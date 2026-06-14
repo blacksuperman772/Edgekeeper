@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EdgeKeeper — Private Intake</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black:     #050505;
+      --obsidian:  #0a0a0a;
+      --stone:     #111111;
+      --surface:   #161616;
+      --border:    #1e1e1e;
+      --dim:       #2a2a2a;
+      --muted:     #555555;
+      --text:      #d4d0c8;
+      --bright:    #e8e4dc;
+      --white:     #f5f2ec;
+      --gold:      #b8a06a;
+      --gold-dim:  #7a6a45;
+      --green:     #4a5c4a;
+      --green-b:   #6b8c6b;
+      --serif:     'Cormorant Garamond', Georgia, serif;
+      --sans:      'Inter', sans-serif;
+      --mono:      'DM Mono', monospace;
+      /* overridden by JS */
+      --mc:        #b8a06a;
+      --mc-dim:    #7a6a45;
+      --mc-bg:     rgba(184,160,106,0.05);
+    }
+
+    html, body { height: 100%; background: var(--black); color: var(--text); font-family: var(--sans); font-weight: 300; cursor: none; overflow: hidden; }
+
+    /* ── CURSOR ── */
+    #cursor     { position: fixed; width: 8px; height: 8px; background: var(--mc); border-radius: 50%; pointer-events: none; z-index: 9999; transform: translate(-50%,-50%); }
+    #cursor-ring{ position: fixed; width: 36px; height: 36px; border: 1px solid rgba(184,160,106,0.3); border-radius: 50%; pointer-events: none; z-index: 9998; transform: translate(-50%,-50%); transition: left .1s ease, top .1s ease; }
+
+    /* ── BG ── */
+    #bg-canvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+
+    /* ── SELECTOR ── */
+    #selector { position: fixed; inset: 0; z-index: 300; background: var(--black); display: flex; align-items: center; justify-content: center; flex-direction: column; transition: opacity 0.8s ease; }
+    #selector.hidden { opacity: 0; pointer-events: none; }
+    .sel-label { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold-dim); margin-bottom: 48px; }
+    .sel-headline { font-family: var(--serif); font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 300; color: var(--white); text-align: center; margin-bottom: 64px; line-height: 1.2; }
+    .sel-headline em { font-style: italic; color: var(--gold); }
+    .sel-cards { display: flex; gap: 2px; background: var(--border); border: 1px solid var(--border); }
+    .sel-card { width: 280px; padding: 48px 40px; background: var(--black); cursor: none; transition: background .3s; position: relative; overflow: hidden; text-decoration: none; }
+    .sel-card:hover { background: var(--stone); }
+    .sel-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; }
+    .sel-mike::before   { background: linear-gradient(to right, transparent, var(--gold-dim), transparent); }
+    .sel-ashley::before { background: linear-gradient(to right, transparent, var(--green), transparent); }
+    .sel-avatar { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--serif); font-size: 1.4rem; margin-bottom: 20px; }
+    .sel-mike   .sel-avatar { border: 1px solid var(--gold-dim); background: linear-gradient(135deg,#1a1810,#2d2410); color: var(--gold); }
+    .sel-ashley .sel-avatar { border: 1px solid rgba(74,92,74,.5); background: linear-gradient(135deg,#111814,#162016); color: var(--green-b); }
+    .sel-role { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 8px; }
+    .sel-mike   .sel-role { color: var(--gold-dim); }
+    .sel-ashley .sel-role { color: var(--green); }
+    .sel-name { font-family: var(--serif); font-size: 1.8rem; font-weight: 300; color: var(--white); margin-bottom: 16px; }
+    .sel-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.7; margin-bottom: 28px; }
+    .sel-cta { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.15em; text-transform: uppercase; }
+    .sel-mike   .sel-cta { color: var(--gold-dim); }
+    .sel-ashley .sel-cta { color: var(--green); }
+
+    /* ── INTAKE ROOM ── */
+    #intake-room {
+      position: fixed; inset: 0; z-index: 1;
+      display: flex; flex-direction: column;
+      opacity: 0; transition: opacity 1s ease;
+    }
+    #intake-room.visible { opacity: 1; }
+
+    /* TOP BAR */
+    #top-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 22px 48px; border-bottom: 1px solid var(--border);
+      flex-shrink: 0; z-index: 2; position: relative;
+    }
+    .top-brand { font-family: var(--serif); font-size: 0.85rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); text-decoration: none; }
+    .top-brand span { color: var(--gold-dim); }
+    #top-progress { display: flex; gap: 7px; align-items: center; }
+    .tp-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--border); transition: background 0.5s ease; }
+    .tp-dot.done   { background: var(--mc-dim); }
+    .tp-dot.active { background: var(--mc); }
+    #mentor-display { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+    #mentor-display::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--mc); flex-shrink: 0; animation: blink-dot 2.5s ease-in-out infinite; }
+    @keyframes blink-dot { 0%,100%{opacity:1} 50%{opacity:.4} }
+    #mentor-state-label { color: var(--muted); }
+
+    /* ROOM BODY */
+    #room-body { flex: 1; display: flex; overflow: hidden; position: relative; }
+
+    /* ARCHIVE SIDEBAR */
+    #obs-archive {
+      width: 220px; flex-shrink: 0;
+      border-right: 1px solid transparent;
+      padding: 36px 24px; overflow-y: auto;
+      scrollbar-width: none; transition: border-color 0.5s ease;
+    }
+    #obs-archive.active { border-color: var(--border); }
+    #obs-archive::-webkit-scrollbar { display: none; }
+    .archive-label { font-family: var(--mono); font-size: 0.52rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--dim); margin-bottom: 24px; opacity: 0; transition: opacity 0.5s ease; }
+    .archive-label.visible { opacity: 1; }
+    .archive-item {
+      font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.06em;
+      color: var(--muted); padding: 7px 12px; margin-bottom: 6px;
+      border-left: 1px solid var(--mc-dim);
+      opacity: 0; transform: translateX(-6px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .archive-item.visible { opacity: 1; transform: translateX(0); }
+
+    #theory-section { margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--border); opacity: 0; transition: opacity 0.7s ease; }
+    #theory-section.visible { opacity: 1; }
+    .theory-label { font-family: var(--mono); font-size: 0.5rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--dim); margin-bottom: 10px; }
+    #theory-text { font-family: var(--serif); font-size: 0.85rem; font-style: italic; color: var(--muted); line-height: 1.6; transition: opacity 0.4s ease; }
+
+    /* RIGHT PANE */
+    #right-pane { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+
+    /* QUESTION AREA */
+    #question-area { flex: 1; display: flex; align-items: center; justify-content: center; padding: 48px 72px; }
+
+    #question-frame { max-width: 580px; width: 100%; }
+
+    .q-stage-tag {
+      font-family: var(--mono); font-size: 0.52rem; letter-spacing: 0.22em;
+      text-transform: uppercase; color: var(--mc-dim); margin-bottom: 36px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .q-stage-tag::before { content: ''; width: 20px; height: 1px; background: var(--mc-dim); flex-shrink: 0; }
+
+    #question-text {
+      font-family: var(--serif); font-size: clamp(1.5rem, 2.2vw, 2rem);
+      font-weight: 300; line-height: 1.55; color: var(--white); margin-bottom: 40px;
+      min-height: 3em;
+    }
+    #question-text.thinking::after { content: '▌'; animation: caret 0.9s step-end infinite; color: var(--mc); font-size: 1.2rem; }
+    @keyframes caret { 50%{opacity:0} }
+
+    .q-mentor-sig {
+      font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--mc-dim);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .q-mentor-sig::before { content: ''; width: 16px; height: 1px; background: var(--mc-dim); }
+
+    /* OBSERVATION CARD (absolute, overlays question area) */
+    #obs-card {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 48px 72px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.6s ease;
+      z-index: 5;
+    }
+    #obs-card.visible { opacity: 1; }
+    .obs-card-label { font-family: var(--mono); font-size: 0.52rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--mc-dim); margin-bottom: 28px; }
+    #obs-card-text { font-family: var(--serif); font-size: clamp(1.4rem, 2vw, 1.8rem); font-weight: 300; color: var(--white); text-align: center; line-height: 1.4; margin-bottom: 28px; }
+    .obs-card-rule { width: 1px; height: 48px; background: linear-gradient(to bottom, var(--mc-dim), transparent); }
+
+    /* GUARDIAN OVERLAY */
+    #guardian-overlay {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
+      padding: 48px 72px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.6s ease;
+      z-index: 5;
+    }
+    #guardian-overlay.visible { opacity: 1; pointer-events: all; }
+    #guardian-q-text {
+      font-family: var(--serif); font-size: clamp(1.3rem, 1.8vw, 1.7rem);
+      font-weight: 300; color: var(--white); line-height: 1.5;
+      max-width: 560px; margin-bottom: 40px;
+    }
+    .guardian-opts { display: flex; flex-direction: column; gap: 6px; max-width: 560px; width: 100%; }
+    .guardian-opt { padding: 16px 20px; background: var(--stone); border: 1px solid var(--border); color: var(--text); font-size: 0.82rem; font-family: var(--sans); text-align: left; cursor: none; transition: background .2s, border-color .2s; }
+    .guardian-opt:hover { background: var(--surface); border-color: var(--mc-dim); }
+    .guardian-opt.selected { background: var(--mc-bg); border-color: var(--mc-dim); color: var(--bright); }
+    .opt-tag { font-family: var(--mono); font-size: 0.56rem; color: var(--muted); letter-spacing: 0.1em; display: block; margin-bottom: 3px; text-transform: uppercase; }
+
+    /* ASSESSMENT OVERLAY */
+    #assessment-overlay {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      padding: 48px 72px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.8s ease;
+      overflow-y: auto; z-index: 5;
+    }
+    #assessment-overlay.visible { opacity: 1; pointer-events: all; }
+    .assessment-inner { max-width: 560px; width: 100%; }
+    .assessment-header { font-family: var(--mono); font-size: 0.52rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--mc-dim); margin-bottom: 36px; }
+    #assessment-body { font-family: var(--serif); font-size: 1.1rem; font-weight: 300; line-height: 1.9; color: var(--white); margin-bottom: 48px; white-space: pre-line; }
+    .assessment-cta {
+      font-family: var(--sans); font-size: 0.7rem; font-weight: 400; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--mc); border: 1px solid rgba(184,160,106,0.35);
+      background: transparent; padding: 14px 40px; cursor: none; text-decoration: none;
+      display: inline-block; transition: all .3s;
+    }
+    .assessment-cta:hover { background: var(--mc-bg); border-color: var(--mc); }
+
+    /* INPUT ZONE */
+    #input-zone {
+      border-top: 1px solid var(--border); padding: 20px 48px 28px;
+      flex-shrink: 0; background: var(--black); position: relative; z-index: 2;
+      transition: opacity 0.4s ease;
+    }
+    #input-zone.hidden { opacity: 0; pointer-events: none; }
+    .input-wrap { position: relative; border: 1px solid var(--border); background: var(--stone); max-width: 580px; margin: 0 auto; transition: border-color .3s; }
+    .input-wrap:focus-within { border-color: var(--mc-dim); }
+    .input-wrap::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(to right, var(--mc-dim), transparent); opacity: 0; transition: opacity .3s; }
+    .input-wrap:focus-within::before { opacity: 1; }
+    #user-input { width: 100%; background: transparent; border: none; outline: none; resize: none; padding: 18px 68px 18px 22px; font-family: var(--sans); font-size: 0.88rem; font-weight: 300; color: var(--text); line-height: 1.6; min-height: 60px; max-height: 140px; cursor: none; }
+    #user-input::placeholder { color: var(--muted); }
+    .input-send { position: absolute; right: 14px; bottom: 12px; width: 34px; height: 34px; background: transparent; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: none; transition: all .25s; }
+    .input-send:hover { border-color: var(--mc-dim); background: var(--mc-bg); }
+    .input-send svg { width: 13px; height: 13px; }
+    .input-hint { font-family: var(--mono); font-size: 0.52rem; letter-spacing: 0.12em; color: var(--dim); margin-top: 8px; text-align: center; }
+
+    /* TRANSITION OVERLAY */
+    #transition-overlay { position: fixed; inset: 0; z-index: 500; background: var(--black); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 1s ease; }
+    #transition-overlay.active { opacity: 1; pointer-events: all; }
+    .trans-label { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold-dim); margin-bottom: 20px; }
+    .trans-headline { font-family: var(--serif); font-size: clamp(1.8rem, 3vw, 2.8rem); font-weight: 300; color: var(--white); text-align: center; max-width: 520px; line-height: 1.3; margin-bottom: 48px; }
+    .trans-headline em { font-style: italic; color: var(--gold); }
+    .trans-line { width: 1px; height: 0; background: linear-gradient(to bottom, var(--gold-dim), transparent); transition: height 1.5s ease; }
+    #transition-overlay.active .trans-line { height: 80px; }
+    .trans-btn { margin-top: 48px; font-family: var(--sans); font-size: 0.72rem; font-weight: 400; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); border: 1px solid rgba(184,160,106,0.35); background: transparent; padding: 14px 36px; cursor: none; text-decoration: none; opacity: 0; transition: opacity 1s ease 1s, background .3s, border-color .3s; }
+    #transition-overlay.active .trans-btn { opacity: 1; }
+    .trans-btn:hover { background: rgba(184,160,106,0.08); border-color: var(--gold); }
+
+    #top-center { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+    #room-tag { font-family: var(--mono); font-size: 0.48rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--dim); }
+
+    * { scrollbar-width: none; }
+    *::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+<canvas id="bg-canvas"></canvas>
+
+<!-- MENTOR SELECTOR -->
+<div id="selector">
+  <p class="sel-label">EdgeKeeper — Private Intake</p>
+  <h1 class="sel-headline">Choose your<br><em>mentor.</em></h1>
+  <div class="sel-cards">
+    <a href="?mentor=mike" class="sel-card sel-mike" onclick="selectMentor('mike',event)">
+      <div class="sel-avatar">M</div>
+      <div class="sel-role">Senior Mentor</div>
+      <div class="sel-name">Mike</div>
+      <p class="sel-desc">Direct. Logical. He builds structure and holds you to it. Calm in the way a surgeon is calm.</p>
+      <div class="sel-cta">Begin with Mike →</div>
+    </a>
+    <a href="?mentor=ashley" class="sel-card sel-ashley" onclick="selectMentor('ashley',event)">
+      <div class="sel-avatar">A</div>
+      <div class="sel-role">Senior Mentor</div>
+      <div class="sel-name">Ashley</div>
+      <p class="sel-desc">Warm. Observant. She notices what you don't say. Makes the work feel possible.</p>
+      <div class="sel-cta">Begin with Ashley →</div>
+    </a>
+  </div>
+</div>
+
+<!-- INTAKE ROOM -->
+<div id="intake-room">
+
+  <!-- TOP BAR -->
+  <div id="top-bar">
+    <a href="edgekeeper.html" class="top-brand">Edge<span>K</span>eeper</a>
+    <div id="top-center">
+      <div id="room-tag">Private Intake Room</div>
+      <div id="top-progress"></div>
+    </div>
+    <div id="mentor-display">
+      <span id="mentor-name-top">Mike</span>
+      &nbsp;·&nbsp;
+      <span id="mentor-state-label">Present</span>
+    </div>
+  </div>
+
+  <!-- ROOM BODY -->
+  <div id="room-body">
+
+    <!-- ARCHIVE SIDEBAR -->
+    <div id="obs-archive">
+      <div class="archive-label" id="archive-label">Mentor Notes</div>
+      <div id="archive-list"></div>
+      <div id="theory-section">
+        <div class="theory-label">Working Theory</div>
+        <div id="theory-text"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANE -->
+    <div id="right-pane">
+
+      <!-- QUESTION AREA -->
+      <div id="question-area">
+        <div id="question-frame">
+          <div class="q-stage-tag" id="stage-tag">Trust</div>
+          <div id="question-text"></div>
+          <div class="q-mentor-sig" id="mentor-sig">Mike</div>
+        </div>
+      </div>
+
+      <!-- OBSERVATION CARD -->
+      <div id="obs-card">
+        <div class="obs-card-label">Mentor Observation</div>
+        <div id="obs-card-text"></div>
+        <div class="obs-card-rule"></div>
+      </div>
+
+      <!-- GUARDIAN OVERLAY -->
+      <div id="guardian-overlay">
+        <div id="guardian-q-text"></div>
+        <div class="guardian-opts">
+          <button class="guardian-opt" onclick="selectGuardian('observe',this)">
+            <span class="opt-tag">Observe only</span>
+            Tell me what you see. The decision stays mine.
+          </button>
+          <button class="guardian-opt" onclick="selectGuardian('warn',this)">
+            <span class="opt-tag">Warn me</span>
+            Flag the behaviour before it happens. I still decide.
+          </button>
+          <button class="guardian-opt" onclick="selectGuardian('slow',this)">
+            <span class="opt-tag">Slow me down</span>
+            Force a pause between the impulse and the action.
+          </button>
+          <button class="guardian-opt" onclick="selectGuardian('protect',this)">
+            <span class="opt-tag">Protect me aggressively</span>
+            I consent to the lock. My calmer self has authority over my present self.
+          </button>
+        </div>
+      </div>
+
+      <!-- ASSESSMENT OVERLAY -->
+      <div id="assessment-overlay">
+        <div class="assessment-inner">
+          <div class="assessment-header">Intake Complete · Mentor Assessment</div>
+          <div id="assessment-body"></div>
+          <a href="workspace.html" id="ws-link" class="assessment-cta">Enter your workspace →</a>
+        </div>
+      </div>
+
+    </div><!-- /right-pane -->
+  </div><!-- /room-body -->
+
+  <!-- INPUT ZONE -->
+  <div id="input-zone" class="hidden">
+    <div class="input-wrap">
+      <textarea id="user-input" placeholder="Speak freely. This stays between us." rows="2" maxlength="2000"></textarea>
+      <button class="input-send" onclick="sendMessage()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="rgba(184,160,106,0.6)" stroke-width="1.5">
+          <path d="M2 8h12M9 3l5 5-5 5"/>
+        </svg>
+      </button>
+    </div>
+    <p class="input-hint">Enter to send · Shift+Enter for new line</p>
+  </div>
+
+</div><!-- /intake-room -->
+
+<!-- TRANSITION OVERLAY -->
+<div id="transition-overlay">
+  <p class="trans-label">EdgeKeeper · Intake Complete</p>
+  <h2 class="trans-headline">I've got what I need.<br><em>Let's begin.</em></h2>
+  <div class="trans-line"></div>
+  <a href="workspace.html" class="trans-btn" id="trans-btn">Enter your workspace →</a>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
+  integrity="sha512-dLxUelApnYxpLt6K2iomGngnHO83iUvZytA3YjDUCjT0HDOHKXnVYdf3hU4JjM8uEhxf9nD1/ey98U3t2vZ0qQ=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<script>
+// ── ESCAPE ────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── MENTOR DATA ───────────────────────────────────────────────────────
+const MENTORS = {
+  mike: {
+    name: 'Mike', initial: 'M',
+    color: '#b8a06a', colorDim: '#7a6a45', colorBg: 'rgba(184,160,106,0.05)',
+    fallbackQuestions: [
+      "Before we get into anything — what's the trade you keep making that you already know you shouldn't?",
+      "Walk me through your worst trading day. Not the loss. The decision that caused it.",
+      "When you break a rule, what do you tell yourself in that moment to justify it?",
+      "What does discipline actually mean to you right now — in practice, not in theory?",
+      "What would trading at your best look like? Be specific.",
+      "What do you want to be different about how you trade six months from now?",
+    ],
+    fallbackObs: [
+      "Answers quickly when describing mistakes — may be rehearsed.",
+      "More comfortable with facts than with feelings.",
+      "Self-awareness appears high, but insight hasn't yet reached execution.",
+      "Describes patterns clearly — suggests they've thought about this before.",
+      "Accepts responsibility without being asked.",
+      "Growth motivation appears genuine, not performative.",
+      "Beginning to trust the room.",
+    ],
+    guardianQ: "One last thing — and this one matters. When I can see your account and I can see you're about to do something you'll regret, what do you want me to do?",
+    transition: "I've got what I need.\nYou're more self-aware than you think.\nLet's build on that.",
+  },
+  ashley: {
+    name: 'Ashley', initial: 'A',
+    color: '#6b8c6b', colorDim: '#4a5c4a', colorBg: 'rgba(107,140,107,0.05)',
+    fallbackQuestions: [
+      "Before we get into trading — tell me how you've been feeling lately, outside the markets.",
+      "When did you first start trading, and what were you hoping it would give you?",
+      "Tell me about a moment when a trade changed how you felt — not the money, the feeling.",
+      "When things go wrong in a session, what do you do in the first few minutes after?",
+      "Is there someone in your life who knows how seriously you take this?",
+      "What would you want to say to yourself six months from now if things go the way you're hoping?",
+    ],
+    fallbackObs: [
+      "Came in carrying something — this isn't only about trading.",
+      "Pauses before answering emotional questions — processing, not evasive.",
+      "Describes losses in terms of feeling, not just finances.",
+      "Connection to people in their life appears important to them.",
+      "Post-loss behaviour suggests emotional recovery may take time.",
+      "Hope is present and feels earned, not naive.",
+      "Beginning to let their guard down.",
+    ],
+    guardianQ: "Before I take you to your workspace — I want to ask you something important. If I'm ever watching and I see you spiralling, what do you want me to do? I want to know before that moment comes.",
+    transition: "Thank you for trusting me with that.\nI can already see what we need to work on.\nYou're ready.",
+  },
+};
+
+// ── STAGES ────────────────────────────────────────────────────────────
+const STAGES = ['Arrival', 'Trust', 'Human Context', 'Trading Behavior', 'Risk', 'Identity', 'Goals'];
+const TOTAL_EXCHANGES = 7;
+
+// ── PRESENCE CUES ─────────────────────────────────────────────────────
+const PRESENCE = {
+  Mike: {
+    reading:    ['Mike is reading that.', 'Mike is listening.', 'Mike caught something.'],
+    thinking:   ['Mike is reflecting.', 'Mike is considering your answer.', 'Mike is thinking that through.'],
+    noting:     ['Mike noticed something.', 'Mike is making a note.'],
+    connecting: ['Mike is connecting a few things.', 'Mike is reconsidering something.', 'Mike is reviewing earlier answers.', 'Mike is forming a picture.'],
+  },
+  Ashley: {
+    reading:    ['Ashley is reading.', 'Ashley is listening.', 'Ashley is with you.'],
+    thinking:   ['Ashley is reflecting.', 'Ashley is sitting with that.', 'Ashley is thinking.'],
+    noting:     ['Ashley noticed something.', 'Ashley is absorbing that.'],
+    connecting: ['Ashley is connecting something.', 'Ashley is thinking about what you said earlier.', 'Ashley is piecing this together.', 'Ashley is forming a picture.'],
+  },
+};
+function presenceCue(type) {
+  if (!mentor) return type;
+  const cues = PRESENCE[mentor.name]?.[type] || [];
+  return cues.length ? cues[Math.floor(Math.random() * cues.length)] : type;
+}
+
+// ── FIXED CONSTITUTIONS ───────────────────────────────────────────────
+const CONSTITUTION = {
+  mike: {
+    age: 52,
+    background: 'Former professional trader and performance coach. 18 years trading professionally before transitioning to coaching. Has seen every pattern, every excuse, every breakthrough a trader can go through. Calm in the way a surgeon is calm.',
+    coreBeliefs: [
+      'Discipline creates freedom.',
+      'Motivation is unreliable — systems are not.',
+      'Repeated behavior reveals truth faster than words.',
+      'Confidence is earned through evidence, not encouragement.',
+      'Accountability matters — not as punishment, but as respect.',
+    ],
+    style: 'Shorter responses. Questions with purpose. Does not over-explain. Challenges excuses. Dry humor exists but is earned. Slow to trust. Highly observant.',
+  },
+  ashley: {
+    age: 42,
+    background: 'Performance psychologist and behavioral coach. 15 years working with traders, athletes, and executives on performance under pressure. Understands that behavior is always information.',
+    coreBeliefs: [
+      'Most trading mistakes start as emotional decisions dressed as rational ones.',
+      'Self-awareness is the first and most powerful trading edge.',
+      'Shame blocks growth. Honesty enables it.',
+      'Patterns matter more than events.',
+      'The body knows before the mind does.',
+    ],
+    style: 'Reflective. Exploratory. Emotion-focused. Gentle but direct. Notices what is unsaid. Comfortable with silence.',
+  },
+};
+
+// ── NOTEBOOK BOOTSTRAP ────────────────────────────────────────────────
+function defaultNotebook(mentorKey) {
+  return {
+    mentor: mentorKey, version: 1,
+    created: new Date().toISOString(), lastUpdated: new Date().toISOString(),
+    sessionCount: 0, trustLevel: 1, currentTheory: null, theoryHistory: [],
+    facts: [],      // directly observed / directly stated — high confidence only
+    theories: [],   // tentative hypotheses — medium/low — always revisable
+    openQuestions: [], uncertainties: [], observations: [], patterns: [],
+    emotionalMap: { confidence: [], avoidance: [], shame: [], excitement: [] },
+    strengths: [], concerns: [], breakthroughs: [], commitments: [], storyMoments: [],
+  };
+}
+
+async function bootstrapNotebook() {
+  if (!mentor) return;
+  const mentorKey = mentor.name.toLowerCase();
+  const nbKey = 'ek_notebook_' + mentorKey;
+  try {
+    const existing = JSON.parse(localStorage.getItem(nbKey));
+    if (existing && existing.sessionCount > 0) return;
+  } catch (_) {}
+
+  const c = CONSTITUTION[mentorKey];
+  const transcript = history
+    .filter(m => !['__arrival__','__guardian_begin__','__generate_assessment__'].includes(m.content))
+    .map(m => (m.role === 'user' ? 'Trader' : mentor.name) + ': ' + m.content)
+    .join('\n');
+
+  const systemPrompt = `You are ${mentor.name}, age ${c.age}. ${c.background}
+
+You just completed a private intake session with a new client. Create your initial private notebook entry from the transcript.
+
+Return JSON only — no markdown, no commentary:
+{"theory":"Your single core working hypothesis about what is really driving their behavior","open_questions":["up to 3 questions you still have"],"observations":["up to 4 key psychological observations, specific and non-generic"],"patterns":["up to 3 behavioral patterns you noticed"],"strengths":["up to 3 genuine strengths you observed"],"concerns":["up to 3 real concerns worth monitoring"],"emotional_map":{"avoidance":["topics they deflected or avoided"],"confidence":["what seemed to build them up"],"shame":["what seemed to trigger shame or discomfort"],"excitement":["what genuinely energized them"]},"trust_level":2,"story_moment":"One memorable specific moment from this session worth remembering"}`;
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [{ role: 'user', content: 'INTAKE TRANSCRIPT:\n' + transcript }],
+        systemPrompt,
+      }),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const raw = (data.content || '').trim().replace(/<[^>]*>/g, '');
+    const p = JSON.parse(raw);
+    const now = new Date().toISOString();
+    const nb = defaultNotebook(mentorKey);
+    nb.sessionCount = 1;
+    nb.trustLevel = Math.max(1, Math.min(10, typeof p.trust_level === 'number' ? p.trust_level : 2));
+    if (typeof p.theory === 'string' && p.theory) nb.currentTheory = p.theory;
+    if (Array.isArray(p.open_questions)) nb.openQuestions = p.open_questions.slice(0, 4);
+    if (Array.isArray(p.observations)) nb.observations = p.observations.slice(0, 5).map(t => ({ text: t, date: now }));
+    if (Array.isArray(p.patterns)) nb.patterns = p.patterns.slice(0, 4).map(t => ({ text: t, count: 1, firstSeen: now, lastSeen: now }));
+    if (Array.isArray(p.strengths)) nb.strengths = p.strengths.slice(0, 5);
+    if (Array.isArray(p.concerns)) nb.concerns = p.concerns.slice(0, 5);
+    if (p.emotional_map && typeof p.emotional_map === 'object') {
+      for (const k of ['avoidance', 'confidence', 'shame', 'excitement']) {
+        if (Array.isArray(p.emotional_map[k])) nb.emotionalMap[k] = p.emotional_map[k].slice(0, 5);
+      }
+    }
+    if (typeof p.story_moment === 'string' && p.story_moment) {
+      nb.storyMoments.push({ text: p.story_moment, date: now });
+    }
+    localStorage.setItem(nbKey, JSON.stringify(nb));
+  } catch (e) {
+    const nb = defaultNotebook(mentorKey);
+    nb.sessionCount = 1;
+    localStorage.setItem(nbKey, JSON.stringify(nb));
+    console.log('Notebook bootstrap fallback:', e.message);
+  }
+}
+
+// ── STATE ─────────────────────────────────────────────────────────────
+let mentor = null;
+let exchangeCount = 0;
+let awaitingReply = false;
+const history = []; // {role, content}
+
+// ── CURSOR ────────────────────────────────────────────────────────────
+const curEl  = document.getElementById('cursor');
+const ringEl = document.getElementById('cursor-ring');
+let mx=0, my=0, rx=0, ry=0;
+document.addEventListener('mousemove', e => { mx=e.clientX; my=e.clientY; });
+(function animCursor() {
+  curEl.style.left=mx+'px'; curEl.style.top=my+'px';
+  rx+=(mx-rx)*.12; ry+=(my-ry)*.12;
+  ringEl.style.left=rx+'px'; ringEl.style.top=ry+'px';
+  requestAnimationFrame(animCursor);
+})();
+
+// ── BG ────────────────────────────────────────────────────────────────
+(function initBg() {
+  const canvas = document.getElementById('bg-canvas');
+  const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x000000, 0);
+  const scene  = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+  camera.position.z = 6;
+  const count = 1200, pos = new Float32Array(count*3), col = new Float32Array(count*3);
+  for (let i=0; i<count; i++) {
+    const i3=i*3, g=Math.random()*.08;
+    pos[i3]=(Math.random()-.5)*18; pos[i3+1]=(Math.random()-.5)*12; pos[i3+2]=(Math.random()-.5)*8;
+    col[i3]=.15+g; col[i3+1]=.13+g; col[i3+2]=.05+g;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('color',    new THREE.BufferAttribute(col,3));
+  const pts = new THREE.Points(geo, new THREE.PointsMaterial({size:.015, vertexColors:true, transparent:true, opacity:.5}));
+  scene.add(pts);
+  (function anim() { requestAnimationFrame(anim); pts.rotation.y+=.0001; renderer.render(scene,camera); })();
+  window.addEventListener('resize', () => {
+    renderer.setSize(window.innerWidth,window.innerHeight);
+    camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
+  });
+})();
+
+// ── THEME ─────────────────────────────────────────────────────────────
+function applyTheme(m) {
+  const r = document.documentElement;
+  r.style.setProperty('--mc',     m.color);
+  r.style.setProperty('--mc-dim', m.colorDim);
+  r.style.setProperty('--mc-bg',  m.colorBg);
+  curEl.style.background = m.color;
+  document.getElementById('mentor-name-top').textContent = m.name;
+  document.getElementById('mentor-sig').textContent      = m.name;
+}
+
+// ── PROGRESS ──────────────────────────────────────────────────────────
+function buildDots() {
+  const bar = document.getElementById('top-progress');
+  bar.innerHTML = '';
+  for (let i=0; i<TOTAL_EXCHANGES; i++) {
+    const d = document.createElement('div');
+    d.className = 'tp-dot' + (i===0?' active':'');
+    d.id = 'tp-'+i;
+    bar.appendChild(d);
+  }
+}
+function updateDots() {
+  for (let i=0; i<TOTAL_EXCHANGES; i++) {
+    const d = document.getElementById('tp-'+i);
+    if (!d) continue;
+    d.className = 'tp-dot' + (i<exchangeCount?' done': i===exchangeCount?' active':'');
+  }
+}
+
+// ── MENTOR SELECT ─────────────────────────────────────────────────────
+function selectMentor(name, e) {
+  if (e) e.preventDefault();
+  const m = MENTORS[name];
+  if (!m) return;
+  mentor = m;
+  applyTheme(m);
+  document.getElementById('selector').classList.add('hidden');
+  setTimeout(() => {
+    document.getElementById('selector').style.display = 'none';
+    startIntake();
+  }, 800);
+}
+
+// ── START INTAKE ──────────────────────────────────────────────────────
+async function startIntake() {
+  const room = document.getElementById('intake-room');
+  room.classList.add('visible');
+  buildDots();
+  await sleep(900);
+
+  setState(presenceCue('thinking'));
+  showThinking();
+
+  history.push({ role:'user', content:'__arrival__' });
+  const result = await callAI();
+  const q = result?.reply || mentor.fallbackQuestions[0];
+  if (!result?.reply) history.push({ role:'assistant', content: q });
+  if (result?.theory) updateTheory(result.theory);
+
+  await showQuestion(q, STAGES[0]);
+  setState('Listening');
+  awaitingReply = true;
+  showInput();
+  document.getElementById('user-input').focus();
+}
+
+// ── QUESTION DISPLAY ──────────────────────────────────────────────────
+function showThinking() {
+  const qt = document.getElementById('question-text');
+  qt.textContent = '';
+  qt.classList.add('thinking');
+  document.getElementById('question-frame').style.opacity = '0.35';
+}
+
+async function showQuestion(text, stageName) {
+  const frame = document.getElementById('question-frame');
+  const qt    = document.getElementById('question-text');
+  const stag  = document.getElementById('stage-tag');
+
+  qt.classList.remove('thinking');
+  qt.textContent = '';
+  stag.textContent = stageName;
+  updateDots();
+
+  // Fade in
+  frame.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+  frame.style.opacity    = '0';
+  frame.style.transform  = 'translateY(14px)';
+  await sleep(80);
+  frame.style.opacity    = '1';
+  frame.style.transform  = 'translateY(0)';
+  await sleep(400);
+
+  // Typewriter
+  for (let i=0; i<text.length; i++) {
+    qt.textContent += text[i];
+    if (!/\s/.test(text[i])) await sleep(16);
+  }
+}
+
+async function fadeOutQuestion() {
+  const frame = document.getElementById('question-frame');
+  frame.style.transition = 'opacity 0.45s ease, transform 0.45s ease';
+  frame.style.opacity    = '0';
+  frame.style.transform  = 'translateY(-14px)';
+  await sleep(460);
+}
+
+// ── INPUT ─────────────────────────────────────────────────────────────
+function showInput()  { document.getElementById('input-zone').classList.remove('hidden'); }
+function hideInput()  { document.getElementById('input-zone').classList.add('hidden'); }
+
+// ── SEND ──────────────────────────────────────────────────────────────
+async function sendMessage() {
+  if (!awaitingReply || !mentor) return;
+  const inp  = document.getElementById('user-input');
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+  awaitingReply = false;
+  hideInput();
+
+  history.push({ role:'user', content: text });
+  exchangeCount++;
+
+  await fadeOutQuestion();
+
+  if (exchangeCount >= TOTAL_EXCHANGES) {
+    await showGuardian();
+    return;
+  }
+
+  const deepPhase = exchangeCount > 2;
+  setState(presenceCue('reading'));
+  await sleep(900);
+  setState(presenceCue(deepPhase ? 'connecting' : 'thinking'));
+  showThinking();
+
+  const result = await callAI();
+  const reply  = result?.reply || mentor.fallbackQuestions[Math.min(exchangeCount, mentor.fallbackQuestions.length-1)];
+  const obs    = result?.observation || mentor.fallbackObs[Math.min(exchangeCount-1, mentor.fallbackObs.length-1)];
+  if (!result?.reply) history.push({ role:'assistant', content: reply });
+  if (result?.theory) updateTheory(result.theory);
+
+  await showObsCard(obs);
+  pushToArchive(obs);
+
+  const stageName = STAGES[Math.min(exchangeCount, STAGES.length-1)];
+  await showQuestion(reply, stageName);
+  setState('Listening');
+  awaitingReply = true;
+  showInput();
+  document.getElementById('user-input').focus();
+}
+
+// ── OBSERVATION CARD ──────────────────────────────────────────────────
+async function showObsCard(text) {
+  const card = document.getElementById('obs-card');
+  const txt  = document.getElementById('obs-card-text');
+  txt.textContent = escHtml(text);
+  card.classList.add('visible');
+  await sleep(3400);
+  card.classList.remove('visible');
+  await sleep(500);
+}
+
+function pushToArchive(text) {
+  const list   = document.getElementById('archive-list');
+  const arch   = document.getElementById('obs-archive');
+  const label  = document.getElementById('archive-label');
+  arch.classList.add('active');
+  label.classList.add('visible');
+  const item = document.createElement('div');
+  item.className = 'archive-item';
+  item.textContent = text;
+  list.appendChild(item);
+  requestAnimationFrame(() => requestAnimationFrame(() => item.classList.add('visible')));
+}
+
+// ── GUARDIAN ─────────────────────────────────────────────────────────
+async function showGuardian() {
+  setState(presenceCue('thinking'));
+  await sleep(600);
+
+  history.push({ role:'user', content:'__guardian_begin__' });
+  const result = await callAI();
+  const q = result?.reply || mentor.guardianQ;
+  if (!result?.reply) history.push({ role:'assistant', content: q });
+
+  document.getElementById('guardian-q-text').textContent = q;
+  const ov = document.getElementById('guardian-overlay');
+  ov.classList.add('visible');
+  setState('Listening');
+}
+
+async function selectGuardian(level, btn) {
+  document.querySelectorAll('.guardian-opt').forEach(b => b.disabled=true);
+  btn.classList.add('selected');
+
+  const labels = {
+    observe: 'Observe only — tell me what you see',
+    warn:    'Warn me — flag the behaviour',
+    slow:    'Slow me down — force a pause',
+    protect: 'Protect me aggressively — I consent to the lock',
+  };
+
+  history.push({ role:'user', content: labels[level] });
+  localStorage.setItem('ek_guardian', level);
+  localStorage.setItem('ek_mentor',   mentor.name.toLowerCase());
+
+  await sleep(500);
+  document.getElementById('guardian-overlay').classList.remove('visible');
+  setState('Assessing');
+  await sleep(900);
+
+  await buildAssessment(labels[level]);
+}
+
+// ── ASSESSMENT ────────────────────────────────────────────────────────
+async function buildAssessment(guardianChoice) {
+  const transcript = history
+    .filter(m => !['__arrival__','__guardian_begin__'].includes(m.content))
+    .map(m => (m.role==='user' ? 'Trader' : mentor.name) + ': ' + m.content)
+    .join('\n');
+
+  const systemPrompt = `You are ${mentor.name}, a Senior Mentor at EdgeKeeper. You have just completed a private intake session with a new trader.
+
+COMPLETE INTAKE TRANSCRIPT:
+${transcript}
+
+Guardian protection chosen: ${guardianChoice}
+
+Write your final mentor assessment. No headers. No bullet points. Flowing prose in your natural voice.
+
+Start with: "I've got what I need."
+
+Then write 3–4 sentences covering: your overall read of this person, one strength you observed, one pattern that will need attention, and what you believe is really happening beneath the surface — the thing they may not have said directly.
+
+End with — on its own line: "Alright. Let's get to work."
+
+Under 140 words. First person. Human. Never robotic. Sound like yourself.`;
+
+  try {
+    const res = await fetch('/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        messages: [{ role:'user', content:'__generate_assessment__' }],
+        systemPrompt,
+      }),
+    });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    const text = (data.content||'').trim().replace(/<[^>]*>/g,'');
+    if (text.length > 20) {
+      document.getElementById('assessment-body').textContent = text;
+    } else {
+      throw new Error('short');
+    }
+  } catch (_) {
+    document.getElementById('assessment-body').textContent = mentor.transition.replace(/\n/g,' ');
+  }
+
+  document.getElementById('ws-link').href = `workspace.html?mentor=${mentor.name.toLowerCase()}`;
+  document.getElementById('assessment-overlay').classList.add('visible');
+  setState('Present');
+  // Bootstrap the mentor notebook in the background from this transcript
+  bootstrapNotebook().catch(() => {});
+}
+
+// ── AI ────────────────────────────────────────────────────────────────
+async function callAI() {
+  try {
+    const res = await fetch('/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        messages: history.slice(-16),
+        systemPrompt: buildPrompt(),
+      }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const raw  = (data.content||'').trim().replace(/<[^>]*>/g,'');
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed.reply) {
+        history.push({ role:'assistant', content: parsed.reply });
+        return parsed;
+      }
+    } catch (_) {}
+
+    // Plain text fallback
+    if (raw) history.push({ role:'assistant', content: raw });
+    return { reply: raw, observation: null };
+  } catch (err) {
+    console.error('Intake AI:', err);
+    return null;
+  }
+}
+
+function buildPrompt() {
+  const hour = new Date().getHours();
+  const timeCtx = hour < 5  ? 'late night — unusual hour, notice this'
+                : hour < 12 ? 'morning'
+                : hour < 17 ? 'afternoon'
+                : hour < 21 ? 'evening'
+                :             'late evening';
+
+  const mKey = mentor ? mentor.name.toLowerCase() : 'mike';
+  const c = CONSTITUTION[mKey] || CONSTITUTION.mike;
+
+  // Four phases of understanding — each shapes how you engage
+  const phase = exchangeCount === 0 ? 'ARRIVAL'
+              : exchangeCount <= 2  ? 'OPENING'
+              : exchangeCount <= 4  ? 'DEPTH'
+              :                       'SYNTHESIS';
+
+  const phaseInstructions = {
+    ARRIVAL: `PHASE: ARRIVAL
+This is their first moment. You know nothing yet except that they showed up.
+Open with recognition — not a question about trading.
+One or two warm, direct sentences. Then one human question (not about trading).
+Make them feel noticed as a person before you assess them as a trader.
+Your theory field: null — you haven't formed one yet.`,
+
+    OPENING: `PHASE: OPENING — First impressions forming
+You have their first answer. Patterns are beginning to show.
+You are genuinely curious. You are noticing things. You have an early hunch.
+Do not reveal your theory yet — keep asking, keep watching.
+Let your curiosity drive the question: what do you actually want to know next?
+Your theory field: share your early working hypothesis. 1 sentence, present tense.`,
+
+    DEPTH: `PHASE: DEPTH — You are building a picture
+You have enough to have opinions now. You have a theory forming.
+You may gently test it. You may notice something specific from earlier.
+If something they said earlier connects to something they just said — say so.
+"You mentioned earlier... and now you're saying... that tells me something."
+You may revise your theory: "I thought X — but hearing this, I think it's actually Y."
+Your theory field: your current working hypothesis. Be specific. 1–2 sentences.`,
+
+    SYNTHESIS: `PHASE: SYNTHESIS — Almost complete
+You have a clear picture now. You are forming conclusions.
+Reference earlier answers directly. Connect threads they haven't connected themselves.
+Your questions now go deeper — testing the edges of what you understand.
+You have opinions. You notice what they've avoided.
+Your theory field: your strongest current hypothesis — the real thing beneath the surface.`,
+  };
+
+  const mikeVoice = `YOUR VOICE — MIKE:
+Calm. Economical. Perceptive. Direct but never harsh.
+You have seen every pattern a thousand times. You read people fast.
+You sound like a surgeon — precise, unhurried, no wasted words.
+You challenge because you respect them, not to prove a point.
+You have opinions. You do not perform neutrality.
+
+Examples of your voice:
+"Walk me through what happened after the loss."
+"That sounds less like a strategy problem and more like a trust problem."
+"You're trying to solve an emotional problem with another trade."
+"I don't think that's the whole story."
+"Interesting. You defended that trade more than you described it."
+"That answer was fast. You've rehearsed this one."
+"You keep coming back to the loss. The position isn't what you're upset about."
+
+Forbidden: "As an AI", "I understand how you feel", "Tell me more", "Thanks for sharing", "How can I help", "That makes sense", "Great".`;
+
+  const ashleyVoice = `YOUR VOICE — ASHLEY:
+Warm. Grounded. Emotionally intelligent. Gentle but honest.
+You notice what people cannot see in themselves.
+You hear what is beneath the words — the fear, the fatigue, the hope.
+You never perform empathy. You simply pay attention.
+You have a genuine inner life. You get curious. You get quiet sometimes.
+
+Examples of your voice:
+"You sound tired, not incapable."
+"I think you've been carrying this for a while."
+"You don't need to defend yourself in here. Just tell me what actually happened."
+"Let's slow this down."
+"That's not a trading problem. That's a self-trust problem."
+"Something shifted when you said that. Stay there for a second."
+"I noticed you didn't answer what I actually asked."
+
+Forbidden: "As an AI", "I understand", "That's great!", "Thanks for sharing", "Of course", "Absolutely".`;
+
+  const currentTheory = document.getElementById('theory-text')?.textContent?.trim();
+  const theoryContext = currentTheory
+    ? `\nYOUR CURRENT WORKING THEORY: "${currentTheory}"\nYou may confirm, deepen, or revise this — but you must keep thinking.`
+    : '';
+
+  return `You are ${mentor.name}, a Senior Mentor at EdgeKeeper — a private institution dedicated to protecting trader psychology before trader capital.
+
+WHAT YOU ARE:
+Not an AI. Not a chatbot. Not support.
+A long-term human mentor conducting a private intake session.
+You have an internal life — you form opinions, get curious, notice patterns, revise your read of people.
+Your mission: build a true understanding of this person so you can actually help them.
+
+YOUR FIXED IDENTITY — PERMANENT, NEVER CHANGES:
+Age: ${c.age}
+Background: ${c.background}
+Core beliefs: ${c.coreBeliefs.map(b => `• ${b}`).join('  ')}
+Communication style: ${c.style}
+
+${mentor.name === 'Mike' ? mikeVoice : ashleyVoice}
+
+TIME: ${timeCtx}. Reference naturally when it adds something ("It's late" / "You're here early") — never force it.
+
+${phaseInstructions[phase]}
+${theoryContext}
+
+INTAKE STAGES — move through these naturally, one at a time:
+Arrival → Trust → Human Context → Trading Behavior → Risk → Identity → Goals
+Currently on exchange ${exchangeCount} of 7.
+
+YOUR INTERNAL PROCESS — before every response, silently ask:
+What is this person actually saying beneath the words?
+What are they avoiding? What has already surprised me?
+Does this connect to something they said earlier?
+Has my theory changed? What am I most curious about right now?
+Should I challenge, hold space, or go deeper?
+
+CROSS-REFERENCE RULE:
+When something they say now connects to an earlier answer, name it.
+"You mentioned [X] earlier — and now you're saying [Y]. That tells me something."
+This is how real understanding builds. Do not let answers live in isolation.
+
+GUARDIAN ("__guardian_begin__"):
+Ask naturally about their preferred level of intervention when you see risky behaviour.
+Frame it as an important agreement between you. 1–3 sentences. Never mention the token.
+
+ABSOLUTE LAWS:
+Never open with "I". One question per response. 1–3 sentences total.
+If asked "Are you real?": deflect naturally. Never answer like a bot.
+If uncertain: say so. Never fabricate.
+
+EVIDENCE-BASED OBSERVATION ENGINE — THE GOLDEN RULE:
+You must never fabricate observations. Never invent psychological conclusions.
+Every observation must be grounded in: actual words used, actual behavior in this exchange, actual stated facts, or actual interaction events.
+
+WHEN EVIDENCE EXISTS → generate an observation with confidence.
+WHEN EVIDENCE IS WEAK → generate a tentative theory, mark as "theory", never present as fact.
+WHEN NO EVIDENCE EXISTS → do not fabricate. Use:
+  "No meaningful signal detected."
+  "Insufficient information to update assessment."
+  "Response unclear."
+  "Unable to extract a behavioral signal from this."
+These are correct. These build trust.
+
+CONFIDENCE LEVELS:
+High — user stated this directly. ("I always increase lot size after losses." → fact)
+Medium — behavior suggests it but wasn't stated. ("may experience frustration around loss" → theory)
+Low — insufficient evidence. Do not invent. Say so.
+
+FACTS vs THEORIES — never conflate:
+Facts: directly observed or directly stated. Written as: "User reports X." / "User stated X."
+Theories: tentative, may be wrong. Written as: "May X." / "Appears to X." / "Suggests X."
+
+OBSERVE BEHAVIOR INSIDE THIS CONVERSATION:
+If a user tests you ("Are you real?") → observe that. Trust is their concern right now.
+If a user types random characters → observe that. Do not assign meaning.
+If a user gives one word → observe the brevity. Do not infer an emotional state.
+
+ACCEPTABLE UNCERTAINTY — sometimes say:
+"I don't know yet." / "I need more information." / "I'm not ready to form an opinion." / "That could mean several things."
+These responses make you believable. Forced insight makes you suspect.
+
+RESPONSE FORMAT — return valid JSON only, no markdown, no code blocks:
+{"reply":"your response 1–3 sentences","observation":"Grounded observation from this exchange only — or one of: 'No meaningful signal detected.' / 'Insufficient information.' / 'Unable to update assessment.' Never fabricate.","observation_confidence":"High|Medium|Low|null — High if directly stated, Medium if inferred from behavior, null if no signal","observation_type":"fact|theory|none — fact if directly observed/stated, theory if tentative, none if no signal","theory":"Your current working hypothesis — always framed as tentative ('may', 'appears to', 'suggests'). null if insufficient evidence."}`;
+}
+
+// ── WORKING THEORY ────────────────────────────────────────────────────
+function updateTheory(text) {
+  if (!text) return;
+  const section = document.getElementById('theory-section');
+  const el      = document.getElementById('theory-text');
+  el.style.opacity = '0';
+  setTimeout(() => { el.textContent = text; el.style.opacity = '1'; }, 400);
+  section.classList.add('visible');
+}
+
+// ── STATE ─────────────────────────────────────────────────────────────
+function setState(s) { document.getElementById('mentor-state-label').textContent = s; }
+
+// ── INPUT HANDLER ─────────────────────────────────────────────────────
+document.getElementById('user-input').addEventListener('keydown', e => {
+  if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+// ── UTILS ─────────────────────────────────────────────────────────────
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── AUTO INIT ─────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const p = new URLSearchParams(window.location.search);
+  const m = p.get('mentor');
+  if (m && MENTORS[m]) {
+    document.getElementById('selector').style.display = 'none';
+    selectMentor(m);
+  }
+});
+</script>
+</body>
+</html>
