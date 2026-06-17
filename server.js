@@ -2501,64 +2501,107 @@ app.use((err, req, res, _next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// ── Start ─────────────────────────────────────────────────────────────────────
-app.listen(PORT, HOST, () => {
-  console.log(`\nEdgeKeeper server → http://${HOST}:${PORT}\n`);
+// ── Vercel Cron endpoints ─────────────────────────────────────────────────────
+// Vercel calls these HTTP routes on schedule (defined in vercel.json).
+// A shared secret prevents public abuse — set CRON_SECRET in Vercel env vars.
+function verifyCronSecret(req, res, next) {
+  const secret = process.env.CRON_SECRET;
+  if (secret && req.headers.authorization !== `Bearer ${secret}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+}
 
+app.get('/api/cron/outreach', verifyCronSecret, async (req, res) => {
+  try {
+    await runProactiveOutreach();
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Proactive outreach error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/cron/reports', verifyCronSecret, async (req, res) => {
+  const prevMonth = new Date();
+  prevMonth.setDate(0);
+  const reportMonth = prevMonth.toISOString().slice(0, 7);
+  try {
+    const { data: users } = await supabaseAdmin
+      .from('user_profiles')
+      .select('id')
+      .in('subscription_status', ['pro', 'institutional']);
+    if (users?.length) {
+      for (const u of users) {
+        await generateBehavioralReport(u.id, reportMonth).catch(err =>
+          console.error(`[Reports] Error for user ${u.id}:`, err.message)
+        );
+      }
+    }
+    res.json({ ok: true, reports: users?.length ?? 0, month: reportMonth });
+  } catch (err) {
+    console.error('[Reports] Cron error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Local dev server ──────────────────────────────────────────────────────────
+// Only binds a port when run directly (`node server.js`).
+// Vercel imports this file and uses `module.exports` — never calls listen().
+if (require.main === module) {
   const warnings = [];
-  if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'your-openai-key-here') {
+  if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'your-openai-key-here')
     warnings.push('OPENAI_API_KEY not set — AI responses will fail');
-  }
-  if (!process.env.SUPABASE_URL || process.env.SUPABASE_URL === 'https://your-project.supabase.co') {
+  if (!process.env.SUPABASE_URL || process.env.SUPABASE_URL === 'https://your-project.supabase.co')
     warnings.push('SUPABASE_URL not set — auth and data will fail');
-  }
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY.startsWith('placeholder')) {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY.startsWith('placeholder'))
     warnings.push('SUPABASE_SERVICE_ROLE_KEY not set — server-side auth will fail');
-  }
-  if (!process.env.PAYSTACK_SECRET_KEY || process.env.PAYSTACK_SECRET_KEY.startsWith('sk_live_your')) {
+  if (!process.env.PAYSTACK_SECRET_KEY || process.env.PAYSTACK_SECRET_KEY.startsWith('sk_live_your'))
     warnings.push('PAYSTACK_SECRET_KEY not set — payments will fail');
-  }
   if (process.env.NODE_ENV === 'production' && !process.env.APP_URL) {
-    console.error('FATAL: APP_URL must be set in production (used for CORS and email links). Shutting down.');
+    console.error('FATAL: APP_URL must be set in production. Shutting down.');
     process.exit(1);
   }
-  if (!process.env.APP_URL) {
+  if (!process.env.APP_URL)
     warnings.push('APP_URL not set — CORS and email links will use localhost fallback');
-  }
-  if (warnings.length) {
-    console.warn('  Configuration warnings:');
-    for (const w of warnings) console.warn('  ⚠  ' + w);
-    console.warn('');
-  }
 
-  // Proactive mentor outreach — runs daily at 09:00 server time
-  cron.schedule('0 9 * * *', () => {
-    runProactiveOutreach().catch(err => console.error('Proactive outreach error:', err.message));
-  });
-  console.log('  Proactive outreach cron scheduled (09:00 daily)');
-
-  // Monthly behavioral reports — runs on the 1st of each month at 06:00
-  cron.schedule('0 6 1 * *', async () => {
-    const prevMonth = new Date();
-    prevMonth.setDate(0); // last day of previous month
-    const reportMonth = prevMonth.toISOString().slice(0, 7);
-    console.log(`[Reports] Generating monthly reports for ${reportMonth}…`);
-    try {
-      const { data: users } = await supabaseAdmin
-        .from('user_profiles')
-        .select('id')
-        .in('subscription_status', ['pro', 'institutional']);
-      if (users?.length) {
-        for (const u of users) {
-          await generateBehavioralReport(u.id, reportMonth).catch(err =>
-            console.error(`[Reports] Error for user ${u.id}:`, err.message)
-          );
-        }
-        console.log(`[Reports] Done — ${users.length} report(s) generated.`);
-      }
-    } catch (err) {
-      console.error('[Reports] Cron error:', err.message);
+  app.listen(PORT, HOST, () => {
+    console.log(`\nEdgeKeeper server → http://${HOST}:${PORT}\n`);
+    if (warnings.length) {
+      console.warn('  Configuration warnings:');
+      for (const w of warnings) console.warn('  ⚠  ' + w);
+      console.warn('');
     }
+
+    cron.schedule('0 9 * * *', () => {
+      runProactiveOutreach().catch(err => console.error('Proactive outreach error:', err.message));
+    });
+    console.log('  Proactive outreach cron scheduled (09:00 daily)');
+
+    cron.schedule('0 6 1 * *', async () => {
+      const prevMonth = new Date();
+      prevMonth.setDate(0);
+      const reportMonth = prevMonth.toISOString().slice(0, 7);
+      console.log(`[Reports] Generating monthly reports for ${reportMonth}…`);
+      try {
+        const { data: users } = await supabaseAdmin
+          .from('user_profiles').select('id')
+          .in('subscription_status', ['pro', 'institutional']);
+        if (users?.length) {
+          for (const u of users) {
+            await generateBehavioralReport(u.id, reportMonth).catch(err =>
+              console.error(`[Reports] Error for user ${u.id}:`, err.message)
+            );
+          }
+          console.log(`[Reports] Done — ${users.length} report(s) generated.`);
+        }
+      } catch (err) {
+        console.error('[Reports] Cron error:', err.message);
+      }
+    });
+    console.log('  Monthly reports cron scheduled (1st of month, 06:00)\n');
   });
-  console.log('  Monthly reports cron scheduled (1st of month, 06:00)\n');
-});
+}
+
+// Vercel serverless entry point — exports the Express app as the request handler
+module.exports = app;
