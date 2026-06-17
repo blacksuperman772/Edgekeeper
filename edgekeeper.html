@@ -1331,6 +1331,43 @@
         text-align: center;
       }
       .footer-links { gap: 20px; justify-content: center; }
+
+      /* ── NEW SECTIONS ── */
+
+      /* Constitution */
+      #constitution { padding: 72px 0; }
+      .constitution-grid { gap: 32px; }
+      .belief-line { font-size: 1rem; padding: 20px 0; }
+      .constitution-closing { margin-top: 28px; font-size: 0.85rem; }
+
+      /* Eight Divisions */
+      #eight-divisions { padding: 72px 0; }
+      .divisions-headline { font-size: clamp(1.9rem, 8vw, 2.6rem); text-wrap: balance; }
+      .divisions-grid { grid-template-columns: 1fr; }
+      .division-item { padding: 24px 20px; }
+
+      /* Inside EdgeKeeper vignettes */
+      #inside { padding: 72px 0 !important; }
+      #inside [style*="grid-template-columns:120px 1fr"],
+      #inside [style*="grid-template-columns: 120px 1fr"] {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+      }
+      #inside [style*="padding:52px 56px"] { padding: 28px 20px !important; }
+
+      /* Why EdgeKeeper Exists */
+      #why { padding: 72px 0 !important; }
+      #why [style*="grid-template-columns:320px 1fr"],
+      #why [style*="grid-template-columns: 320px 1fr"] {
+        grid-template-columns: 1fr !important;
+        gap: 32px !important;
+      }
+
+      /* Your Mentor Remembers */
+      #remembers { padding: 72px 0 !important; }
+      #remembers [style*="padding:40px 0"] { padding: 24px 0 !important; }
+      #remembers [style*="font-size:1.25rem"] { font-size: 1.05rem !important; }
+      #remembers [style*="font-size:1.4rem"] { font-size: 1.15rem !important; }
     }
   </style>
 </head>
@@ -1462,10 +1499,7 @@
       </div>
       <div style="display:flex;flex-direction:column;gap:40px;">
         <p class="reveal" style="font-family:var(--serif);font-size:1.35rem;font-weight:300;color:var(--text);line-height:1.75;">
-          Most traders do not fail because they lack information.
-        </p>
-        <p class="reveal reveal-delay-1" style="font-family:var(--serif);font-size:1.35rem;font-weight:300;color:var(--text);line-height:1.75;">
-          They fail because pressure changes behavior.
+          Traders do not fail from lack of information. They fail because pressure changes behavior.
         </p>
         <p class="reveal reveal-delay-2" style="font-size:0.88rem;color:var(--muted);line-height:1.9;max-width:540px;">
           The moment money becomes emotional, discipline becomes difficult. EdgeKeeper exists to protect traders during the moments they are most likely to abandon their process — not with rules, but with a relationship.
@@ -1489,8 +1523,7 @@
   <div class="section-inner">
     <div class="constitution-grid">
       <div>
-        <div class="section-label reveal">The Constitution</div>
-        <h2 class="reveal reveal-delay-1" style="font-family:var(--serif);font-size:clamp(2rem,3vw,2.8rem);font-weight:300;color:var(--white);line-height:1.2;margin-top:8px;">
+        <h2 class="reveal" style="font-family:var(--serif);font-size:clamp(2rem,3vw,2.8rem);font-weight:300;color:var(--white);line-height:1.2;">
           What EdgeKeeper<br><em style="font-style:italic;color:var(--gold);">believes.</em>
         </h2>
       </div>
@@ -1500,9 +1533,9 @@
           <div class="belief-line reveal reveal-delay-1">Process beats outcome.</div>
           <div class="belief-line reveal reveal-delay-2">Risk management is the beginning, not the end.</div>
           <div class="belief-line reveal reveal-delay-3">Self-awareness precedes improvement.</div>
-          <div class="belief-line reveal">Discipline can be trained — but not by knowing more.</div>
-          <div class="belief-line reveal reveal-delay-1">Most traders fail because of behavior, not knowledge.</div>
-          <div class="belief-line reveal reveal-delay-2">The goal is not better predictions. The goal is a better decision-maker.</div>
+          <div class="belief-line reveal">Discipline can be trained, but not by knowing more.</div>
+          <div class="belief-line reveal reveal-delay-1">Failure is behavioral, not informational.</div>
+          <div class="belief-line reveal reveal-delay-2">Better predictions are not the point. A better decision-maker is.</div>
           <div class="belief-line reveal reveal-delay-3">An institution that remembers you is more valuable than one that answers you.</div>
         </div>
         <p class="constitution-closing reveal reveal-delay-2">These are not aspirations. They are the operating principles of every session, every intervention, every review.</p>
@@ -1735,7 +1768,7 @@
           We don't predict<br><em>markets.</em><br>We predict you.
         </h2>
         <p class="engine-body reveal reveal-delay-2">
-          EdgeKeeper's core intelligence does not analyse charts. It analyses you. Pattern recognition built specifically around behavioral deviation: the moments when the best version of you steps away and a different trader takes over.
+          EdgeKeeper's core intelligence does not analyse charts. It analyses you — pattern recognition built around behavioral deviation: the moments when the best version of you steps away and a different trader takes over.
         </p>
         <ul class="detect-list reveal reveal-delay-3">
           <li class="detect-item">Revenge trading detected</li>
@@ -1764,8 +1797,7 @@
 <section id="results">
   <div class="section-inner">
     <div class="results-header">
-      <div class="section-label reveal" style="justify-content:center">Transformation</div>
-      <h2 class="results-headline reveal reveal-delay-1">
+      <h2 class="results-headline reveal">
         The highest compliment<br>a mentor can receive.
       </h2>
       <p class="results-sub reveal reveal-delay-2">"I don't need you as much anymore."</p>
@@ -1844,8 +1876,7 @@
   <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 100%, rgba(184,160,106,0.04) 0%, transparent 65%);pointer-events:none;"></div>
   <div class="section-inner" style="position:relative;z-index:1;">
     <div style="text-align:center;margin-bottom:80px;">
-      <div class="section-label reveal" style="justify-content:center;">Memory</div>
-      <h2 class="reveal reveal-delay-1" style="font-family:var(--serif);font-size:clamp(2.5rem,5vw,4.5rem);font-weight:300;color:var(--white);line-height:1.1;">
+      <h2 class="reveal" style="font-family:var(--serif);font-size:clamp(2.5rem,5vw,4.5rem);font-weight:300;color:var(--white);line-height:1.1;">
         Your mentor<br><em>remembers.</em>
       </h2>
     </div>

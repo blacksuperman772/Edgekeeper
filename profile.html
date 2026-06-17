@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trader Profile — EdgeKeeper</title>
+  <meta name="description" content="Your development record at EdgeKeeper. Where you began, what has happened, and where you are becoming." />
+  <meta name="robots" content="noindex, nofollow" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Space+Grotesk:wght@300;400&family=Space+Mono:wght@400&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --void:           #07050E;
+      --surface:        #0D0B15;
+      --gold:           #C9A85C;
+      --gold-dim:       rgba(201,168,92,0.45);
+      --green-bright:   #4ADE80;
+      --green:          rgba(74,222,128,0.7);
+      --violet:         #7C3AED;
+      --border:         rgba(255,255,255,0.06);
+      --border-med:     rgba(255,255,255,0.08);
+      --text-primary:   rgba(255,255,255,0.82);
+      --text-secondary: rgba(255,255,255,0.45);
+      --text-dim:       rgba(255,255,255,0.2);
+      --mono:           'Space Mono', monospace;
+      --serif:          'Cormorant Garamond', Georgia, serif;
+      --sans:           'Space Grotesk', 'Manrope', sans-serif;
+
+      /* Accent defaults to gold; JS swaps to green for Ashley */
+      --accent:         var(--gold);
+      --accent-dim:     var(--gold-dim);
+      --accent-rgb:     201,168,92;
+    }
+
+    html { scroll-behavior: smooth; font-size: 16px; }
+
+    body {
+      background: var(--void);
+      color: var(--text-primary);
+      font-family: var(--sans);
+      font-weight: 300;
+      line-height: 1.8;
+      cursor: none;
+      overflow-x: hidden;
+    }
+
+    /* ── CUSTOM CURSOR ───────────────────────────────────────────── */
+    #cursor {
+      position: fixed; width: 8px; height: 8px;
+      background: var(--accent); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      transition: width .15s, height .15s, opacity .15s;
+      mix-blend-mode: screen;
+    }
+    #cursor-ring {
+      position: fixed; width: 32px; height: 32px;
+      border: 1px solid rgba(var(--accent-rgb), 0.3); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%);
+      transition: left .08s ease, top .08s ease;
+    }
+
+    /* ── NAV ────────────────────────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 44px;
+      z-index: 200;
+      border-bottom: 1px solid transparent;
+      transition: background .5s, border-color .5s;
+    }
+    nav.scrolled {
+      background: rgba(7,5,14,0.96);
+      border-bottom-color: var(--border);
+      backdrop-filter: blur(12px);
+    }
+    .nav-logo {
+      font-family: var(--serif);
+      font-size: 1rem;
+      font-weight: 400;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--text-primary);
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-links {
+      display: flex; align-items: center; gap: 32px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-family: var(--mono);
+      font-size: 0.62rem; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--text-secondary);
+      text-decoration: none; transition: color .3s;
+    }
+    .nav-links a:hover { color: var(--text-primary); }
+
+    /* ── REVEAL ANIMATION ───────────────────────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    .reveal.in {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity .9s ease, transform .9s ease;
+    }
+    .reveal-delay-1.in { transition-delay: .1s; }
+    .reveal-delay-2.in { transition-delay: .2s; }
+    .reveal-delay-3.in { transition-delay: .3s; }
+    .reveal-delay-4.in { transition-delay: .4s; }
+
+    /* ── HERO ────────────────────────────────────────────────────── */
+    #hero {
+      min-height: 42dvh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 120px 60px 80px;
+      max-width: 900px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .hero-tag {
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--accent-dim);
+      margin-bottom: 32px;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: fadeUp .8s ease .15s forwards;
+    }
+    .hero-name {
+      font-family: var(--serif);
+      font-size: clamp(2.8rem, 5.5vw, 4.8rem);
+      font-weight: 300;
+      line-height: 1.1;
+      color: var(--text-primary);
+      margin-bottom: 28px;
+      opacity: 0;
+      transform: translateY(18px);
+      animation: fadeUp 1s ease .3s forwards;
+    }
+    .hero-day {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.2em;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+      opacity: 0;
+      animation: fadeUp .8s ease .65s forwards;
+    }
+    .hero-stage {
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      opacity: 0;
+      animation: fadeUp .8s ease .82s forwards;
+    }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── SECTION DIVIDER ────────────────────────────────────────── */
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── SHARED SECTION WRAPPER ─────────────────────────────────── */
+    .section-wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 60px;
+      width: 100%;
+    }
+
+    /* ── IDENTITY SECTION ───────────────────────────────────────── */
+    #identity {
+      padding: 100px 0;
+    }
+    .identity-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: start;
+    }
+    .identity-col {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .col-label {
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--accent-dim);
+      margin-bottom: 20px;
+    }
+    .col-heading {
+      font-family: var(--serif);
+      font-size: 1rem;
+      font-weight: 300;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .identity-value {
+      font-family: var(--serif);
+      font-size: clamp(1.8rem, 3vw, 2.4rem);
+      font-weight: 300;
+      font-style: italic;
+      color: var(--text-primary);
+      line-height: 1.25;
+    }
+    .identity-becoming-line {
+      width: 100%;
+      height: 1px;
+      background: var(--border);
+      margin: 28px 0;
+    }
+    .becoming-label {
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+    }
+    .becoming-value {
+      font-family: var(--serif);
+      font-size: 1.35rem;
+      font-weight: 300;
+      font-style: italic;
+      color: var(--text-secondary);
+    }
+    .readiness-value {
+      font-family: var(--serif);
+      font-size: clamp(1.6rem, 2.8vw, 2.2rem);
+      font-weight: 300;
+      color: var(--text-primary);
+      line-height: 1.2;
+      margin-bottom: 14px;
+    }
+    .readiness-note {
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.18em;
+      color: var(--text-dim);
+      margin-bottom: 20px;
+    }
+    .stage-tag {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.18em;
+      color: var(--text-secondary);
+    }
+    .stage-tag span {
+      color: var(--accent);
+    }
+
+    /* ── JOURNEY TIMELINE ───────────────────────────────────────── */
+    #journey {
+      padding: 100px 0;
+    }
+    .journey-header {
+      margin-bottom: 72px;
+    }
+    .journey-heading {
+      font-family: var(--serif);
+      font-size: clamp(2rem, 3.5vw, 3rem);
+      font-weight: 300;
+      color: var(--text-primary);
+      line-height: 1.2;
+      margin-bottom: 14px;
+    }
+    .journey-subtext {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .timeline {
+      position: relative;
+      padding-left: 28px;
+    }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 8px;
+      bottom: 0;
+      width: 1px;
+      background: var(--border-med);
+    }
+    .timeline-entry {
+      position: relative;
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 32px;
+      padding-bottom: 56px;
+      align-items: start;
+    }
+    .timeline-entry::before {
+      content: '';
+      position: absolute;
+      left: -32px;
+      top: 7px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent-dim);
+    }
+    .timeline-entry.milestone-entry::before {
+      background: var(--accent);
+      box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.4);
+    }
+    .entry-date {
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      padding-top: 4px;
+      line-height: 1.6;
+    }
+    .entry-content {}
+    .entry-label {
+      font-family: var(--sans);
+      font-size: 0.88rem;
+      font-weight: 400;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+      letter-spacing: 0.01em;
+    }
+    .entry-desc {
+      font-family: var(--serif);
+      font-size: 1rem;
+      font-weight: 300;
+      font-style: italic;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+    .timeline-empty {
+      padding-left: 28px;
+      padding-bottom: 24px;
+    }
+    .timeline-empty-text {
+      font-family: var(--serif);
+      font-size: 1.1rem;
+      font-weight: 300;
+      font-style: italic;
+      color: var(--accent-dim);
+      line-height: 1.7;
+    }
+
+    /* ── CURRENT FOCUS ──────────────────────────────────────────── */
+    #current-focus {
+      padding: 100px 0;
+      display: none;
+    }
+    #current-focus.visible { display: block; }
+    .focus-heading {
+      font-family: var(--serif);
+      font-size: clamp(1.6rem, 2.8vw, 2.2rem);
+      font-weight: 300;
+      color: var(--text-primary);
+      margin-bottom: 36px;
+      line-height: 1.2;
+    }
+    .focus-block {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .focus-topic {
+      font-family: var(--serif);
+      font-size: 1.4rem;
+      font-weight: 300;
+      font-style: italic;
+      color: var(--text-primary);
+      line-height: 1.4;
+    }
+    .focus-meta {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.18em;
+      color: var(--text-secondary);
+    }
+    .focus-link {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      text-decoration: none;
+      margin-top: 8px;
+      display: inline-block;
+      transition: opacity .3s;
+    }
+    .focus-link:hover { opacity: 0.7; }
+
+    /* ── MENTOR NOTES PREVIEW ───────────────────────────────────── */
+    #notebook-preview {
+      padding: 100px 0;
+      display: none;
+    }
+    #notebook-preview.visible { display: block; }
+    .notebook-heading {
+      font-family: var(--serif);
+      font-size: clamp(1.6rem, 2.8vw, 2.2rem);
+      font-weight: 300;
+      color: var(--text-primary);
+      margin-bottom: 56px;
+      line-height: 1.2;
+    }
+    .notebook-entries {
+      display: flex;
+      flex-direction: column;
+      gap: 48px;
+    }
+    .notebook-item {
+      border-top: 1px solid var(--border);
+      padding-top: 32px;
+    }
+    .notebook-item-label {
+      font-family: var(--mono);
+      font-size: 0.55rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 14px;
+    }
+    .notebook-item-text {
+      font-family: var(--serif);
+      font-size: 1.05rem;
+      font-weight: 300;
+      font-style: italic;
+      color: rgba(255,255,255,0.3);
+      line-height: 1.85;
+    }
+
+    /* ── CTA / BOTTOM ────────────────────────────────────────────── */
+    #cta {
+      padding: 120px 0 100px;
+      border-top: 1px solid var(--border);
+    }
+    .cta-line {
+      font-family: var(--serif);
+      font-size: clamp(1.4rem, 2.4vw, 1.9rem);
+      font-weight: 300;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+      line-height: 1.4;
+    }
+    .cta-link {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: opacity .3s;
+    }
+    .cta-link:hover { opacity: 0.7; }
+
+    /* ── FOOTER ─────────────────────────────────────────────────── */
+    footer {
+      padding: 40px 60px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .footer-logo {
+      font-family: var(--serif);
+      font-size: 0.9rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      text-decoration: none;
+    }
+    .footer-logo span { color: var(--accent-dim); }
+    .footer-tagline {
+      font-family: var(--mono);
+      font-size: 0.55rem;
+      letter-spacing: 0.16em;
+      color: var(--text-dim);
+    }
+    .footer-links {
+      display: flex; gap: 24px; list-style: none;
+    }
+    .footer-links a {
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: color .3s;
+    }
+    .footer-links a:hover { color: var(--text-secondary); }
+
+    /* ── LOADING STATE ───────────────────────────────────────────── */
+    .skeleton {
+      display: inline-block;
+      width: 180px; height: 1em;
+      background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.6s infinite;
+      border-radius: 2px;
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ── MOBILE ─────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      nav { padding: 0 24px; }
+      .nav-links { display: none; }
+      #hero { padding: 100px 24px 60px; min-height: 38dvh; }
+      .section-wrap { padding: 0 24px; }
+      #identity { padding: 72px 0; }
+      .identity-grid { grid-template-columns: 1fr; gap: 56px; }
+      #journey { padding: 72px 0; }
+      .journey-header { margin-bottom: 52px; }
+      .timeline-entry { grid-template-columns: 90px 1fr; gap: 20px; }
+      #current-focus { padding: 72px 0; }
+      #notebook-preview { padding: 72px 0; }
+      #cta { padding: 80px 0 72px; }
+      footer { flex-direction: column; gap: 16px; text-align: center; padding: 32px 24px; }
+      .footer-links { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<!-- NAV -->
+<nav id="main-nav">
+  <a href="/edgekeeper.html" class="nav-logo">Edge<span>K</span>eeper</a>
+  <ul class="nav-links">
+    <li><a href="/workspace.html">Workspace</a></li>
+    <li><a href="/academy">Academy</a></li>
+    <li><a href="/method">Method</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section id="hero" aria-label="Profile header">
+  <div class="hero-tag">Trader Profile &nbsp;·&nbsp; EdgeKeeper</div>
+  <h1 class="hero-name" id="hero-name">Your File.</h1>
+  <div class="hero-day" id="hero-day"><span class="skeleton" style="width:140px;height:0.72em;vertical-align:middle;"></span></div>
+  <div class="hero-stage" id="hero-stage"></div>
+</section>
+
+<div class="divider"></div>
+
+<!-- IDENTITY -->
+<section id="identity" aria-label="Identity and readiness">
+  <div class="section-wrap">
+    <div class="identity-grid">
+
+      <div class="identity-col reveal" id="identity-col">
+        <div class="col-label">Identity</div>
+        <div class="col-heading">Where you began.</div>
+        <div class="identity-value" id="current-identity-display">
+          <span class="skeleton" style="width:200px;height:1em;"></span>
+        </div>
+        <div id="becoming-block" style="display:none;">
+          <div class="identity-becoming-line"></div>
+          <div class="becoming-label">Becoming</div>
+          <div class="becoming-value" id="target-identity-display"></div>
+        </div>
+      </div>
+
+      <div class="identity-col reveal reveal-delay-2" id="readiness-col">
+        <div class="col-label">Readiness</div>
+        <div class="col-heading">Where you stand.</div>
+        <div class="readiness-value" id="readiness-display">
+          <span class="skeleton" style="width:220px;height:1em;"></span>
+        </div>
+        <div class="readiness-note">Updated with each session.</div>
+        <div class="stage-tag">Current stage: <span id="stage-display"></span></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- JOURNEY TIMELINE -->
+<section id="journey" aria-label="Development timeline">
+  <div class="section-wrap">
+    <div class="journey-header reveal">
+      <h2 class="journey-heading">The Journey.</h2>
+      <div class="journey-subtext">Every moment that has been recorded.</div>
+    </div>
+
+    <div class="timeline reveal reveal-delay-1" id="timeline-list">
+      <!-- Populated by JS -->
+      <div class="timeline-entry">
+        <div class="entry-date"><span class="skeleton" style="width:70px;height:0.7em;"></span></div>
+        <div class="entry-content">
+          <div class="entry-label"><span class="skeleton" style="width:160px;height:0.88em;"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider" id="focus-divider" style="display:none;"></div>
+
+<!-- CURRENT FOCUS (conditional) -->
+<section id="current-focus" aria-label="Current focus">
+  <div class="section-wrap">
+    <h2 class="focus-heading reveal">Current Focus.</h2>
+    <div class="focus-block reveal reveal-delay-1">
+      <div class="focus-topic" id="focus-topic"></div>
+      <div class="focus-meta" id="focus-meta"></div>
+      <a href="/workspace.html" class="focus-link">Continue in workspace →</a>
+    </div>
+  </div>
+</section>
+
+<div class="divider" id="notebook-divider" style="display:none;"></div>
+
+<!-- MENTOR NOTES PREVIEW (conditional) -->
+<section id="notebook-preview" aria-label="Mentor notebook preview">
+  <div class="section-wrap">
+    <h2 class="notebook-heading reveal">From the notebook.</h2>
+    <div class="notebook-entries reveal reveal-delay-1" id="notebook-entries">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- CTA -->
+<section id="cta" aria-label="Return to workspace">
+  <div class="section-wrap">
+    <p class="cta-line reveal">Continue the work.</p>
+    <a href="/workspace.html" class="cta-link reveal reveal-delay-1">→ Return to workspace</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <a href="/edgekeeper.html" class="footer-logo">Edge<span>K</span>eeper</a>
+  <span class="footer-tagline">A Trader Development Institution</span>
+  <ul class="footer-links">
+    <li><a href="/workspace.html">Workspace</a></li>
+    <li><a href="/academy">Academy</a></li>
+    <li><a href="/method">Method</a></li>
+    <li><a href="/privacy.html">Privacy</a></li>
+  </ul>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ── CURSOR ─────────────────────────────────────────────────────── */
+  const cursor     = document.getElementById('cursor');
+  const cursorRing = document.getElementById('cursor-ring');
+  let mx = -100, my = -100;
+
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    cursor.style.left = mx + 'px';
+    cursor.style.top  = my + 'px';
+  });
+
+  (function animateRing() {
+    cursorRing.style.left = mx + 'px';
+    cursorRing.style.top  = my + 'px';
+    requestAnimationFrame(animateRing);
+  })();
+
+  /* ── NAV SCROLL ────────────────────────────────────────────────── */
+  const nav = document.getElementById('main-nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 20);
+  }, { passive: true });
+
+  /* ── INTERSECTION OBSERVER (reveal) ────────────────────────────── */
+  const revealObs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('in');
+        revealObs.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12 });
+
+  function observeReveals() {
+    document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+  }
+
+  /* ── HELPERS ────────────────────────────────────────────────────── */
+  function readinessLabel(score) {
+    if (score <= 20) return 'Developing Foundation';
+    if (score <= 40) return 'Building Awareness';
+    if (score <= 60) return 'Gaining Consistency';
+    if (score <= 80) return 'Approaching Ready';
+    return 'Field Ready';
+  }
+
+  const stageLabels = {
+    explorer:         'Explorer',
+    student:          'Student',
+    developing:       'Developing Trader',
+    consistent:       'Consistent Trader',
+    performance:      'Performance Trader',
+    mentor_candidate: 'Mentor Candidate',
+  };
+
+  function formatDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  function formatDateShort(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
+  }
+
+  /* ── ACCENT COLOR (mentor) ─────────────────────────────────────── */
+  function applyMentorAccent(mentor) {
+    if (mentor === 'ashley') {
+      document.documentElement.style.setProperty('--accent',     'var(--green-bright)');
+      document.documentElement.style.setProperty('--accent-dim', 'var(--green)');
+      document.documentElement.style.setProperty('--accent-rgb', '74,222,128');
+    }
+    // gold is the default — no change needed
+  }
+
+  /* ── POPULATE HERO ─────────────────────────────────────────────── */
+  function populateHero(profile) {
+    const memberSince = profile.member_since;
+    const dayN = memberSince
+      ? Math.max(1, Math.floor((Date.now() - new Date(memberSince)) / 86400000) + 1)
+      : null;
+
+    const heroName = document.getElementById('hero-name');
+    const heroDay  = document.getElementById('hero-day');
+    const heroStage = document.getElementById('hero-stage');
+
+    // Name from user metadata if available, else generic
+    const firstName = profile.first_name || null;
+    heroName.textContent = firstName ? firstName + '’s File.' : 'Your File.';
+
+    if (dayN !== null) {
+      heroDay.textContent = 'Day ' + dayN.toLocaleString() + ' in the institution.';
+    } else {
+      heroDay.textContent = '';
+    }
+
+    const stage = stageLabels[profile.trader_stage] || stageLabels.explorer;
+    const readiness = readinessLabel(profile.readiness_score || 0);
+    heroStage.textContent = stage + ' · ' + readiness;
+  }
+
+  /* ── POPULATE IDENTITY ─────────────────────────────────────────── */
+  function populateIdentity(profile) {
+    const currentId = (profile.current_identity || '').trim();
+    const targetId  = (profile.target_identity  || '').trim();
+
+    const currentEl  = document.getElementById('current-identity-display');
+    const becomingBlock = document.getElementById('becoming-block');
+    const targetEl   = document.getElementById('target-identity-display');
+
+    if (currentId) {
+      currentEl.textContent = currentId;
+    } else {
+      currentEl.innerHTML = '<em style="color:var(--text-dim);font-style:italic;">Identity assessment in progress.</em>';
+    }
+
+    if (targetId) {
+      targetEl.textContent = targetId;
+      becomingBlock.style.display = 'block';
+    }
+
+    const readinessEl = document.getElementById('readiness-display');
+    const stageEl     = document.getElementById('stage-display');
+
+    readinessEl.textContent = readinessLabel(profile.readiness_score || 0);
+    stageEl.textContent     = stageLabels[profile.trader_stage] || stageLabels.explorer;
+  }
+
+  /* ── POPULATE TIMELINE ─────────────────────────────────────────── */
+  function populateTimeline(profile, milestones) {
+    const container = document.getElementById('timeline-list');
+    container.innerHTML = '';
+
+    const entries = [];
+
+    // Entry 1: Joined
+    if (profile.member_since) {
+      entries.push({
+        date:  formatDateShort(profile.member_since),
+        label: 'Joined EdgeKeeper',
+        desc:  null,
+        type:  'join',
+      });
+    }
+
+    // Entry 2: First assessment
+    const firstAssessment = milestones.find(m => m.type === 'first_assessment');
+    if (firstAssessment) {
+      entries.push({
+        date:  formatDateShort(firstAssessment.achieved_at),
+        label: 'First Assessment Complete',
+        desc:  firstAssessment.description || null,
+        type:  'first_assessment',
+      });
+    } else if (profile.assessment_complete) {
+      entries.push({
+        date:  '',
+        label: 'First Assessment Complete',
+        desc:  null,
+        type:  'first_assessment',
+      });
+    }
+
+    // All other milestones (excluding first_assessment which is already shown)
+    const rest = milestones.filter(m => m.type !== 'first_assessment');
+    rest.forEach(m => {
+      entries.push({
+        date:  formatDateShort(m.achieved_at),
+        label: m.label || m.type,
+        desc:  m.description || null,
+        type:  m.type,
+      });
+    });
+
+    if (entries.length === 0) {
+      container.innerHTML = '<div class="timeline-empty"><p class="timeline-empty-text">Your story is still being written.</p></div>';
+      return;
+    }
+
+    entries.forEach((entry, i) => {
+      const el = document.createElement('div');
+      el.className = 'timeline-entry reveal' + (i > 0 && i <= 3 ? ' reveal-delay-' + Math.min(i, 4) : '');
+      if (entry.type !== 'join') el.classList.add('milestone-entry');
+
+      const descHtml = entry.desc
+        ? `<div class="entry-desc">${escapeHtml(entry.desc)}</div>`
+        : '';
+
+      el.innerHTML = `
+        <div class="entry-date">${escapeHtml(entry.date)}</div>
+        <div class="entry-content">
+          <div class="entry-label">${escapeHtml(entry.label)}</div>
+          ${descHtml}
+        </div>
+      `;
+      container.appendChild(el);
+    });
+
+    // If no milestones beyond join/assessment, add the "still being written" line
+    if (rest.length === 0 && entries.length > 0) {
+      const emptyEl = document.createElement('div');
+      emptyEl.className = 'timeline-empty reveal reveal-delay-3';
+      emptyEl.innerHTML = '<p class="timeline-empty-text">Your story is still being written.</p>';
+      container.appendChild(emptyEl);
+    }
+  }
+
+  /* ── POPULATE CURRENT FOCUS ────────────────────────────────────── */
+  function populateCurrentFocus() {
+    const topic   = localStorage.getItem('ek_academy_topic');
+    const mentor  = localStorage.getItem('ek_academy_mentor') || 'Mike';
+    const section = document.getElementById('current-focus');
+    const divider = document.getElementById('focus-divider');
+
+    if (!topic) return;
+
+    document.getElementById('focus-topic').textContent = topic;
+    document.getElementById('focus-meta').textContent  = 'With ' + mentor;
+    section.classList.add('visible');
+    divider.style.display = 'block';
+  }
+
+  /* ── POPULATE NOTEBOOK PREVIEW ─────────────────────────────────── */
+  function populateNotebookPreview(notebook) {
+    if (!notebook) return;
+
+    const items = [];
+    if (notebook.current_theory && notebook.current_theory.trim()) {
+      items.push({ label: 'Working Theory', text: notebook.current_theory });
+    }
+    if (notebook.open_questions && notebook.open_questions.trim()) {
+      items.push({ label: 'Open Question', text: notebook.open_questions });
+    }
+    if (notebook.concerns && notebook.concerns.trim()) {
+      items.push({ label: 'Watching', text: notebook.concerns });
+    }
+    if (notebook.patterns && notebook.patterns.trim()) {
+      items.push({ label: 'Pattern', text: notebook.patterns });
+    }
+
+    const preview = items.slice(0, 3);
+    if (preview.length === 0) return;
+
+    const section  = document.getElementById('notebook-preview');
+    const divider  = document.getElementById('notebook-divider');
+    const entriesEl = document.getElementById('notebook-entries');
+
+    entriesEl.innerHTML = '';
+    preview.forEach((item, i) => {
+      const el = document.createElement('div');
+      el.className = 'notebook-item reveal' + (i > 0 ? ' reveal-delay-' + i : '');
+      el.innerHTML = `
+        <div class="notebook-item-label">${escapeHtml(item.label)}</div>
+        <div class="notebook-item-text">${escapeHtml(item.text)}</div>
+      `;
+      entriesEl.appendChild(el);
+    });
+
+    section.classList.add('visible');
+    divider.style.display = 'block';
+  }
+
+  /* ── ESCAPE HTML ───────────────────────────────────────────────── */
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  /* ── MAIN DATA FETCH ───────────────────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', async () => {
+    observeReveals();
+
+    try {
+      const [profileResp, milestonesResp] = await Promise.all([
+        fetch('/api/profile'),
+        fetch('/api/milestones'),
+      ]);
+
+      if (profileResp.status === 401) {
+        window.location.href = '/auth.html';
+        return;
+      }
+
+      const { profile }    = await profileResp.json();
+      const { milestones } = await milestonesResp.json();
+
+      if (!profile) {
+        window.location.href = '/auth.html';
+        return;
+      }
+
+      applyMentorAccent(profile.mentor);
+
+      populateHero(profile);
+      populateIdentity(profile);
+      populateTimeline(profile, milestones || []);
+      populateCurrentFocus();
+
+      // Fetch notebook after we know the mentor
+      const mentorKey = (profile.mentor === 'ashley') ? 'ashley' : 'mike';
+      try {
+        const notebookResp = await fetch('/api/notebook/' + mentorKey);
+        if (notebookResp.ok) {
+          const { notebook } = await notebookResp.json();
+          populateNotebookPreview(notebook);
+        }
+      } catch (_) {
+        // Notebook is a best-effort preview; silence errors
+      }
+
+      // Re-run observer after DOM mutations
+      observeReveals();
+
+    } catch (err) {
+      console.error('Profile load error:', err);
+    }
+  });
+
+})();
+</script>
+</body>
+</html>

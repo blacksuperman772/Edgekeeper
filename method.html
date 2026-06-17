@@ -148,12 +148,14 @@
     .step-block {
       border-top: 1px solid var(--border);
       display: grid;
-      grid-template-columns: 200px 1fr 1fr;
+      grid-template-columns: 240px 1fr 280px;
       gap: 0;
+      max-width: 1000px;
+      margin: 0 auto;
     }
     .step-block:last-child { border-bottom: 1px solid var(--border); }
     .step-num-col {
-      padding: 80px 60px 80px 0;
+      padding: 80px 60px 80px 60px;
       border-right: 1px solid var(--border);
     }
     .step-number {
@@ -206,11 +208,13 @@
     .research-notes {
       display: flex; flex-direction: column; gap: 2px;
       background: var(--border);
+      max-width: 1000px;
+      margin: 0 auto;
     }
     .research-note {
       background: var(--black);
       padding: 40px 44px;
-      display: grid; grid-template-columns: 180px 1fr; gap: 48px;
+      display: grid; grid-template-columns: 200px 1fr; gap: 48px;
     }
     .research-note:nth-child(even) { background: var(--obsidian); }
     .rn-meta { padding-top: 2px; }
@@ -225,7 +229,7 @@
 
     /* ── INSTITUTIONAL DETAILS ────────────────────────────────────── */
     #institution-detail { padding: 120px 0; }
-    .inst-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; background: var(--border); }
+    .inst-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; background: var(--border); max-width: 1000px; margin: 0 auto; }
     .inst-cell { background: var(--black); padding: 44px; }
     .inst-cell:nth-child(even) { background: var(--obsidian); }
     .inst-cell-label {
@@ -281,6 +285,12 @@
     .footer-links a { font-size: 0.7rem; letter-spacing: 0.12em; color: var(--dim); text-decoration: none; transition: color .3s; }
     .footer-links a:hover { color: var(--muted); }
 
+    @media (max-width: 1100px) {
+      .section-inner { padding: 0 40px; }
+      .step-num-col { padding: 60px 40px 60px 40px; }
+      .step-body-col { padding: 60px 40px; }
+      .step-note-col { padding: 60px 40px; }
+    }
     @media (max-width: 900px) {
       .step-block { grid-template-columns: 1fr; }
       .step-num-col { padding: 60px 24px 24px; border-right: none; border-bottom: 1px solid var(--border); }
@@ -322,14 +332,14 @@
 </nav>
 
 <!-- HEADER -->
-<section>
+<section style="position:relative;">
   <div id="method-header">
     <div class="header-tag">EdgeKeeper · Internal Doctrine · Est. 2024</div>
     <h1 class="header-title">
       The<br>EdgeKeeper<br><em>Method.</em>
     </h1>
     <p class="header-body">
-      This is not a trading strategy. It is not a set of rules. It is a framework for understanding why traders fail and what can be done about it. Five stages. Each one builds on the last. Each one is harder than it sounds.
+      A framework for understanding why traders fail and what can be done about it. Five stages, each built on the one before. They are harder than they sound.
     </p>
     <div class="header-scroll">Read the doctrine ↓</div>
   </div>
@@ -346,8 +356,8 @@
         "The framework exists because most trading psychology tools treat the symptom. EdgeKeeper works on the cause."
       </blockquote>
       <div class="preamble-body reveal reveal-delay-1">
-        <p>Most traders approach behavioral problems the way you'd approach a broken car — look for the part that broke and replace it. Revenge traded? Control impulses. Overleveraged? Reduce position size. Rule-broke? Add a rule.</p>
-        <p>This works occasionally. It does not work reliably, because it treats the surface. The EdgeKeeper Method begins below the surface: with the question of <em>why</em> the behavior happened in the first place.</p>
+        <p>Traders approach behavioral problems the way you'd approach a broken car: find the part that broke and replace it. Revenge traded? Control impulses. Overleveraged? Reduce position size. Rule-broke? Add a rule.</p>
+        <p>This works occasionally. It does not work, because it treats the surface. The EdgeKeeper Method begins below the surface: with the question of <em>why</em> the behavior happened in the first place.</p>
         <p>The answer is almost always found in the space between who you believe you are and who you actually become under pressure. That gap is where the work happens.</p>
       </div>
     </div>
@@ -373,7 +383,7 @@
     </div>
     <div class="step-body-col">
       <div class="step-desc">
-        <p>The first thing a mentor does is not advise. It is observe. Not because they need time to think — because most traders come to a session with an incomplete picture of what is actually happening.</p>
+        <p>The first thing a mentor does is not advise. It is observe. Not because they need time to think, but because traders come to a session with an incomplete picture of what is actually happening.</p>
         <p>Awareness is not self-criticism. It is accuracy. The ability to see, without judgment, what is actually occurring in your trading behavior. What you do when losing. What you do when winning. What you avoid saying. What you say too often.</p>
         <p>This stage is slower than it seems. Real awareness — the kind that changes behavior — usually takes three to five weeks to stabilize.</p>
       </div>
@@ -393,8 +403,8 @@
     <div class="step-body-col">
       <div class="step-desc">
         <p>Accountability at EdgeKeeper is not confession. It is not apology. It is the practice of holding accurate records of your own behavior without the distortion of shame or pride.</p>
-        <p>A trader who accepts accountability without self-destruction is rare. Most either dismiss what happened ("the market was unfair") or collapse into it ("I'm not cut out for this"). Neither response is useful.</p>
-        <p>The EdgeKeeper standard is: state what happened, understand why it happened, decide what changes. Three steps. Without drama in either direction.</p>
+        <p>A trader who accepts accountability without self-destruction is rare. The pattern splits cleanly: dismiss what happened ("the market was unfair") or collapse into it ("I'm not cut out for this"). Neither response is useful.</p>
+        <p>The EdgeKeeper standard is straightforward: state what happened, understand why, decide what changes. No drama in either direction.</p>
       </div>
     </div>
     <div class="step-note-col">
@@ -430,7 +440,7 @@
     </div>
     <div class="step-body-col">
       <div class="step-desc">
-        <p>Most traders review outcomes. EdgeKeeper reviews behavior. There is a significant difference.</p>
+        <p>Reviewing outcomes and reviewing behavior look similar from the outside. EdgeKeeper does the second.</p>
         <p>Reflection at EdgeKeeper asks: what did you do, why did you do it, and what does the pattern across many sessions tell you? It does not ask whether you profited. Profitable behavior repeated accidentally is dangerous. Consistent behavior that produced a loss is often progress.</p>
         <p>The Decision Passport is the institutional record of this reflection. It grows over time and becomes the most honest document a trader has about who they actually are in the market.</p>
       </div>
@@ -449,9 +459,9 @@
     </div>
     <div class="step-body-col">
       <div class="step-desc">
-        <p>Growth in the EdgeKeeper model is not inspiration. It is not momentum. It is compounding repetition — the gradual stabilization of better behavior until better behavior becomes identity.</p>
+        <p>Growth in the EdgeKeeper model is compounding repetition: the gradual stabilization of better behavior until better behavior becomes identity. Not inspiration. Not momentum.</p>
         <p>The goal is not to feel like a disciplined trader on your best days. The goal is to behave like a disciplined trader on your worst days. That is what growth looks like here.</p>
-        <p>This stage arrives differently for every trader. Some reach it in months. Some take longer. The indicator is not a metric but a shift in how you relate to your own patterns — from judgment to observation, from reaction to response.</p>
+        <p>This stage arrives differently for every trader. Some reach it in months. The indicator is not a metric but a shift in how you relate to your own patterns: from judgment to observation, from reaction to response.</p>
       </div>
     </div>
     <div class="step-note-col">
@@ -489,7 +499,7 @@
           <span class="rn-source">Observed across rule-break patterns</span>
         </div>
         <div class="rn-text">
-          The most common precursor to a rule break is not a bad market — it is a good one. <em>Overconfidence following a winning period is the highest-risk state we observe.</em> This is rarely what traders expect.
+          The most common precursor to a rule break is a good market, not a bad one. <em>Overconfidence following a winning period is the highest-risk state we observe.</em> Traders rarely expect this.
         </div>
       </div>
       <div class="research-note reveal reveal-delay-2">
@@ -498,7 +508,7 @@
           <span class="rn-source">Observed across onboarding cohorts</span>
         </div>
         <div class="rn-text">
-          Traders who articulate a clear behavioral pattern within the first three sessions progress measurably faster than those who cannot. Self-awareness is not just useful — <em>it is the rate-limiting variable.</em>
+          Traders who articulate a clear behavioral pattern within the first three sessions progress measurably faster than those who cannot. <em>Self-awareness is the rate-limiting variable.</em>
         </div>
       </div>
       <div class="research-note reveal reveal-delay-3">
@@ -507,7 +517,7 @@
           <span class="rn-source">Observed across long-term members</span>
         </div>
         <div class="rn-text">
-          Members who reach 90 days of consistent engagement rarely leave. Not because of contract obligation — because the mentorship relationship itself has become load-bearing in their trading practice. <em>The relationship becomes the infrastructure.</em>
+          Members who reach 90 days of consistent engagement rarely leave. Contract has nothing to do with it. The mentorship relationship itself has become load-bearing in their trading practice. <em>The relationship becomes the infrastructure.</em>
         </div>
       </div>
     </div>

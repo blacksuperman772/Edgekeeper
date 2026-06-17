@@ -605,11 +605,24 @@ async function registerAndProceed() {
       document.cookie = `ek_session=${token}; path=/; SameSite=Strict; max-age=${60 * 60 * 24 * 7}`;
     }
 
-    btn.textContent   = 'Taking you in…';
-    const isPaid      = _plan && _plan !== 'free';
-    window.location.href = isPaid
-      ? `/workspace.html?mentor=${mentorKey}&newplan=${_plan}`
-      : `/workspace.html?mentor=${mentorKey}`;
+    btn.textContent = 'Taking you in…';
+    const isPaid    = _plan && _plan !== 'free';
+
+    // Check whether the assessment has been completed
+    let assessComplete = false;
+    try {
+      const assessResp = await fetch('/api/assessment', { credentials: 'include' });
+      const assessData = await assessResp.json().catch(() => ({}));
+      assessComplete = !!assessData.complete;
+    } catch (_) {}
+
+    if (assessComplete) {
+      window.location.href = isPaid
+        ? `/workspace.html?mentor=${mentorKey}&newplan=${_plan}`
+        : `/workspace.html?mentor=${mentorKey}`;
+    } else {
+      window.location.href = `/assessment.html`;
+    }
 
   } catch (err) {
     btn.disabled    = false;

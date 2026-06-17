@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Academy — EdgeKeeper</title>
+  <meta name="description" content="The EdgeKeeper Academy. Mentorship-led education for traders at every stage. Not a course. A guided development program." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Space+Grotesk:wght@300;400&family=Space+Mono:wght@400&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --void:          #07050E;
+      --surface:       #0D0B15;
+      --obsidian:      #0a0812;
+      --gold:          #C9A85C;
+      --gold-dim:      rgba(201, 168, 92, 0.45);
+      --green-bright:  #4ADE80;
+      --green:         rgba(74, 222, 128, 0.7);
+      --violet:        #7C3AED;
+      --border:        rgba(255,255,255,0.06);
+      --text-primary:  rgba(255,255,255,0.82);
+      --text-secondary:rgba(255,255,255,0.45);
+      --text-dim:      rgba(255,255,255,0.2);
+      --mono:          'Space Mono', monospace;
+      --serif:         'Cormorant Garamond', Georgia, serif;
+      --sans:          'Space Grotesk', 'Manrope', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; font-size: 16px; }
+
+    body {
+      background: var(--void);
+      color: var(--text-primary);
+      font-family: var(--sans);
+      font-weight: 300;
+      line-height: 1.7;
+      cursor: none;
+      overflow-x: hidden;
+    }
+
+    /* ── CURSOR ── */
+    #cursor {
+      position: fixed; width: 7px; height: 7px;
+      background: var(--gold); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+    }
+    #cursor-ring {
+      position: fixed; width: 32px; height: 32px;
+      border: 1px solid rgba(201,168,92,0.3); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%);
+      transition: left .1s ease, top .1s ease;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 48px;
+      z-index: 100;
+      border-bottom: 1px solid transparent;
+      transition: background .4s, border-color .4s;
+    }
+    nav.scrolled {
+      background: rgba(7,5,14,0.96);
+      border-bottom-color: var(--border);
+    }
+    .nav-logo {
+      font-family: var(--serif);
+      font-size: 1rem;
+      font-weight: 400;
+      letter-spacing: 0.22em;
+      padding-left: 0.22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--gold); }
+    .nav-links {
+      display: flex; align-items: center; gap: 36px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-family: var(--mono);
+      font-size: 0.6rem; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--text-secondary);
+      text-decoration: none; transition: color .3s;
+    }
+    .nav-links a:hover { color: var(--text-primary); }
+    .nav-links a.active { color: var(--gold); }
+    .nav-cta {
+      font-family: var(--mono); font-size: 0.62rem;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--text-primary); background: transparent;
+      border: 1px solid rgba(201,168,92,0.35);
+      padding: 9px 20px; text-decoration: none;
+      transition: all .4s;
+    }
+    .nav-cta:hover {
+      background: var(--gold); color: var(--void);
+      border-color: var(--gold);
+    }
+
+    /* ── REVEAL ── */
+    .reveal { opacity: 0; transform: translateY(24px); }
+    .reveal.in { opacity: 1; transform: translateY(0); transition: opacity .9s ease, transform .9s ease; }
+    .reveal-delay-1.in { transition-delay: .12s; }
+    .reveal-delay-2.in { transition-delay: .24s; }
+    .reveal-delay-3.in { transition-delay: .36s; }
+    .reveal-delay-4.in { transition-delay: .48s; }
+
+    /* ── HERO ── */
+    #hero {
+      min-height: 50dvh;
+      display: flex; flex-direction: column;
+      justify-content: flex-end;
+      padding: 120px 60px 80px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .hero-tag {
+      font-family: var(--mono); font-size: 0.6rem;
+      letter-spacing: 0.32em; text-transform: uppercase;
+      color: var(--gold-dim); margin-bottom: 32px;
+      opacity: 0; transform: translateY(10px);
+      animation: fadeUp .7s ease .15s forwards;
+    }
+    .hero-heading {
+      font-family: var(--serif);
+      font-size: clamp(3rem, 6vw, 5.5rem);
+      font-weight: 300; line-height: 1.1; color: rgba(255,255,255,0.9);
+      margin-bottom: 24px;
+      opacity: 0; transform: translateY(20px);
+      animation: fadeUp .9s ease .3s forwards;
+    }
+    .hero-sub {
+      font-family: var(--sans); font-size: 0.88rem;
+      color: var(--text-secondary); line-height: 1.8;
+      max-width: 500px; margin-bottom: 24px;
+      opacity: 0; transform: translateY(14px);
+      animation: fadeUp .8s ease .55s forwards;
+    }
+    .hero-note {
+      font-family: var(--mono); font-size: 0.56rem;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--gold-dim);
+      opacity: 0; transform: translateY(10px);
+      animation: fadeUp .7s ease .75s forwards;
+    }
+    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+    /* ── SECTION SHARED ── */
+    .program-section {
+      padding: 100px 60px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .program-label {
+      font-family: var(--mono); font-size: 0.58rem;
+      letter-spacing: 0.32em; text-transform: uppercase;
+      color: var(--gold-dim); margin-bottom: 16px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .program-label::before {
+      content: ''; width: 28px; height: 1px;
+      background: var(--gold-dim); flex-shrink: 0;
+    }
+    .program-name {
+      font-family: var(--serif);
+      font-size: clamp(2.2rem, 4vw, 3.5rem);
+      font-weight: 300; line-height: 1.15;
+      color: rgba(255,255,255,0.88);
+      margin-bottom: 20px;
+    }
+    .program-desc {
+      font-family: var(--sans); font-size: 0.85rem;
+      color: var(--text-secondary); line-height: 1.85;
+      max-width: 560px; margin-bottom: 56px;
+    }
+
+    /* ── MODULE ROWS ── */
+    .module-list {
+      list-style: none;
+    }
+    .module-row {
+      border-top: 1px solid var(--border);
+      padding: 20px 0;
+      display: grid;
+      grid-template-columns: 36px 1fr 80px auto;
+      align-items: center;
+      gap: 24px;
+      transition: opacity .2s;
+    }
+    .module-row:last-child { border-bottom: 1px solid var(--border); }
+    .module-num {
+      font-family: var(--mono); font-size: 0.58rem;
+      color: var(--text-dim); letter-spacing: 0.06em;
+      flex-shrink: 0;
+    }
+    .module-name {
+      font-family: var(--sans); font-size: 0.9rem;
+      color: rgba(255,255,255,0.75); line-height: 1.5;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .module-name::before {
+      content: '';
+      width: 4px; height: 4px; border-radius: 50%;
+      background: var(--gold);
+      opacity: 0; flex-shrink: 0;
+      transition: opacity .3s;
+    }
+    .module-row.started .module-name::before {
+      opacity: 1;
+    }
+    .module-mentor {
+      font-family: var(--mono); font-size: 0.56rem;
+      letter-spacing: 0.12em; text-transform: uppercase;
+    }
+    .module-mentor.mike  { color: var(--gold-dim); }
+    .module-mentor.ashley { color: rgba(74,222,128,0.45); }
+    .module-begin {
+      font-family: var(--mono); font-size: 0.6rem;
+      letter-spacing: 0.15em; text-transform: uppercase;
+      text-decoration: none;
+      transition: opacity .2s;
+      white-space: nowrap;
+    }
+    .module-row:hover .module-begin { opacity: 0.7; }
+    .module-begin.mike   { color: var(--gold); }
+    .module-begin.ashley { color: var(--green-bright); }
+
+    /* ── GATE BANNER ── */
+    .gate-banner {
+      padding: 40px 60px;
+      max-width: 900px; margin: 0 auto;
+      text-align: center;
+      display: flex; align-items: center; justify-content: center; gap: 16px;
+    }
+    .gate-banner::before,
+    .gate-banner::after {
+      content: ''; flex: 1; height: 1px;
+      background: linear-gradient(to right, transparent, var(--border));
+    }
+    .gate-banner::after {
+      background: linear-gradient(to left, transparent, var(--border));
+    }
+    .gate-banner-text {
+      font-family: var(--mono); font-size: 0.58rem;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--gold-dim); white-space: nowrap;
+    }
+
+    /* ── CTA BOTTOM ── */
+    #academy-cta {
+      padding: 120px 60px;
+      text-align: center;
+      border-top: 1px solid var(--border);
+    }
+    .cta-eyebrow {
+      font-family: var(--mono); font-size: 0.58rem;
+      letter-spacing: 0.3em; text-transform: uppercase;
+      color: var(--gold-dim); margin-bottom: 32px;
+    }
+    .cta-headline {
+      font-family: var(--serif);
+      font-size: clamp(2.5rem, 4vw, 3.8rem);
+      font-weight: 300; color: rgba(255,255,255,0.9);
+      line-height: 1.2; margin-bottom: 52px;
+    }
+    .cta-buttons {
+      display: flex; align-items: center; justify-content: center;
+      gap: 24px; flex-wrap: wrap;
+    }
+    .cta-link {
+      font-family: var(--mono); font-size: 0.65rem;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      text-decoration: none;
+      border: 1px solid rgba(201,168,92,0.3);
+      padding: 14px 32px;
+      transition: all .3s;
+    }
+    .cta-link.mike  { color: var(--gold); }
+    .cta-link.mike:hover  { background: rgba(201,168,92,0.08); border-color: var(--gold); }
+    .cta-link.ashley { color: var(--green-bright); border-color: rgba(74,222,128,0.3); }
+    .cta-link.ashley:hover { background: rgba(74,222,128,0.06); border-color: var(--green-bright); }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 44px 60px;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center;
+      justify-content: space-between;
+    }
+    .footer-logo {
+      font-family: var(--serif); font-size: 0.9rem;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+    .footer-logo span { color: var(--gold-dim); }
+    .footer-copy { font-family: var(--mono); font-size: 0.56rem; color: var(--text-dim); }
+    .footer-links { display: flex; gap: 28px; list-style: none; }
+    .footer-links a {
+      font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.12em;
+      color: var(--text-dim); text-decoration: none; transition: color .3s;
+    }
+    .footer-links a:hover { color: var(--text-secondary); }
+
+    /* ── MOBILE ── */
+    @media (max-width: 768px) {
+      nav { padding: 0 24px; }
+      .nav-links { display: none; }
+      #hero { padding: 100px 24px 64px; }
+      .program-section { padding: 72px 24px; }
+      .gate-banner { padding: 32px 24px; }
+      .module-row {
+        grid-template-columns: 28px 1fr;
+        grid-template-rows: auto auto;
+        gap: 8px 12px;
+        padding: 16px 0;
+      }
+      .module-mentor { grid-column: 2; grid-row: 2; }
+      .module-begin { display: none; }
+      #academy-cta { padding: 80px 24px; }
+      footer { flex-direction: column; gap: 16px; text-align: center; padding: 36px 24px; }
+      .footer-links { justify-content: center; }
+    }
+
+    * { scrollbar-width: none; }
+    *::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<!-- NAV -->
+<nav id="main-nav">
+  <a href="/edgekeeper.html" class="nav-logo">Edge<span>K</span>eeper</a>
+  <ul class="nav-links">
+    <li><a href="/edgekeeper.html#institution">Philosophy</a></li>
+    <li><a href="/mike">Mike</a></li>
+    <li><a href="/ashley">Ashley</a></li>
+    <li><a href="/edgekeeper.html#pricing">Membership</a></li>
+    <li><a href="/academy" class="active">Academy</a></li>
+  </ul>
+  <a href="/workspace.html" class="nav-cta">Open Workspace</a>
+</nav>
+
+<!-- HERO -->
+<section>
+  <div id="hero">
+    <p class="hero-tag">EdgeKeeper Academy</p>
+    <h1 class="hero-heading">The Academy.</h1>
+    <p class="hero-sub">Mentorship-led education for traders at every stage. Not a course. A guided development program.</p>
+    <p class="hero-note">Foundation Program must be completed before discussing live trading.</p>
+  </div>
+</section>
+
+<!-- PROGRAM I — FOUNDATION -->
+<section class="program-section reveal">
+  <p class="program-label">Program I</p>
+  <h2 class="program-name">Foundation.</h2>
+  <p class="program-desc">For traders who are new or want to rebuild from the ground up. Mike won't allow you to discuss live trades until Foundation is complete.</p>
+
+  <ul class="module-list" id="modules-foundation">
+    <li class="module-row" data-module="what_is_trading">
+      <span class="module-num">01</span>
+      <span class="module-name">What Is Trading?</span>
+      <span class="module-mentor mike">Mike</span>
+      <a href="/workspace.html?topic=what_is_trading" class="module-begin mike">Begin with Mike →</a>
+    </li>
+    <li class="module-row" data-module="risk_position_sizing">
+      <span class="module-num">02</span>
+      <span class="module-name">Risk and Position Sizing</span>
+      <span class="module-mentor mike">Mike</span>
+      <a href="/workspace.html?topic=risk_position_sizing" class="module-begin mike">Begin with Mike →</a>
+    </li>
+    <li class="module-row" data-module="market_structure">
+      <span class="module-num">03</span>
+      <span class="module-name">Market Structure</span>
+      <span class="module-mentor mike">Mike</span>
+      <a href="/workspace.html?topic=market_structure" class="module-begin mike">Begin with Mike →</a>
+    </li>
+    <li class="module-row" data-module="psychology_basics">
+      <span class="module-num">04</span>
+      <span class="module-name">Psychology Basics</span>
+      <span class="module-mentor ashley">Ashley</span>
+      <a href="/workspace.html?topic=psychology_basics" class="module-begin ashley">Begin with Ashley →</a>
+    </li>
+    <li class="module-row" data-module="trading_journal_setup">
+      <span class="module-num">05</span>
+      <span class="module-name">The Trading Journal</span>
+      <span class="module-mentor ashley">Ashley</span>
+      <a href="/workspace.html?topic=trading_journal_setup" class="module-begin ashley">Begin with Ashley →</a>
+    </li>
+  </ul>
+</section>
+
+<!-- GATE BANNER -->
+<div class="gate-banner reveal">
+  <span class="gate-banner-text">You must complete Foundation before Execution modules unlock.</span>
+</div>
+
+<!-- PROGRAM II — EXECUTION -->
+<section class="program-section reveal">
+  <p class="program-label">Program II</p>
+  <h2 class="program-name">Execution.</h2>
+  <p class="program-desc">For traders who understand the basics and are building their process. The gap between knowing and doing is where most traders get stuck.</p>
+
+  <ul class="module-list" id="modules-execution">
+    <li class="module-row" data-module="trading_plan">
+      <span class="module-num">06</span>
+      <span class="module-name">Building Your Trading Plan</span>
+      <span class="module-mentor mike">Mike</span>
+      <a href="/workspace.html?topic=trading_plan" class="module-begin mike">Begin with Mike →</a>
+    </li>
+    <li class="module-row" data-module="discipline_process">
+      <span class="module-num">07</span>
+      <span class="module-name">Discipline and Process</span>
+      <span class="module-mentor ashley">Ashley</span>
+      <a href="/workspace.html?topic=discipline_process" class="module-begin ashley">Begin with Ashley →</a>
+    </li>
+    <li class="module-row" data-module="trade_management">
+      <span class="module-num">08</span>
+      <span class="module-name">Trade Management</span>
+      <span class="module-mentor mike">Mike</span>
+      <a href="/workspace.html?topic=trade_management" class="module-begin mike">Begin with Mike →</a>
+    </li>
+    <li class="module-row" data-module="weekly_review">
+      <span class="module-num">09</span>
+      <span class="module-name">The Weekly Review</span>
+      <span class="module-mentor mike">Mike</span>
+      <a href="/workspace.html?topic=weekly_review" class="module-begin mike">Begin with Mike →</a>
+    </li>
+  </ul>
+</section>
+
+<!-- GATE BANNER -->
+<div class="gate-banner reveal">
+  <span class="gate-banner-text">Advanced work. Ashley takes the lead.</span>
+</div>
+
+<!-- PROGRAM III — PERFORMANCE -->
+<section class="program-section reveal">
+  <p class="program-label">Program III</p>
+  <h2 class="program-name">Performance.</h2>
+  <p class="program-desc">For traders who trade consistently and want to go deeper. This is advanced work. Ashley takes the lead here.</p>
+
+  <ul class="module-list" id="modules-performance">
+    <li class="module-row" data-module="advanced_psychology">
+      <span class="module-num">10</span>
+      <span class="module-name">Advanced Psychology</span>
+      <span class="module-mentor ashley">Ashley</span>
+      <a href="/workspace.html?topic=advanced_psychology" class="module-begin ashley">Begin with Ashley →</a>
+    </li>
+    <li class="module-row" data-module="consistency">
+      <span class="module-num">11</span>
+      <span class="module-name">Consistency and Process</span>
+      <span class="module-mentor ashley">Ashley</span>
+      <a href="/workspace.html?topic=consistency" class="module-begin ashley">Begin with Ashley →</a>
+    </li>
+    <li class="module-row" data-module="drawdown_recovery">
+      <span class="module-num">12</span>
+      <span class="module-name">Drawdown Recovery</span>
+      <span class="module-mentor ashley">Ashley</span>
+      <a href="/workspace.html?topic=drawdown_recovery" class="module-begin ashley">Begin with Ashley →</a>
+    </li>
+    <li class="module-row" data-module="review_system">
+      <span class="module-num">13</span>
+      <span class="module-name">The Review System</span>
+      <span class="module-mentor mike">Mike</span>
+      <a href="/workspace.html?topic=review_system" class="module-begin mike">Begin with Mike →</a>
+    </li>
+  </ul>
+</section>
+
+<!-- CTA -->
+<section id="academy-cta">
+  <div>
+    <p class="cta-eyebrow reveal">EdgeKeeper Academy</p>
+    <h2 class="cta-headline reveal reveal-delay-1">Your mentor is waiting.</h2>
+    <div class="cta-buttons reveal reveal-delay-2">
+      <a href="/workspace.html?mentor=mike" class="cta-link mike">Begin with Mike →</a>
+      <a href="/workspace.html?mentor=ashley" class="cta-link ashley">Begin with Ashley →</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Edge<span>K</span>eeper</div>
+  <p class="footer-copy">© 2025 EdgeKeeper. A Private Mentorship Institution.</p>
+  <ul class="footer-links">
+    <li><a href="/edgekeeper.html">Home</a></li>
+    <li><a href="/academy">Academy</a></li>
+    <li><a href="/privacy.html">Privacy</a></li>
+  </ul>
+</footer>
+
+<script>
+// ── CURSOR ──────────────────────────────────────────────────────────────
+const cursor = document.getElementById('cursor');
+const ring   = document.getElementById('cursor-ring');
+let mx = 0, my = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+(function tick() {
+  cursor.style.left = mx + 'px'; cursor.style.top = my + 'px';
+  rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12;
+  ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+  requestAnimationFrame(tick);
+})();
+
+// ── NAV SCROLL ──────────────────────────────────────────────────────────
+const nav = document.getElementById('main-nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 40);
+});
+
+// ── REVEAL ON SCROLL ────────────────────────────────────────────────────
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+}, { threshold: 0.10 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ── ACADEMY PROGRESS (localStorage) ─────────────────────────────────────
+const moduleKeys = [
+  'what_is_trading', 'risk_position_sizing', 'market_structure',
+  'psychology_basics', 'trading_journal_setup',
+  'trading_plan', 'discipline_process', 'trade_management', 'weekly_review',
+  'advanced_psychology', 'consistency', 'drawdown_recovery', 'review_system',
+];
+
+moduleKeys.forEach(key => {
+  const started = localStorage.getItem('ek_academy_' + key + '_started');
+  if (started) {
+    const row = document.querySelector('[data-module="' + key + '"]');
+    if (row) row.classList.add('started');
+  }
+});
+</script>
+</body>
+</html>

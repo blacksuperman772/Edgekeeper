@@ -280,6 +280,7 @@ app.get('/sitemap.xml',   (req, res) => res.type('application/xml').sendFile(pat
 app.get('/mike',    (req, res) => res.sendFile(path.join(__dirname, 'mike.html')));
 app.get('/ashley',  (req, res) => res.sendFile(path.join(__dirname, 'ashley.html')));
 app.get('/method',  (req, res) => res.sendFile(path.join(__dirname, 'method.html')));
+app.get('/academy', requireAuthPage, serveInjectedHtml(path.join(__dirname, 'academy.html')));
 
 app.get('/pricing.html',    (req, res) => {
   const f = path.join(__dirname, 'pricing.html');
@@ -345,9 +346,12 @@ app.post('/api/onboarding/register', apiLimiter, async (req, res) => {
 
   res.json({ success: true, user_id: userData.user.id, plan: safePlan });
 });
+app.get('/profile.html',     requireAuthPage, serveInjectedHtml(path.join(__dirname, 'profile.html')));
+app.get('/profile',          requireAuthPage, (req, res) => res.redirect('/profile.html'));
 app.get('/workspace.html',   requireAuthPage, serveInjectedHtml(path.join(__dirname, 'workspace.html')));
 app.get('/settings.html',    requireAuthPage, serveInjectedHtml(path.join(__dirname, 'settings.html')));
 app.get('/assessment.html',  requireAuthPage, serveInjectedHtml(path.join(__dirname, 'assessment.html')));
+app.get('/academy.html',     requireAuthPage, serveInjectedHtml(path.join(__dirname, 'academy.html')));
 
 // ── Admin dashboard (admin only) ──────────────────────────────────────────────
 app.get('/admin.html', requireAuthPage, (req, res, next) => {

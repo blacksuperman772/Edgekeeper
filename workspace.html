@@ -2029,6 +2029,16 @@ const MENTORS = {
   },
 };
 
+// ── GUARDIAN INTERVENTION LADDER ─────────────────────────────────────
+const INTERVENTION_LADDER = {
+  1: { label: 'Observation',      color: 'rgba(255,255,255,0.3)',   action: null },
+  2: { label: 'Warning',          color: 'rgba(201,168,92,0.6)',    action: 'warn' },
+  3: { label: 'Conversation',     color: 'rgba(201,168,92,0.9)',    action: 'message' },
+  4: { label: 'Cooldown',         color: 'rgba(239,68,68,0.6)',     action: 'cooldown' },
+  5: { label: 'Lockout',          color: 'rgba(239,68,68,0.9)',     action: 'lockout' },
+  6: { label: 'Mandatory Review', color: 'rgba(239,68,68,1)',       action: 'review' },
+};
+
 let mentor = null;
 let msgQueue = [];
 
@@ -2177,6 +2187,9 @@ async function sendChat() {
   waitingReply = true;
   // Clear new milestones after first message so mentor only acknowledges once per session
   EK.setStr('ek_new_milestones', '[]');
+  // Clear one-shot context flags so they fire only in this session
+  if (EK.str('ek_pending_review_day')) EK.setStr('ek_pending_review_day', '');
+  if (EK.str('ek_academy_topic')) EK.setStr('ek_academy_topic', '');
 
   if (panel === 'breakroom') {
     await getAIResponse('The user wants to enter the break room. Respond briefly, then the break room will activate.', true);
@@ -2678,12 +2691,18 @@ async function loadGuardianPanel(body) {
 
     <div style="font-family:var(--mono);font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--dim);margin-bottom:10px;">Current Lock Level</div>
     <div class="guardian-lock-levels">
-      ${[1,2,3,4,5].map(l => `
+      ${[1,2,3,4,5].map(l => {
+        const ladderEntry = INTERVENTION_LADDER[l] || {};
+        return `
       <div class="g-lock-row ${l === lvl ? 'active' : ''}">
         <div class="g-lock-num">Lvl ${l}</div>
-        <div class="g-lock-desc">${lockDescriptions[l]}</div>
+        <div class="g-lock-desc">
+          ${lockDescriptions[l]}
+          <span style="display:block;font-family:var(--mono);font-size:0.48rem;letter-spacing:0.14em;text-transform:uppercase;color:${l === lvl ? ladderEntry.color || 'var(--mentor-color-dim)' : 'var(--dim)'};margin-top:3px;">${ladderEntry.label || ''}</span>
+        </div>
         <div class="g-lock-indicator"></div>
-      </div>`).join('')}
+      </div>`;
+      }).join('')}
     </div>
 
     <div style="font-family:var(--mono);font-size:0.56rem;color:var(--dim);margin-top:16px;">Last update: ${age} ago · <button onclick="manualGuardianUpdate()" style="background:none;border:none;color:var(--gold-dim);font-family:var(--mono);font-size:0.56rem;cursor:pointer;padding:0;text-decoration:underline;">Update manually</button></div>
@@ -2694,9 +2713,12 @@ async function loadGuardianPanel(body) {
   // Async: ask the AI for a one-sentence read based on current state
   generateGuardianRead(gdata);
 
-  // Update the nav badge
+  // Update the nav badge with ladder label
   const badge = document.getElementById('guardian-level-badge');
-  if (badge) badge.textContent = 'Lvl ' + lvl;
+  if (badge) {
+    const ladderLabel = INTERVENTION_LADDER[Math.min(lvl, 6)]?.label;
+    badge.textContent = ladderLabel ? ladderLabel : 'Lvl ' + lvl;
+  }
 
   // Auto-refresh every 45s while panel is open
   guardianPollTimer = setInterval(() => {
@@ -3396,6 +3418,15 @@ async function hydrateProfileFromServer() {
       if (dayEl) dayEl.textContent = `Day ${dayN}`;
       const roleEl = document.getElementById('sb-mentor-role');
       if (roleEl) roleEl.textContent = `Senior Mentor · Day ${dayN}`;
+
+      // Check review milestones: 7, 30, 90, 180 days
+      const reviewMilestones = [7, 30, 90, 180];
+      const reviewKey = `ek_review_triggered_day_${dayN}`;
+      const isReviewDay = reviewMilestones.includes(dayN);
+      if (isReviewDay && !localStorage.getItem(reviewKey)) {
+        localStorage.setItem(reviewKey, 'true');
+        EK.setStr('ek_pending_review_day', String(dayN));
+      }
     }
 
     // Trader stage display
@@ -3497,8 +3528,28 @@ function applyPlanGating() {
 window.addEventListener('DOMContentLoaded', async () => {
   const params = new URLSearchParams(window.location.search);
 
+  // Academy topic detection — must run before hydrateProfileFromServer so EK is ready
+  const academyTopic = params.get('topic');
+  if (academyTopic) {
+    // EK may not yet be user-scoped here (userId loads below), but the key still works
+    // because hydrateProfileFromServer sets __ekUserId before any EK read in the session
+    localStorage.setItem('ek__academy_topic_pending', academyTopic);
+    localStorage.setItem(`ek_academy_${academyTopic}_started`, 'true');
+    // Clean URL without reload
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState({}, '', '/workspace.html');
+    }
+  }
+
   // Resolve user identity first — sets __ekUserId so all EK reads/writes are user-scoped
   await hydrateProfileFromServer();
+
+  // After identity is resolved, move the pending academy topic into the scoped key
+  const _pendingTopic = localStorage.getItem('ek__academy_topic_pending');
+  if (_pendingTopic) {
+    EK.setStr('ek_academy_topic', _pendingTopic);
+    localStorage.removeItem('ek__academy_topic_pending');
+  }
 
   // Handle Paystack billing callback
   if (params.get('subscribed') === '1') {
@@ -4041,6 +4092,53 @@ function buildSystemPrompt() {
     ? `\nRecent milestone: "${newMilestones[0].label}" — acknowledge it only if the conversation naturally goes there. Do not force it.`
     : '';
 
+  // Periodic review milestone context (Days 7/30/90/180)
+  const pendingReviewDay = EK.str('ek_pending_review_day');
+  const reviewContext = pendingReviewDay
+    ? `\nThis is Day ${pendingReviewDay} — a formal review milestone. Open this session with a real review. ${
+        pendingReviewDay === '7'   ? 'Seven days in. What have you actually noticed? What are you still unsure about?' :
+        pendingReviewDay === '30'  ? 'Thirty days. This is when patterns become visible. What pattern has emerged that the user hasn\'t named yet?' :
+        pendingReviewDay === '90'  ? 'Ninety days. Who is this person compared to who they were on Day 1? What has changed and what hasn\'t?' :
+        pendingReviewDay === '180' ? 'Six months. This is a real review. What is the honest assessment of where they are, what the next 180 days need to focus on, and what you\'ve learned about them as a trader?' :
+        ''
+      }`
+    : '';
+
+  // Academy topic context — structured learning session
+  const activeTopic = EK.str('ek_academy_topic');
+  const topicLabels = {
+    what_is_trading:        'Introduction to Trading — what markets are, how they work, and what trading actually means',
+    risk_position_sizing:   'Risk and Position Sizing — the first law: never risk more than you can afford to think clearly about',
+    market_structure:       'Market Structure — reading what the market is actually doing, not what indicators say',
+    psychology_basics:      'Psychology Basics — the emotional patterns that determine trading outcomes',
+    trading_journal_setup:  'The Trading Journal — how to build the self-awareness that separates improving traders from stagnating ones',
+    trading_plan:           'Building a Trading Plan — without a plan, there is only reaction',
+    discipline_process:     'Discipline and Process — the gap between knowing the rules and following them under pressure',
+    trade_management:       'Trade Management — what happens after the entry is the part most traders ignore',
+    weekly_review:          'The Weekly Review — how to learn from what actually happened instead of what you thought happened',
+    advanced_psychology:    'Advanced Psychology — identifying the deeper patterns that create the surface behaviors',
+    consistency:            'Consistency — the only metric that matters before profitability does',
+    drawdown_recovery:      'Drawdown Recovery — how to return to your process after a difficult period without the emotional residue',
+    review_system:          'The Review System — building a structured practice of learning that compounds over months and years',
+  };
+  const topicContext = activeTopic && topicLabels[activeTopic]
+    ? `\nAcademy topic for this session: "${topicLabels[activeTopic]}"\nThis is a structured learning session. Guide the trader through this topic using the Socratic approach — ask what they already understand before explaining anything. Don't lecture. Let them discover. End the session by asking what they would do differently next time.`
+    : '';
+
+  // Guardian intervention ladder context
+  const guardianLockLevel = parseInt(EK.str('guardian') || '1', 10) || 1;
+  const guardianLadderEntry = INTERVENTION_LADDER[Math.min(guardianLockLevel, 6)];
+  const guardianContext = guardianLockLevel >= 2
+    ? `\nGuardian status: ${guardianLadderEntry.label} (Level ${guardianLockLevel}/6)\n${
+        guardianLockLevel === 2 ? 'Account patterns are worth noting. Mention it naturally if the conversation allows.' :
+        guardianLockLevel === 3 ? 'This requires a direct conversation about what is happening. Do not let this session pass without addressing it.' :
+        guardianLockLevel === 4 ? 'Implement a cooldown. Tell them explicitly: no more trades today. Be direct, not harsh.' :
+        guardianLockLevel === 5 ? 'Lockout is active. Be firm but not cold. The account is protected. Explain why.' :
+        guardianLockLevel >= 6  ? 'Mandatory review. This session IS the review. Nothing else happens until this is complete.' :
+        ''
+      }`
+    : '';
+
   const memCtx = [
     privateNotes && `Your private notes on this person (never expose; let them shape how you read the conversation):\n${privateNotes}`,
     northStar    && `Their stated north star: "${northStar}"`,
@@ -4093,6 +4191,9 @@ ${betweenSessions ? `Between sessions, you have been sitting with:\n${betweenSes
 ${identityContext ? `\nTrader profile:\n${identityContext}` : ''}
 Use the trader profile above to inform your perception — not to label them or describe your observations out loud.
 ${milestoneContext}
+${reviewContext}
+${topicContext}
+${guardianContext}
 
 Colleague: ${colleague} is the other mentor here. Reference them naturally when it fits: "Ashley might push you harder on the emotional side of that" or "Mike would want to know if the plan existed before you got in."
 
@@ -4147,6 +4248,9 @@ ${betweenSessions ? `Between sessions, you have been sitting with:\n${betweenSes
 ${identityContext ? `\nTrader profile:\n${identityContext}` : ''}
 Use the trader profile above to inform your perception — not to label them or describe your observations out loud.
 ${milestoneContext}
+${reviewContext}
+${topicContext}
+${guardianContext}
 
 Colleague: ${colleague} is the other mentor here. Reference them when it adds something: "Mike tends to go straight to the rule that was broken. I want to know what was happening before that."
 
