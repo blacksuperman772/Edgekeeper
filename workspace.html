@@ -1766,6 +1766,97 @@
       transition: color .2s;
     }
     .vd-btn-cancel:hover { color: var(--muted); }
+
+    /* ── GUARDIAN BANNER ────────────────────────────────────────────── */
+    #guardian-banner {
+      display: none;
+      padding: 12px 24px;
+      border-bottom: 1px solid transparent;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      letter-spacing: 0.02em;
+      font-weight: 400;
+      line-height: 1.5;
+      position: relative;
+    }
+    #guardian-banner.level-2 {
+      display: block;
+      background: rgba(201,168,92,0.06);
+      border-color: rgba(201,168,92,0.2);
+      color: rgba(201,168,92,0.8);
+    }
+    #guardian-banner.level-3 {
+      display: block;
+      background: rgba(201,168,92,0.10);
+      border-color: rgba(201,168,92,0.35);
+      color: rgba(201,168,92,0.95);
+    }
+    #guardian-banner.level-4 {
+      display: block;
+      background: rgba(239,68,68,0.06);
+      border-color: rgba(239,68,68,0.25);
+      color: rgba(239,68,68,0.85);
+    }
+    #guardian-banner.level-5,
+    #guardian-banner.level-6 {
+      display: block;
+      background: rgba(239,68,68,0.10);
+      border-color: rgba(239,68,68,0.4);
+      color: rgba(239,68,68,1);
+    }
+    .guardian-banner-inner {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      max-width: 580px;
+      margin: 0 auto;
+    }
+    .guardian-banner-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+    .guardian-banner-text { flex: 1; }
+    .guardian-banner-label {
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.7;
+      margin-bottom: 2px;
+    }
+    .guardian-banner-msg { opacity: 0.9; }
+    .guardian-timer {
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+      color: inherit;
+      font-size: 15px;
+      letter-spacing: 0.05em;
+    }
+    .guardian-banner-action {
+      font-size: 12px;
+      color: inherit;
+      opacity: 0.7;
+      text-decoration: underline;
+      cursor: none;
+      background: none;
+      border: none;
+      padding: 0;
+      font-family: inherit;
+    }
+    .guardian-banner-action:hover { opacity: 1; }
+    /* Lock overlay on chat input */
+    #chat-input:disabled, #chat-input[disabled] {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    .chat-send:disabled, .chat-send[disabled] {
+      opacity: 0.2;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -1918,6 +2009,7 @@
     <div class="chat-col" id="chat-col">
       <img src="/assets/mentor-space.png" alt="" aria-hidden="true" class="chat-ambient" />
       <div class="chat-messages" id="chat-messages"></div>
+      <div id="guardian-banner"></div>
       <div class="chat-input-area">
         <div class="chat-input-box">
           <textarea id="chat-input" placeholder="Talk to your mentor..." rows="2" maxlength="2000"></textarea>
@@ -2038,6 +2130,122 @@ const INTERVENTION_LADDER = {
   5: { label: 'Lockout',          color: 'rgba(239,68,68,0.9)',     action: 'lockout' },
   6: { label: 'Mandatory Review', color: 'rgba(239,68,68,1)',       action: 'review' },
 };
+
+// ── GUARDIAN BANNER ───────────────────────────────────────────────────
+let guardianTimerInterval = null;
+
+function applyGuardianBanner(level) {
+  level = parseInt(level) || 1;
+  const banner = document.getElementById('guardian-banner');
+  if (!banner) return;
+
+  // Remove all level classes
+  banner.className = '';
+  banner.innerHTML = '';
+
+  if (level < 2) return; // No banner for level 1
+
+  banner.classList.add(`level-${level}`);
+
+  const configs = {
+    2: {
+      label: 'Warning',
+      msg: 'Guardian has flagged a behavioral pattern. Be deliberate in your next session.',
+      action: null,
+    },
+    3: {
+      label: 'Conversation Required',
+      msg: 'Your mentor has requested a conversation about your recent behavior. Address this before trading.',
+      action: null,
+    },
+    4: {
+      label: 'Cooldown Active',
+      msg: 'Session paused.',
+      timer: true,
+      durationMs: 30 * 60 * 1000,
+      storageKey: 'ek_guardian_cooldown_start',
+      action: null,
+    },
+    5: {
+      label: 'Lockout Active',
+      msg: 'Trading halted.',
+      timer: true,
+      durationMs: 2 * 60 * 60 * 1000,
+      storageKey: 'ek_guardian_lockout_start',
+      action: null,
+    },
+    6: {
+      label: 'Mandatory Review',
+      msg: 'A mandatory review must be completed before you can continue.',
+      timer: true,
+      durationMs: 24 * 60 * 60 * 1000,
+      storageKey: 'ek_guardian_review_start',
+      action: { label: 'Submit Review', href: '/reviews.html' },
+    },
+  };
+
+  const cfg = configs[level];
+  if (!cfg) return;
+
+  // Build banner HTML
+  let innerHtml = `<div class="guardian-banner-inner">
+    <div class="guardian-banner-dot"></div>
+    <div class="guardian-banner-text">
+      <div class="guardian-banner-label">${cfg.label}</div>
+      <div class="guardian-banner-msg">${cfg.msg}${cfg.timer ? ' Return in <span class="guardian-timer" id="guardian-countdown">--:--:--</span>' : ''}</div>
+    </div>`;
+
+  if (cfg.action) {
+    innerHtml += `<a href="${cfg.action.href}" class="guardian-banner-action">${cfg.action.label}</a>`;
+  }
+  innerHtml += '</div>';
+  banner.innerHTML = innerHtml;
+
+  // Lock/unlock input
+  const inp = document.getElementById('chat-input');
+  const sendBtn = document.querySelector('.chat-send');
+  const isLocked = level >= 4;
+
+  if (inp) inp.disabled = isLocked;
+  if (sendBtn) sendBtn.disabled = isLocked;
+
+  // Timer logic for levels 4-6
+  if (cfg.timer) {
+    const key = cfg.storageKey;
+    if (!localStorage.getItem(key)) {
+      localStorage.setItem(key, Date.now().toString());
+    }
+    const startTime = parseInt(localStorage.getItem(key));
+    const duration = cfg.durationMs;
+
+    if (guardianTimerInterval) clearInterval(guardianTimerInterval);
+
+    function updateTimer() {
+      const elapsed = Date.now() - startTime;
+      const remaining = duration - elapsed;
+      const countEl = document.getElementById('guardian-countdown');
+
+      if (remaining <= 0) {
+        clearInterval(guardianTimerInterval);
+        localStorage.removeItem(key);
+        // Cooldown/lockout expired — re-enable input, remove banner
+        if (inp) inp.disabled = false;
+        if (sendBtn) sendBtn.disabled = false;
+        banner.className = '';
+        banner.innerHTML = '';
+        return;
+      }
+
+      const h = Math.floor(remaining / 3600000);
+      const m = Math.floor((remaining % 3600000) / 60000);
+      const s = Math.floor((remaining % 60000) / 1000);
+      const formatted = `${h > 0 ? h + ':' : ''}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      if (countEl) countEl.textContent = formatted;
+    }
+    updateTimer();
+    guardianTimerInterval = setInterval(updateTimer, 1000);
+  }
+}
 
 let mentor = null;
 let msgQueue = [];
@@ -2167,6 +2375,9 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 // ── SEND CHAT ─────────────────────────────────────────────────────────
 let waitingReply = false;
 async function sendChat() {
+  // Guardian hard enforcement: prevent sending if locked
+  const guardianLevel = parseInt(EK.str('guardian')) || 1;
+  if (guardianLevel >= 4) return;
   if (waitingReply) return;
   const inp = document.getElementById('chat-input');
   const text = inp.value.trim();
@@ -3410,6 +3621,7 @@ async function hydrateProfileFromServer() {
     if (profile.north_star     && !EK.str('north_star'))       EK.setStr('north_star',       profile.north_star);
     if (profile.living_identity && !EK.str('living_identity')) EK.setStr('living_identity',  profile.living_identity);
     if (profile.guardian_level && !EK.str('guardian'))         EK.setStr('guardian',         profile.guardian_level);
+    if (profile.guardian_level) applyGuardianBanner(profile.guardian_level);
     if (profile.plan) window.__ek_subscription__ = profile.plan;
     // Compute and display relationship day counter
     if (profile.member_since) {

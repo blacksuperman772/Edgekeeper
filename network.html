@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Network — EdgeKeeper</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600&display=swap" rel="stylesheet" />
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --obsidian:  #07050E;
+      --surface:   #0d0b15;
+      --border:    rgba(255,255,255,0.06);
+      --border-solid: rgba(255,255,255,0.08);
+      --gold:      #B8A06A;
+      --gold-dim:  rgba(184,160,106,0.4);
+      --green:     #5EA68A;
+      --green-dim: rgba(94,166,138,0.5);
+      --muted:     rgba(255,255,255,0.25);
+      --text:      rgba(255,255,255,0.7);
+      --sans:      'Manrope', sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      background: var(--obsidian);
+      color: var(--text);
+      font-family: var(--sans);
+      font-weight: 300;
+      line-height: 1.7;
+      cursor: none;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── CURSOR ── */
+    #cursor {
+      position: fixed; width: 7px; height: 7px;
+      background: var(--gold); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      transition: width .15s, height .15s, opacity .15s;
+    }
+    #cursor-ring {
+      position: fixed; width: 30px; height: 30px;
+      border: 1px solid rgba(184,160,106,0.3); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%);
+      transition: left .08s ease, top .08s ease;
+    }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      flex-shrink: 0;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(7,5,14,0.98);
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+    }
+    .topbar-logo {
+      font-family: var(--sans);
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+    }
+    .topbar-logo span { color: var(--gold); }
+    .topbar-nav {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      list-style: none;
+    }
+    .topbar-nav a {
+      font-size: 0.7rem;
+      font-weight: 400;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .25s;
+    }
+    .topbar-nav a:hover { color: rgba(255,255,255,0.65); }
+    .topbar-nav a.active { color: rgba(255,255,255,0.35); cursor: default; }
+
+    /* ── ROOM SELECTOR BAR (sticky below topbar) ── */
+    .room-bar {
+      flex-shrink: 0;
+      position: fixed;
+      top: 56px; left: 0; right: 0;
+      z-index: 90;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      padding: 0 40px;
+      background: rgba(7,5,14,0.97);
+      border-bottom: 1px solid var(--border);
+      height: 52px;
+    }
+    .room-tab {
+      background: none;
+      border: none;
+      border-bottom: 1px solid transparent;
+      padding: 0 28px;
+      height: 52px;
+      font-family: var(--sans);
+      font-size: 0.72rem;
+      font-weight: 400;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      cursor: none;
+      transition: color .2s, border-color .2s;
+      margin-bottom: -1px;
+      white-space: nowrap;
+    }
+    .room-tab:hover { color: rgba(255,255,255,0.55); }
+    .room-tab.active {
+      color: var(--gold);
+      border-bottom-color: var(--gold);
+    }
+
+    /* ── MAIN FEED AREA ── */
+    .feed-wrapper {
+      position: fixed;
+      top: 108px; /* topbar 56 + room-bar 52 */
+      bottom: 0;
+      left: 0;
+      right: 0;
+      overflow-y: auto;
+      padding: 48px 24px 80px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.06) transparent;
+    }
+    .feed-wrapper::-webkit-scrollbar { width: 4px; }
+    .feed-wrapper::-webkit-scrollbar-track { background: transparent; }
+    .feed-wrapper::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); }
+
+    .feed-inner {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* ── HERO ── */
+    .feed-hero {
+      margin-bottom: 56px;
+    }
+    .feed-hero h1 {
+      font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+      font-weight: 300;
+      letter-spacing: -0.01em;
+      color: rgba(255,255,255,0.88);
+      line-height: 1.15;
+      margin-bottom: 14px;
+    }
+    .feed-hero-sub {
+      font-size: 0.88rem;
+      font-weight: 300;
+      color: var(--muted);
+      max-width: 480px;
+      line-height: 1.75;
+    }
+
+    /* ── MESSAGE FEED ── */
+    #message-feed {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── NETWORK MESSAGE ── */
+    .network-msg {
+      padding: 24px 0 24px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      position: relative;
+    }
+    .network-msg::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 2px;
+      background: currentColor;
+    }
+    [data-role="mike"] {
+      color: var(--gold-dim);
+    }
+    [data-role="ashley"] {
+      color: var(--green-dim);
+    }
+    [data-role="system"] {
+      color: rgba(255,255,255,0.15);
+    }
+
+    .network-msg-meta {
+      display: flex;
+      gap: 12px;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .network-msg-author {
+      font-weight: 600;
+      font-size: 13px;
+      opacity: 0.7;
+      letter-spacing: 0.02em;
+      color: inherit;
+    }
+    .network-msg-time {
+      font-size: 12px;
+      opacity: 0.3;
+      font-weight: 300;
+      color: rgba(255,255,255,0.6);
+    }
+    .network-msg-content {
+      font-size: 15px;
+      line-height: 1.7;
+      color: rgba(255,255,255,0.7);
+      font-weight: 300;
+    }
+
+    /* ── REVEAL ANIMATION ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    .reveal.in {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+
+    /* ── LOADING STATE ── */
+    .network-loading {
+      font-size: 0.78rem;
+      font-weight: 300;
+      letter-spacing: 0.12em;
+      color: rgba(255,255,255,0.15);
+      text-transform: uppercase;
+      padding: 40px 0;
+    }
+
+    /* ── EMPTY STATE ── */
+    .network-empty {
+      text-align: center;
+      opacity: 0.3;
+      font-size: 14px;
+      font-weight: 300;
+      margin-top: 80px;
+      line-height: 1.9;
+    }
+    .network-empty p:first-child {
+      font-size: 15px;
+      font-weight: 400;
+      margin-bottom: 4px;
+    }
+    .network-empty-sub {
+      color: var(--muted);
+    }
+
+    /* ── NEW MESSAGE INDICATOR ── */
+    #new-msg-indicator {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(7,5,14,0.9);
+      border: 1px solid rgba(184,160,106,0.25);
+      color: var(--gold-dim);
+      font-size: 0.68rem;
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 9px 20px;
+      cursor: none;
+      display: none;
+      z-index: 200;
+      transition: opacity .3s;
+      backdrop-filter: blur(8px);
+    }
+    #new-msg-indicator.visible {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- CURSOR -->
+  <div id="cursor"></div>
+  <div id="cursor-ring"></div>
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <a href="/workspace.html" class="topbar-logo">Edge<span>Keeper</span></a>
+    <nav>
+      <ul class="topbar-nav">
+        <li><a href="/workspace.html">Workspace</a></li>
+        <li><a href="/network.html" class="active">Network</a></li>
+        <li><a href="/reviews.html">Reviews</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- ROOM SELECTOR -->
+  <div class="room-bar">
+    <button class="room-tab active" data-slug="discipline-room">Discipline Room</button>
+    <button class="room-tab" data-slug="recovery-room">Recovery Room</button>
+    <button class="room-tab" data-slug="performance-room">Performance Room</button>
+  </div>
+
+  <!-- FEED -->
+  <div class="feed-wrapper" id="feed-wrapper">
+    <div class="feed-inner">
+      <!-- Hero -->
+      <div class="feed-hero reveal">
+        <h1>Network</h1>
+        <p class="feed-hero-sub">Transmissions from your mentors. Read, absorb, apply.</p>
+      </div>
+
+      <!-- Messages -->
+      <div id="message-feed">
+        <div class="network-loading">Connecting...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- New message indicator -->
+  <button id="new-msg-indicator">New message &darr;</button>
+
+  <script>
+    /* ── CURSOR ── */
+    const cur = document.getElementById('cursor');
+    const ring = document.getElementById('cursor-ring');
+    document.addEventListener('mousemove', e => {
+      cur.style.left = e.clientX + 'px';
+      cur.style.top  = e.clientY + 'px';
+      ring.style.left = e.clientX + 'px';
+      ring.style.top  = e.clientY + 'px';
+    });
+    document.querySelectorAll('a, button').forEach(el => {
+      el.addEventListener('mouseenter', () => { cur.style.width = '14px'; cur.style.height = '14px'; cur.style.opacity = '0.6'; });
+      el.addEventListener('mouseleave', () => { cur.style.width = '7px';  cur.style.height = '7px';  cur.style.opacity = '1'; });
+    });
+
+    /* ── INTERSECTION OBSERVER FOR REVEAL ── */
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); observer.unobserve(e.target); } });
+    }, { threshold: 0.08 });
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    /* ── ESCAPE HTML ── */
+    function escHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    /* ── RELATIVE TIMESTAMPS ── */
+    function relativeTime(isoString) {
+      const now = Date.now();
+      const then = new Date(isoString).getTime();
+      const diff = Math.floor((now - then) / 1000); // seconds
+
+      if (diff < 60) return 'Just now';
+      if (diff < 3600) {
+        const mins = Math.floor(diff / 60);
+        return mins + ' minute' + (mins === 1 ? '' : 's') + ' ago';
+      }
+      if (diff < 86400) {
+        const hours = Math.floor(diff / 3600);
+        return hours + ' hour' + (hours === 1 ? '' : 's') + ' ago';
+      }
+      if (diff < 172800) return 'Yesterday';
+      if (diff < 604800) {
+        const days = Math.floor(diff / 86400);
+        return days + ' day' + (days === 1 ? '' : 's') + ' ago';
+      }
+      const d = new Date(isoString);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    /* update all timestamps every 60s */
+    setInterval(() => {
+      document.querySelectorAll('.network-msg-time[data-iso]').forEach(el => {
+        el.textContent = relativeTime(el.dataset.iso);
+      });
+    }, 60000);
+
+    /* ── ROLE → CSS CLASS ── */
+    function roleToSlug(role) {
+      if (!role) return 'system';
+      const r = role.toLowerCase();
+      if (r.includes('mike')) return 'mike';
+      if (r.includes('ashley')) return 'ashley';
+      return 'system';
+    }
+
+    /* ── BUILD A MESSAGE ELEMENT ── */
+    function buildMsgEl(msg) {
+      const role = roleToSlug(msg.author_role);
+      const el = document.createElement('div');
+      el.className = 'network-msg reveal';
+      el.setAttribute('data-role', role);
+      el.setAttribute('data-id', msg.id);
+      el.innerHTML = `
+        <div class="network-msg-meta">
+          <span class="network-msg-author">${escHtml(msg.author_name || 'Unknown')}</span>
+          <span class="network-msg-time" data-iso="${escHtml(msg.created_at)}">${relativeTime(msg.created_at)}</span>
+        </div>
+        <div class="network-msg-content">${escHtml(msg.content)}</div>
+      `;
+      return el;
+    }
+
+    /* ── SCROLL HELPERS ── */
+    const feedWrapper = document.getElementById('feed-wrapper');
+    const newMsgBtn   = document.getElementById('new-msg-indicator');
+
+    function isNearBottom() {
+      return (feedWrapper.scrollHeight - feedWrapper.scrollTop - feedWrapper.clientHeight) < 200;
+    }
+    function scrollToBottom(smooth) {
+      feedWrapper.scrollTo({ top: feedWrapper.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+    }
+
+    newMsgBtn.addEventListener('click', () => {
+      scrollToBottom(true);
+      newMsgBtn.classList.remove('visible');
+    });
+
+    feedWrapper.addEventListener('scroll', () => {
+      if (isNearBottom()) newMsgBtn.classList.remove('visible');
+    });
+
+    /* ── APPEND A REALTIME MESSAGE ── */
+    function appendMessage(msg) {
+      const feed = document.getElementById('message-feed');
+      const el = buildMsgEl(msg);
+      feed.appendChild(el);
+
+      // Trigger reveal
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          observer.observe(el);
+        });
+      });
+
+      if (isNearBottom()) {
+        scrollToBottom(true);
+      } else {
+        newMsgBtn.classList.add('visible');
+      }
+    }
+
+    /* ── SUPABASE CLIENT ── */
+    let supabase = null;
+    let realtimeChannel = null;
+
+    function initSupabase() {
+      const url  = window.__EK_SUPABASE_URL__;
+      const anon = window.__EK_SUPABASE_ANON__;
+      if (url && anon && window.supabase) {
+        supabase = window.supabase.createClient(url, anon);
+      }
+    }
+
+    function subscribeToRoom(roomSlug) {
+      if (!supabase) return;
+      if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+
+      realtimeChannel = supabase
+        .channel('network-' + roomSlug)
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'network_messages',
+          filter: 'room_slug=eq.' + roomSlug,
+        }, (payload) => {
+          appendMessage(payload.new);
+        })
+        .subscribe();
+    }
+
+    /* ── ROOMS STATE ── */
+    let activeSlug = null;
+
+    /* ── RENDER MESSAGES IN FEED ── */
+    function renderMessages(messages) {
+      const feed = document.getElementById('message-feed');
+      feed.innerHTML = '';
+
+      if (!messages || messages.length === 0) {
+        feed.innerHTML = `
+          <div class="network-empty">
+            <p>Signal stable.</p>
+            <p class="network-empty-sub">Nothing yet from this room.</p>
+          </div>
+        `;
+        return;
+      }
+
+      messages.forEach((msg, i) => {
+        const el = buildMsgEl(msg);
+        // stagger the reveal
+        el.style.transitionDelay = Math.min(i * 0.06, 0.6) + 's';
+        feed.appendChild(el);
+        observer.observe(el);
+      });
+
+      // scroll to bottom without animation on initial load
+      requestAnimationFrame(() => scrollToBottom(false));
+    }
+
+    /* ── SWITCH ROOM ── */
+    async function switchRoom(slug) {
+      if (activeSlug === slug) return;
+      activeSlug = slug;
+
+      // update tab styling
+      document.querySelectorAll('.room-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.slug === slug);
+      });
+
+      // loading state
+      const feed = document.getElementById('message-feed');
+      feed.innerHTML = '<div class="network-loading">Connecting...</div>';
+      newMsgBtn.classList.remove('visible');
+
+      // fetch messages
+      try {
+        const res = await fetch('/api/network/messages/' + encodeURIComponent(slug));
+        if (!res.ok) throw new Error('Failed to load messages');
+        const data = await res.json();
+        renderMessages(data.messages || []);
+      } catch (err) {
+        feed.innerHTML = `
+          <div class="network-empty">
+            <p>Signal lost.</p>
+            <p class="network-empty-sub">Could not reach this room. Try again shortly.</p>
+          </div>
+        `;
+        console.error('[Network] Failed to load room:', err);
+      }
+
+      // subscribe to realtime for this room
+      subscribeToRoom(slug);
+    }
+
+    /* ── LOAD NETWORK (after auth) ── */
+    async function loadNetwork(profile) {
+      // fetch rooms
+      let rooms = [];
+      try {
+        const res = await fetch('/api/network/rooms');
+        if (res.ok) {
+          const data = await res.json();
+          rooms = data.rooms || [];
+        }
+      } catch (_) {
+        // fallback: use default slugs so the page still works
+      }
+
+      // wire up room tabs
+      const tabs = document.querySelectorAll('.room-tab');
+      tabs.forEach(tab => {
+        // update display names from API if available
+        const match = rooms.find(r => r.slug === tab.dataset.slug);
+        if (match && match.name) {
+          tab.textContent = match.name;
+        }
+        tab.addEventListener('click', () => switchRoom(tab.dataset.slug));
+      });
+
+      // auto-select first room
+      const firstSlug = rooms.length > 0 ? rooms[0].slug : 'discipline-room';
+      switchRoom(firstSlug);
+    }
+
+    /* ── AUTH GUARD ── */
+    async function init() {
+      initSupabase();
+
+      try {
+        const res = await fetch('/api/profile');
+        if (!res.ok) {
+          window.location.href = '/auth.html';
+          return;
+        }
+        const { profile } = await res.json();
+        loadNetwork(profile);
+      } catch (_) {
+        window.location.href = '/auth.html';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

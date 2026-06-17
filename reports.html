@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Behavioral Reports — EdgeKeeper</title>
+  <meta name="robots" content="noindex, nofollow" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --obsidian:    #07050E;
+      --surface:     #0D0B15;
+      --layer:       #12101A;
+      --border:      rgba(255,255,255,0.06);
+      --border-med:  rgba(255,255,255,0.1);
+      --gold:        #B8A06A;
+      --gold-dim:    rgba(184,160,106,0.4);
+      --green:       #5EA68A;
+      --green-dim:   rgba(94,166,138,0.4);
+      --violet:      rgba(124,58,237,0.5);
+      --muted:       rgba(255,255,255,0.25);
+      --text:        rgba(255,255,255,0.72);
+      --text-bright: rgba(255,255,255,0.88);
+      --accent:      var(--gold);
+      --accent-dim:  var(--gold-dim);
+    }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      background: var(--obsidian);
+      color: var(--text);
+      font-family: 'Manrope', sans-serif;
+      font-weight: 300;
+      line-height: 1.8;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── CURSOR ── */
+    #cursor {
+      position: fixed; width: 7px; height: 7px;
+      background: var(--accent); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      transition: width .12s, height .12s, opacity .15s;
+    }
+    #cursor-ring {
+      position: fixed; width: 30px; height: 30px;
+      border: 1px solid var(--accent-dim); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%);
+      transition: left .09s ease, top .09s ease;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: 58px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 48px;
+      z-index: 500;
+      background: rgba(7,5,14,0.0);
+      border-bottom: 1px solid transparent;
+      transition: background .5s, border-color .5s;
+    }
+    nav.scrolled {
+      background: rgba(7,5,14,0.96);
+      border-bottom-color: var(--border);
+      backdrop-filter: blur(14px);
+    }
+    .nav-logo {
+      font-family: 'Manrope', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--text-bright);
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-links {
+      display: flex; align-items: center; gap: 36px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 0.6rem;
+      font-weight: 400;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .25s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-links a.active { color: var(--accent); }
+
+    /* ── REVEAL ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    .reveal.in {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .reveal.in.d1 { transition-delay: .08s; }
+    .reveal.in.d2 { transition-delay: .16s; }
+    .reveal.in.d3 { transition-delay: .24s; }
+    .reveal.in.d4 { transition-delay: .32s; }
+    .reveal.in.d5 { transition-delay: .40s; }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 140px 80px 80px;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+    .hero-title {
+      font-size: clamp(2.4rem, 4vw, 3.6rem);
+      font-weight: 300;
+      color: var(--text-bright);
+      line-height: 1.15;
+      letter-spacing: -0.01em;
+      margin-bottom: 20px;
+    }
+    .hero-sub {
+      font-size: 0.82rem;
+      font-weight: 300;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+    .hero-rule {
+      width: 48px;
+      height: 1px;
+      background: var(--accent-dim);
+      margin: 32px 0;
+    }
+
+    /* ── CONTENT WRAP ── */
+    .content-wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 80px 120px;
+    }
+
+    /* ── PLAN GATE ── */
+    #gate-block {
+      display: none;
+      padding: 72px 0;
+      border-top: 1px solid var(--border);
+    }
+    .gate-label {
+      font-size: 0.56rem;
+      font-weight: 600;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 28px;
+    }
+    .gate-text {
+      font-size: 1rem;
+      font-weight: 300;
+      color: var(--text);
+      line-height: 1.85;
+      max-width: 480px;
+      margin-bottom: 32px;
+    }
+    .gate-link {
+      font-size: 0.6rem;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 14px 30px;
+      text-decoration: none;
+      display: inline-block;
+      transition: color .25s, border-color .25s;
+    }
+    .gate-link:hover {
+      color: var(--accent);
+      border-color: var(--accent-dim);
+    }
+
+    /* ── SECTION LABEL ── */
+    .section-label {
+      font-size: 0.56rem;
+      font-weight: 600;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 28px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── MONTH SELECTOR ── */
+    #reports-block { display: none; }
+
+    .month-selector {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 64px;
+    }
+    .month-pill {
+      font-size: 0.6rem;
+      font-weight: 400;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 9px 20px;
+      background: transparent;
+      cursor: none;
+      transition: color .2s, border-color .2s;
+    }
+    .month-pill:hover { color: var(--text); border-color: var(--border-med); }
+    .month-pill.active { color: var(--accent); border-color: var(--accent-dim); }
+
+    /* No-reports state */
+    .no-reports-state {
+      padding: 60px 0;
+    }
+    .no-reports-text {
+      font-size: 0.82rem;
+      font-weight: 300;
+      color: var(--muted);
+      font-style: italic;
+      margin-bottom: 32px;
+    }
+    .btn-generate {
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      background: transparent;
+      padding: 14px 32px;
+      cursor: none;
+      transition: color .25s, border-color .25s;
+    }
+    .btn-generate:hover {
+      color: var(--accent);
+      border-color: var(--accent-dim);
+    }
+    .generate-status {
+      margin-top: 18px;
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      font-style: italic;
+      min-height: 18px;
+    }
+
+    /* ── REPORT DOCUMENT ── */
+    #report-content { display: none; }
+
+    .report-doc-header {
+      margin-bottom: 56px;
+    }
+    .report-doc-eyebrow {
+      font-size: 0.52rem;
+      font-weight: 600;
+      letter-spacing: 0.38em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .report-doc-month {
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      font-weight: 300;
+      color: var(--text-bright);
+      letter-spacing: 0.02em;
+      line-height: 1.2;
+    }
+
+    /* Stats bar */
+    .stats-bar {
+      display: flex;
+      gap: 0;
+      margin-bottom: 52px;
+      border: 1px solid var(--border);
+    }
+    .stat-cell {
+      flex: 1;
+      padding: 20px 24px;
+      border-right: 1px solid var(--border);
+    }
+    .stat-cell:last-child { border-right: none; }
+    .stat-cell-label {
+      font-size: 0.5rem;
+      font-weight: 600;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .stat-cell-val {
+      font-size: 0.88rem;
+      font-weight: 400;
+      color: var(--text);
+      letter-spacing: 0.02em;
+    }
+    .stat-cell-val.accent { color: var(--accent); }
+
+    /* Readiness */
+    .readiness-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 56px;
+    }
+    .readiness-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+    .readiness-label {
+      font-size: 0.56rem;
+      font-weight: 600;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .readiness-val {
+      font-size: 0.56rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    /* Summary — mentor's letter */
+    .summary-block {
+      margin-bottom: 64px;
+      padding-left: 24px;
+      border-left: 1px solid rgba(124,58,237,0.35);
+    }
+    .summary-text {
+      font-size: 1.05rem;
+      font-weight: 300;
+      color: rgba(255,255,255,0.68);
+      line-height: 2.0;
+      font-style: italic;
+      letter-spacing: 0.01em;
+    }
+
+    /* Document sections: Strengths, Patterns, Focus */
+    .doc-section {
+      margin-bottom: 56px;
+    }
+    .doc-section-title {
+      font-size: 0.52rem;
+      font-weight: 600;
+      letter-spacing: 0.38em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 24px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .doc-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .doc-list li {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      font-size: 0.9rem;
+      font-weight: 300;
+      color: var(--text);
+      line-height: 1.75;
+    }
+    .doc-list li::before {
+      content: '–';
+      color: var(--accent-dim);
+      flex-shrink: 0;
+      font-size: 0.8rem;
+    }
+
+    /* Generate this month button */
+    .generate-section {
+      margin-top: 72px;
+      padding-top: 40px;
+      border-top: 1px solid var(--border);
+    }
+    .generate-section-label {
+      font-size: 0.52rem;
+      font-weight: 600;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    /* Loading state */
+    .loading-text {
+      font-size: 0.58rem;
+      letter-spacing: 0.18em;
+      color: var(--muted);
+      padding: 40px 0;
+    }
+
+    /* ── SCROLLBAR ── */
+    * { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.06) transparent; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); }
+  </style>
+</head>
+<body>
+
+  <div id="cursor"></div>
+  <div id="cursor-ring"></div>
+
+  <!-- NAV -->
+  <nav id="nav">
+    <a href="/workspace.html" class="nav-logo">Edge<span>Keeper</span></a>
+    <ul class="nav-links">
+      <li><a href="/workspace.html">Workspace</a></li>
+      <li><a href="/reviews.html">Reviews</a></li>
+      <li><a href="/reports.html" class="active">Reports</a></li>
+      <li><a href="/academy.html">Academy</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <h1 class="hero-title reveal">Behavioral Reports</h1>
+    <div class="hero-rule reveal d1"></div>
+    <p class="hero-sub reveal d2">Monthly case review from your mentor.</p>
+  </section>
+
+  <!-- CONTENT -->
+  <main class="content-wrap">
+
+    <!-- LOADING -->
+    <div id="loading-block" class="reveal">
+      <div class="loading-text">Loading...</div>
+    </div>
+
+    <!-- PLAN GATE -->
+    <div id="gate-block" class="reveal">
+      <div class="gate-label">Access Restricted</div>
+      <p class="gate-text">
+        Behavioral reports are available on the Fellow plan. Your mentor reviews the month, identifies patterns, and writes a case assessment of where you are as a trader.
+      </p>
+      <a href="/pricing.html" class="gate-link">View Plans</a>
+    </div>
+
+    <!-- REPORTS BLOCK -->
+    <div id="reports-block">
+
+      <!-- Section label -->
+      <div class="section-label reveal">Reports</div>
+
+      <!-- Month selector -->
+      <div class="month-selector reveal d1" id="month-selector">
+        <!-- populated by JS -->
+      </div>
+
+      <!-- No reports state -->
+      <div id="no-reports-state" class="no-reports-state reveal d2" style="display:none;">
+        <p class="no-reports-text">No reports generated. Trigger your first one.</p>
+        <button class="btn-generate" id="btn-generate-first">Generate Report</button>
+        <div class="generate-status" id="generate-status-first"></div>
+      </div>
+
+      <!-- Report document -->
+      <div id="report-content" class="reveal d2">
+
+        <!-- Document header -->
+        <div class="report-doc-header">
+          <div class="report-doc-eyebrow">Behavioral Performance Report</div>
+          <div class="report-doc-month" id="report-month-label">—</div>
+        </div>
+
+        <!-- Stats bar -->
+        <div class="stats-bar" id="stats-bar">
+          <div class="stat-cell">
+            <div class="stat-cell-label">Journal Entries</div>
+            <div class="stat-cell-val" id="stat-entries">—</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-cell-label">Rule Violations</div>
+            <div class="stat-cell-val" id="stat-violations">—</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-cell-label">Avg Discipline</div>
+            <div class="stat-cell-val accent" id="stat-discipline">—</div>
+          </div>
+        </div>
+
+        <!-- Readiness -->
+        <div class="readiness-row" id="readiness-row" style="display:none;">
+          <div class="readiness-dot"></div>
+          <span class="readiness-label">Readiness —</span>
+          <span class="readiness-val" id="readiness-val"></span>
+        </div>
+
+        <!-- Summary / mentor letter -->
+        <div class="doc-section">
+          <div class="doc-section-title">Assessment</div>
+          <div class="summary-block">
+            <p class="summary-text" id="report-summary">—</p>
+          </div>
+        </div>
+
+        <!-- Strengths -->
+        <div class="doc-section" id="strengths-section">
+          <div class="doc-section-title">Strengths</div>
+          <ul class="doc-list" id="strengths-list"></ul>
+        </div>
+
+        <!-- Patterns -->
+        <div class="doc-section" id="patterns-section">
+          <div class="doc-section-title">Patterns Observed</div>
+          <ul class="doc-list" id="patterns-list"></ul>
+        </div>
+
+        <!-- Focus areas -->
+        <div class="doc-section" id="focus-section">
+          <div class="doc-section-title">Next Month</div>
+          <ul class="doc-list" id="focus-list"></ul>
+        </div>
+
+      </div><!-- /#report-content -->
+
+      <!-- Generate this month -->
+      <div class="generate-section reveal d3">
+        <div class="generate-section-label">Generate</div>
+        <button class="btn-generate" id="btn-generate-month">Generate This Month's Report</button>
+        <div class="generate-status" id="generate-status-main"></div>
+      </div>
+
+    </div><!-- /#reports-block -->
+
+  </main>
+
+  <script>
+    // ── UTILS ──────────────────────────────────────────────────────
+    function escHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function scoreToWord(score) {
+      const n = parseInt(score, 10);
+      if (isNaN(n)) return String(score);
+      if (n <= 20) return 'Developing';
+      if (n <= 40) return 'Building';
+      if (n <= 60) return 'Consistent';
+      if (n <= 80) return 'Disciplined';
+      return 'Field Ready';
+    }
+
+    function formatMonth(monthStr) {
+      // monthStr is 'YYYY-MM'
+      if (!monthStr) return '';
+      const [year, month] = monthStr.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+      return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    }
+
+    const GATED_STATUSES = ['free', 'starter'];
+
+    // ── CURSOR ─────────────────────────────────────────────────────
+    const cursor = document.getElementById('cursor');
+    const cursorRing = document.getElementById('cursor-ring');
+    document.addEventListener('mousemove', e => {
+      cursor.style.left = e.clientX + 'px';
+      cursor.style.top = e.clientY + 'px';
+      cursorRing.style.left = e.clientX + 'px';
+      cursorRing.style.top = e.clientY + 'px';
+    });
+    document.addEventListener('mousedown', () => {
+      cursor.style.width = '5px'; cursor.style.height = '5px';
+    });
+    document.addEventListener('mouseup', () => {
+      cursor.style.width = '7px'; cursor.style.height = '7px';
+    });
+
+    // ── NAV SCROLL ─────────────────────────────────────────────────
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 20);
+    });
+
+    // ── INTERSECTION OBSERVER ──────────────────────────────────────
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          revealObserver.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.06 });
+    document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+    // ── STATE ──────────────────────────────────────────────────────
+    let reports = [];
+    let selectedReport = null;
+
+    // ── RENDER REPORT ──────────────────────────────────────────────
+    function renderReport(report) {
+      selectedReport = report;
+
+      // Month label
+      document.getElementById('report-month-label').textContent =
+        formatMonth(report.report_month).toUpperCase();
+
+      // Stats
+      const stats = report.stats || {};
+      const entries = stats.journal_entries != null ? stats.journal_entries : '—';
+      const violations = stats.rule_violations != null ? stats.rule_violations : '—';
+      const avgScore = stats.avg_discipline_score != null
+        ? scoreToWord(stats.avg_discipline_score)
+        : (stats.avg_discipline || '—');
+
+      document.getElementById('stat-entries').textContent = entries;
+      document.getElementById('stat-violations').textContent = violations;
+      document.getElementById('stat-discipline').textContent = avgScore;
+
+      // Readiness
+      const readiness = report.readiness || stats.readiness || null;
+      const readinessRow = document.getElementById('readiness-row');
+      if (readiness) {
+        document.getElementById('readiness-val').textContent = escHtml(readiness).toUpperCase();
+        readinessRow.style.display = 'flex';
+      } else {
+        readinessRow.style.display = 'none';
+      }
+
+      // Summary
+      const summaryEl = document.getElementById('report-summary');
+      summaryEl.textContent = report.summary || 'No assessment available for this period.';
+
+      // Strengths
+      renderList('strengths-list', report.strengths || []);
+      document.getElementById('strengths-section').style.display =
+        (report.strengths && report.strengths.length) ? '' : 'none';
+
+      // Patterns
+      renderList('patterns-list', report.patterns || []);
+      document.getElementById('patterns-section').style.display =
+        (report.patterns && report.patterns.length) ? '' : 'none';
+
+      // Focus areas
+      renderList('focus-list', report.focus_areas || []);
+      document.getElementById('focus-section').style.display =
+        (report.focus_areas && report.focus_areas.length) ? '' : 'none';
+
+      // Show document
+      document.getElementById('report-content').style.display = '';
+    }
+
+    function renderList(elId, items) {
+      const el = document.getElementById(elId);
+      if (!items || !items.length) {
+        el.innerHTML = '';
+        return;
+      }
+      el.innerHTML = items.map(item =>
+        `<li>${escHtml(item)}</li>`
+      ).join('');
+    }
+
+    // ── RENDER MONTH SELECTOR ──────────────────────────────────────
+    function renderMonthSelector(reportList, selectedMonth) {
+      const selector = document.getElementById('month-selector');
+      selector.innerHTML = reportList.map(r => {
+        const label = formatMonth(r.report_month);
+        const isActive = r.report_month === selectedMonth ? 'active' : '';
+        return `<button class="month-pill ${isActive}" data-month="${escHtml(r.report_month)}">${escHtml(label)}</button>`;
+      }).join('');
+
+      selector.querySelectorAll('.month-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          selector.querySelectorAll('.month-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          const month = pill.dataset.month;
+          const report = reportList.find(r => r.report_month === month);
+          if (report) renderReport(report);
+        });
+      });
+    }
+
+    // ── GENERATE ───────────────────────────────────────────────────
+    async function triggerGenerate(statusElId, btnEl) {
+      if (btnEl) btnEl.disabled = true;
+      const statusEl = document.getElementById(statusElId);
+      if (statusEl) statusEl.textContent = 'Report is being prepared. Refresh in a moment.';
+
+      try {
+        const now = new Date();
+        const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        await fetch('/api/reports/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ month })
+        });
+      } catch (err) {
+        if (statusEl) statusEl.textContent = 'Something went wrong. Try again.';
+      } finally {
+        if (btnEl) btnEl.disabled = false;
+      }
+    }
+
+    document.getElementById('btn-generate-first').addEventListener('click', function() {
+      triggerGenerate('generate-status-first', this);
+    });
+    document.getElementById('btn-generate-month').addEventListener('click', function() {
+      triggerGenerate('generate-status-main', this);
+    });
+
+    // ── INIT ───────────────────────────────────────────────────────
+    async function init() {
+      const profileRes = await fetch('/api/profile');
+      if (!profileRes.ok) { window.location.href = '/auth.html'; return; }
+      const profileData = await profileRes.json();
+      const profile = profileData.profile || profileData;
+
+      // Set accent for Ashley
+      if (profile.mentor === 'ashley') {
+        document.documentElement.style.setProperty('--accent', '#5EA68A');
+        document.documentElement.style.setProperty('--accent-dim', 'rgba(94,166,138,0.4)');
+      }
+
+      const loadingBlock = document.getElementById('loading-block');
+      const gateBlock = document.getElementById('gate-block');
+      const reportsBlock = document.getElementById('reports-block');
+
+      // Plan gate check
+      const status = profile.subscription_status || profile.plan || '';
+      if (GATED_STATUSES.includes(status)) {
+        loadingBlock.style.display = 'none';
+        gateBlock.style.display = 'block';
+        // Trigger observer for gate block
+        revealObserver.observe(gateBlock);
+        return;
+      }
+
+      // Load reports
+      try {
+        const res = await fetch('/api/reports');
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
+        reports = Array.isArray(data) ? data : (data.reports || []);
+      } catch (err) {
+        reports = [];
+      }
+
+      loadingBlock.style.display = 'none';
+      reportsBlock.style.display = 'block';
+
+      // Observe newly visible reveal elements
+      reportsBlock.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+      if (!reports.length) {
+        document.getElementById('no-reports-state').style.display = 'block';
+        document.getElementById('report-content').style.display = 'none';
+        document.getElementById('month-selector').style.display = 'none';
+      } else {
+        document.getElementById('no-reports-state').style.display = 'none';
+        // Show most recent by default
+        const sorted = [...reports].sort((a, b) => {
+          return (b.report_month || '').localeCompare(a.report_month || '');
+        });
+        renderMonthSelector(sorted, sorted[0].report_month);
+        renderReport(sorted[0]);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

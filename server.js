@@ -352,6 +352,18 @@ app.get('/workspace.html',   requireAuthPage, serveInjectedHtml(path.join(__dirn
 app.get('/settings.html',    requireAuthPage, serveInjectedHtml(path.join(__dirname, 'settings.html')));
 app.get('/assessment.html',  requireAuthPage, serveInjectedHtml(path.join(__dirname, 'assessment.html')));
 app.get('/academy.html',     requireAuthPage, serveInjectedHtml(path.join(__dirname, 'academy.html')));
+app.get('/academy',          requireAuthPage, serveInjectedHtml(path.join(__dirname, 'academy.html')));
+// Phase 3-7 pages
+app.get('/reviews.html',      requireAuthPage, serveInjectedHtml(path.join(__dirname, 'reviews.html')));
+app.get('/reviews',           requireAuthPage, serveInjectedHtml(path.join(__dirname, 'reviews.html')));
+app.get('/reports.html',      requireAuthPage, serveInjectedHtml(path.join(__dirname, 'reports.html')));
+app.get('/reports',           requireAuthPage, serveInjectedHtml(path.join(__dirname, 'reports.html')));
+app.get('/integrations.html', requireAuthPage, serveInjectedHtml(path.join(__dirname, 'integrations.html')));
+app.get('/integrations',      requireAuthPage, serveInjectedHtml(path.join(__dirname, 'integrations.html')));
+app.get('/network.html',      requireAuthPage, serveInjectedHtml(path.join(__dirname, 'network.html')));
+app.get('/network',           requireAuthPage, serveInjectedHtml(path.join(__dirname, 'network.html')));
+app.get('/research.html',     (req, res) => res.sendFile(path.join(__dirname, 'research.html')));
+app.get('/research',          (req, res) => res.sendFile(path.join(__dirname, 'research.html')));
 
 // ── Admin dashboard (admin only) ──────────────────────────────────────────────
 app.get('/admin.html', requireAuthPage, (req, res, next) => {
@@ -2704,6 +2716,281 @@ Journal excerpts:\n${journalExcerpts || '(no entries this month)'}`;
     console.error('Report GPT error:', err.message);
   }
 }
+
+// ── Session Reviews (Phase 3 / Performance OS) ────────────────────────────────
+// GET /api/reviews — list session reviews for the authenticated user
+app.get('/api/reviews', requireAuthApi, apiLimiter, async (req, res) => {
+  const { type } = req.query; // optional filter: session|daily|weekly|monthly
+  let query = supabaseAdmin
+    .from('session_reviews')
+    .select('*')
+    .eq('user_id', req.user.id)
+    .order('created_at', { ascending: false })
+    .limit(50);
+  if (type && ['session','daily','weekly','monthly'].includes(type)) {
+    query = query.eq('review_type', type);
+  }
+  const { data, error } = await query;
+  if (error) return res.status(500).json({ error: 'Database error' });
+  res.json({ reviews: data || [] });
+});
+
+// POST /api/review — submit a session review
+app.post('/api/review', requireAuthApi, apiLimiter, async (req, res) => {
+  const { data: profile } = await supabaseAdmin
+    .from('user_profiles')
+    .select('mentor, subscription_status, bypass_subscription')
+    .eq('id', req.user.id)
+    .maybeSingle();
+
+  const {
+    review_type    = 'session',
+    discipline_score,
+    rule_followed,
+    emotional_state,
+    what_worked,
+    what_didnt,
+    note,
+  } = req.body || {};
+
+  const validTypes   = ['session','daily','weekly','monthly'];
+  const validEmotions = ['calm','focused','anxious','frustrated','confident','distracted','neutral'];
+
+  if (!validTypes.includes(review_type)) {
+    return res.status(400).json({ error: 'Invalid review_type' });
+  }
+  if (discipline_score !== undefined) {
+    const s = parseInt(discipline_score);
+    if (isNaN(s) || s < 0 || s > 100) {
+      return res.status(400).json({ error: 'discipline_score must be 0–100' });
+    }
+  }
+  if (emotional_state !== undefined && !validEmotions.includes(emotional_state)) {
+    return res.status(400).json({ error: 'Invalid emotional_state' });
+  }
+
+  const row = {
+    user_id:          req.user.id,
+    mentor:           profile?.mentor || 'mike',
+    review_type,
+    rule_followed:    rule_followed !== undefined ? Boolean(rule_followed) : null,
+    emotional_state:  emotional_state || null,
+    what_worked:      what_worked   ? String(what_worked).slice(0, 1000)   : null,
+    what_didnt:       what_didnt    ? String(what_didnt).slice(0, 1000)    : null,
+    note:             note          ? String(note).slice(0, 500)           : null,
+  };
+  if (discipline_score !== undefined) row.discipline_score = parseInt(discipline_score);
+
+  const { data, error } = await supabaseAdmin
+    .from('session_reviews')
+    .insert(row)
+    .select()
+    .single();
+
+  if (error) return res.status(500).json({ error: 'Database error' });
+
+  // Also record discipline score in discipline_scores table if provided
+  if (row.discipline_score !== undefined) {
+    await supabaseAdmin.from('discipline_scores').insert({
+      user_id:       req.user.id,
+      overall_score: row.discipline_score,
+      source:        'session_review',
+    }).catch(() => {});
+  }
+
+  res.status(201).json({ review: data });
+});
+
+// ── Readiness Score Compute (Phase 3) ─────────────────────────────────────────
+// POST /api/readiness/compute — recomputes and persists the readiness score
+app.post('/api/readiness/compute', requireAuthApi, apiLimiter, async (req, res) => {
+  try {
+    const { data: scoreData, error: fnError } = await supabaseAdmin
+      .rpc('compute_readiness_score', { p_user_id: req.user.id });
+
+    if (fnError) return res.status(500).json({ error: 'Computation failed' });
+
+    const score = scoreData ?? 0;
+    await supabaseAdmin
+      .from('user_profiles')
+      .update({ readiness_score: score })
+      .eq('id', req.user.id);
+
+    const label =
+      score <= 20 ? 'Developing Foundation' :
+      score <= 40 ? 'Building Awareness'    :
+      score <= 60 ? 'Gaining Consistency'   :
+      score <= 80 ? 'Approaching Ready'     : 'Field Ready';
+
+    res.json({ score, label });
+  } catch (err) {
+    console.error('Readiness compute error:', err.message);
+    res.status(500).json({ error: 'Internal error' });
+  }
+});
+
+// ── Research Insights (Phase 5) ───────────────────────────────────────────────
+// GET /api/research/latest — fetch this user's latest weekly insight
+app.get('/api/research/latest', requireAuthApi, apiLimiter, async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from('research_insights')
+    .select('*')
+    .eq('user_id', req.user.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) return res.status(500).json({ error: 'Database error' });
+  res.json({ insight: data || null });
+});
+
+// POST /api/research/generate — generate a weekly behavioral insight (AI-powered)
+// Deduplicates by week_key — only one per user per calendar week
+app.post('/api/research/generate', requireAuthApi, apiLimiter, async (req, res) => {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return res.status(503).json({ error: 'AI not configured' });
+
+  const now     = new Date();
+  const weekNum = Math.ceil((now - new Date(now.getFullYear(), 0, 1)) / 604800000);
+  const weekKey = `${now.getFullYear()}-W${String(weekNum).padStart(2,'0')}`;
+
+  // Dedup check
+  const { data: existing } = await supabaseAdmin
+    .from('research_insights')
+    .select('id, insight, created_at')
+    .eq('user_id', req.user.id)
+    .eq('week_key', weekKey)
+    .maybeSingle();
+
+  if (existing) return res.json({ insight: existing, cached: true });
+
+  // Gather data for AI
+  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+  const [journalRes, violationsRes, reviewsRes] = await Promise.all([
+    supabaseAdmin.from('journal_entries')
+      .select('content, entry_type, created_at')
+      .eq('user_id', req.user.id)
+      .gte('created_at', weekAgo)
+      .order('created_at', { ascending: false })
+      .limit(10),
+    supabaseAdmin.from('rule_violations')
+      .select('mentor_note, evidence_quote')
+      .eq('user_id', req.user.id)
+      .gte('created_at', weekAgo),
+    supabaseAdmin.from('session_reviews')
+      .select('discipline_score, emotional_state, what_worked, what_didnt')
+      .eq('user_id', req.user.id)
+      .gte('created_at', weekAgo)
+      .limit(7),
+  ]);
+
+  const journalText = (journalRes.data || [])
+    .map(e => e.content.slice(0, 200))
+    .join(' | ');
+  const violationNotes = (violationsRes.data || [])
+    .map(v => v.mentor_note)
+    .join(' | ')
+    .slice(0, 400);
+  const reviewSummary = (reviewsRes.data || [])
+    .map(r => `${r.emotional_state || 'unknown'} emotion, score ${r.discipline_score ?? 'N/A'}, worked: ${(r.what_worked || '').slice(0,100)}`)
+    .join(' | ');
+
+  const systemPrompt = `You are a behavioral trading researcher analyzing a trader's week. Write a single paragraph (150–250 words) of specific, research-grade insight about their behavioral patterns this week. Be precise. No generic advice. No filler. Write in third person, analytical voice, as if writing a case note. Focus on: emotional patterns, discipline trends, rule adherence, what this pattern predicts if continued. Do NOT use bullet points.`;
+  const userMsg = `Week: ${weekKey}
+Journal excerpts (this week): ${journalText || '(none)'}
+Rule violations: ${violationNotes || '(none)'}
+Session reviews: ${reviewSummary || '(none)'}`;
+
+  try {
+    const upstream = await fetch('https://api.openai.com/v1/chat/completions', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body:    JSON.stringify({
+        model:    process.env.OPENAI_MODEL || 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user',   content: userMsg },
+        ],
+        max_completion_tokens: 400,
+      }),
+    });
+
+    const gptData   = await upstream.json();
+    const insightText = (gptData.choices?.[0]?.message?.content || '').trim().slice(0, 3000);
+    if (!insightText) return res.status(500).json({ error: 'No insight generated' });
+
+    const { data: saved, error: saveErr } = await supabaseAdmin
+      .from('research_insights')
+      .insert({ user_id: req.user.id, week_key: weekKey, insight: insightText })
+      .select()
+      .single();
+
+    if (saveErr) return res.status(500).json({ error: 'Failed to save insight' });
+    res.status(201).json({ insight: saved });
+  } catch (err) {
+    console.error('Research generate error:', err.message);
+    res.status(500).json({ error: 'AI error' });
+  }
+});
+
+// ── Network / Community Rooms (Phase 7) ──────────────────────────────────────
+// GET /api/network/rooms — list all community rooms
+app.get('/api/network/rooms', requireAuthApi, apiLimiter, async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from('network_rooms')
+    .select('slug, name, description')
+    .order('created_at', { ascending: true });
+
+  if (error) return res.status(500).json({ error: 'Database error' });
+  res.json({ rooms: data || [] });
+});
+
+// GET /api/network/messages/:room — paginated messages for a room (last 50)
+app.get('/api/network/messages/:room', requireAuthApi, apiLimiter, async (req, res) => {
+  const { room } = req.params;
+  if (!/^[a-z0-9-]{1,60}$/.test(room)) {
+    return res.status(400).json({ error: 'Invalid room slug' });
+  }
+  const { data, error } = await supabaseAdmin
+    .from('network_messages')
+    .select('id, room_slug, author_name, author_role, content, created_at')
+    .eq('room_slug', room)
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error) return res.status(500).json({ error: 'Database error' });
+  res.json({ messages: (data || []).reverse() });
+});
+
+// POST /api/network/message — admin-only: post a message to a room as Mike or Ashley
+app.post('/api/network/message', requireAdmin, adminLimiter, async (req, res) => {
+  const { room_slug, content, author_role = 'mike' } = req.body || {};
+  if (!room_slug || typeof room_slug !== 'string' || !/^[a-z0-9-]{1,60}$/.test(room_slug)) {
+    return res.status(400).json({ error: 'Invalid room_slug' });
+  }
+  if (!content || typeof content !== 'string' || content.trim().length < 1) {
+    return res.status(400).json({ error: 'content required' });
+  }
+  if (!['mike','ashley','system'].includes(author_role)) {
+    return res.status(400).json({ error: 'author_role must be mike, ashley, or system' });
+  }
+
+  const authorName = author_role === 'ashley' ? 'Ashley' : author_role === 'system' ? 'System' : 'Mike';
+
+  const { data, error } = await supabaseAdmin
+    .from('network_messages')
+    .insert({
+      room_slug,
+      author_name: authorName,
+      author_role,
+      content: content.trim().slice(0, 2000),
+    })
+    .select()
+    .single();
+
+  if (error) return res.status(500).json({ error: 'Database error' });
+  res.status(201).json({ message: data });
+});
 
 // ── Catch-all 404 ─────────────────────────────────────────────────────────────
 app.use((req, res) => {

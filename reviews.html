@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Session Reviews — EdgeKeeper</title>
+  <meta name="robots" content="noindex, nofollow" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --obsidian:   #07050E;
+      --surface:    #0D0B15;
+      --layer:      #12101A;
+      --border:     rgba(255,255,255,0.06);
+      --border-med: rgba(255,255,255,0.1);
+      --gold:       #B8A06A;
+      --gold-dim:   rgba(184,160,106,0.4);
+      --green:      #5EA68A;
+      --green-dim:  rgba(94,166,138,0.4);
+      --muted:      rgba(255,255,255,0.25);
+      --text:       rgba(255,255,255,0.72);
+      --text-bright: rgba(255,255,255,0.88);
+      --accent:     var(--gold);
+      --accent-dim: var(--gold-dim);
+    }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      background: var(--obsidian);
+      color: var(--text);
+      font-family: 'Manrope', sans-serif;
+      font-weight: 300;
+      line-height: 1.8;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── CURSOR ── */
+    #cursor {
+      position: fixed; width: 7px; height: 7px;
+      background: var(--accent); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      transition: width .12s, height .12s, opacity .15s;
+    }
+    #cursor-ring {
+      position: fixed; width: 30px; height: 30px;
+      border: 1px solid var(--accent-dim); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%);
+      transition: left .09s ease, top .09s ease;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: 58px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 48px;
+      z-index: 500;
+      background: rgba(7,5,14,0.0);
+      border-bottom: 1px solid transparent;
+      transition: background .5s, border-color .5s;
+    }
+    nav.scrolled {
+      background: rgba(7,5,14,0.96);
+      border-bottom-color: var(--border);
+      backdrop-filter: blur(14px);
+    }
+    .nav-logo {
+      font-family: 'Manrope', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--text-bright);
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-links {
+      display: flex; align-items: center; gap: 36px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 0.6rem;
+      font-weight: 400;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .25s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-links a.active { color: var(--accent); }
+
+    /* ── REVEAL ANIMATION ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    .reveal.in {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .reveal.in.d1 { transition-delay: .08s; }
+    .reveal.in.d2 { transition-delay: .16s; }
+    .reveal.in.d3 { transition-delay: .24s; }
+    .reveal.in.d4 { transition-delay: .32s; }
+    .reveal.in.d5 { transition-delay: .40s; }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 140px 80px 80px;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+    .hero-title {
+      font-size: clamp(2.4rem, 4vw, 3.6rem);
+      font-weight: 300;
+      color: var(--text-bright);
+      line-height: 1.15;
+      letter-spacing: -0.01em;
+      margin-bottom: 20px;
+    }
+    .hero-sub {
+      font-size: 0.82rem;
+      font-weight: 300;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+    .hero-rule {
+      width: 48px;
+      height: 1px;
+      background: var(--accent-dim);
+      margin: 32px 0;
+    }
+
+    /* ── MAIN CONTENT ── */
+    .content-wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 80px 120px;
+    }
+
+    /* ── SECTION LABELS ── */
+    .section-label {
+      font-size: 0.56rem;
+      font-weight: 600;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── FORM ── */
+    .review-form {
+      margin-bottom: 96px;
+    }
+    .form-field {
+      margin-bottom: 52px;
+    }
+    .field-label {
+      font-size: 0.58rem;
+      font-weight: 600;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 18px;
+      display: block;
+    }
+
+    /* Pill selectors */
+    .pill-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .pill {
+      font-size: 0.62rem;
+      font-weight: 400;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 9px 20px;
+      background: transparent;
+      cursor: none;
+      transition: color .2s, border-color .2s;
+      user-select: none;
+    }
+    .pill:hover {
+      color: var(--text);
+      border-color: var(--border-med);
+    }
+    .pill.selected {
+      color: var(--accent);
+      border-color: var(--accent-dim);
+    }
+
+    /* Yes / No large buttons */
+    .yn-group {
+      display: flex;
+      gap: 12px;
+    }
+    .yn-btn {
+      font-size: 0.68rem;
+      font-weight: 400;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 16px 40px;
+      background: transparent;
+      cursor: none;
+      transition: color .2s, border-color .2s;
+    }
+    .yn-btn:hover {
+      color: var(--text);
+      border-color: var(--border-med);
+    }
+    .yn-btn.selected-yes {
+      color: var(--accent);
+      border-color: var(--accent-dim);
+    }
+    .yn-btn.selected-no {
+      color: rgba(200,100,80,0.8);
+      border-color: rgba(200,100,80,0.3);
+    }
+
+    /* Discipline slider */
+    .slider-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .discipline-word {
+      font-size: 1.1rem;
+      font-weight: 300;
+      color: var(--text-bright);
+      letter-spacing: 0.04em;
+    }
+    .range-track {
+      position: relative;
+      height: 20px;
+      display: flex;
+      align-items: center;
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 1px;
+      background: var(--border-med);
+      outline: none;
+      position: relative;
+      cursor: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: none;
+      border: none;
+      box-shadow: 0 0 0 2px rgba(184,160,106,0.15);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: none;
+      cursor: none;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 1px;
+      background: linear-gradient(to right, var(--accent) var(--fill-pct, 60%), var(--border-med) var(--fill-pct, 60%));
+    }
+    input[type="range"]::-moz-range-track {
+      height: 1px;
+      background: var(--border-med);
+    }
+    input[type="range"]::-moz-range-progress {
+      height: 1px;
+      background: var(--accent);
+    }
+    .slider-markers {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+    }
+    .slider-marker {
+      font-size: 0.5rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.15);
+    }
+
+    /* Textareas */
+    .form-textarea {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      outline: none;
+      resize: none;
+      padding: 0 0 16px;
+      font-family: 'Manrope', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 300;
+      color: var(--text);
+      line-height: 1.85;
+      min-height: 80px;
+      cursor: none;
+      transition: border-color .25s;
+    }
+    .form-textarea::placeholder {
+      color: rgba(255,255,255,0.18);
+      font-style: italic;
+    }
+    .form-textarea:focus { border-bottom-color: var(--accent-dim); }
+
+    .form-input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      outline: none;
+      padding: 0 0 14px;
+      font-family: 'Manrope', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 300;
+      color: var(--text);
+      cursor: none;
+      transition: border-color .25s;
+    }
+    .form-input::placeholder {
+      color: rgba(255,255,255,0.18);
+      font-style: italic;
+    }
+    .form-input:focus { border-bottom-color: var(--accent-dim); }
+
+    /* Submit button */
+    .btn-log {
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      background: transparent;
+      padding: 16px 36px;
+      cursor: none;
+      transition: color .25s, border-color .25s;
+    }
+    .btn-log:hover {
+      color: var(--accent);
+      border-color: var(--accent-dim);
+    }
+    .btn-log:disabled {
+      opacity: 0.4;
+      cursor: none;
+    }
+    .form-status {
+      margin-top: 16px;
+      font-size: 0.6rem;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      min-height: 18px;
+    }
+    .form-status.ok { color: var(--accent); }
+    .form-status.err { color: rgba(200,100,80,0.8); }
+
+    /* ── PAST REVIEWS ── */
+    .reviews-list-section {
+      margin-top: 16px;
+    }
+    .filter-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 48px;
+    }
+    .filter-pill {
+      font-size: 0.56rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 7px 16px;
+      background: transparent;
+      cursor: none;
+      transition: color .2s, border-color .2s;
+    }
+    .filter-pill:hover { color: var(--text); border-color: var(--border-med); }
+    .filter-pill.active { color: var(--accent); border-color: var(--accent-dim); }
+
+    /* Review items */
+    .review-item {
+      padding: 32px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .review-item:first-child { border-top: 1px solid var(--border); }
+    .review-top {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .review-meta-left {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+    }
+    .review-date {
+      font-size: 0.62rem;
+      font-weight: 400;
+      letter-spacing: 0.14em;
+      color: var(--text);
+    }
+    .review-type-badge {
+      font-size: 0.5rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 3px 9px;
+    }
+    .review-meta-right {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      text-align: right;
+    }
+    .review-discipline-word {
+      font-size: 0.62rem;
+      font-weight: 400;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+    }
+    .review-emotion {
+      font-size: 0.56rem;
+      font-weight: 400;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .review-bottom {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .review-rules {
+      font-size: 0.58rem;
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+    }
+    .review-rules span { color: var(--text); }
+    .review-worked {
+      font-size: 0.82rem;
+      font-weight: 300;
+      color: rgba(255,255,255,0.38);
+      line-height: 1.7;
+    }
+    .review-worked::before {
+      content: '+ ';
+      color: rgba(94,166,138,0.5);
+      font-size: 0.65rem;
+    }
+    .review-didnt {
+      font-size: 0.82rem;
+      font-weight: 300;
+      color: rgba(255,255,255,0.28);
+      line-height: 1.7;
+    }
+    .review-didnt::before {
+      content: '— ';
+      color: rgba(200,100,80,0.4);
+      font-size: 0.65rem;
+    }
+
+    /* Empty state */
+    .empty-state {
+      padding: 72px 0;
+      text-align: center;
+      font-size: 0.78rem;
+      font-weight: 300;
+      color: rgba(255,255,255,0.18);
+      letter-spacing: 0.04em;
+      font-style: italic;
+    }
+
+    /* Loading state */
+    .loading-text {
+      font-size: 0.58rem;
+      letter-spacing: 0.18em;
+      color: var(--muted);
+      padding: 40px 0;
+    }
+
+    /* ── SCROLLBAR ── */
+    * { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.06) transparent; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); }
+  </style>
+</head>
+<body>
+
+  <div id="cursor"></div>
+  <div id="cursor-ring"></div>
+
+  <!-- NAV -->
+  <nav id="nav">
+    <a href="/workspace.html" class="nav-logo">Edge<span>Keeper</span></a>
+    <ul class="nav-links">
+      <li><a href="/workspace.html">Workspace</a></li>
+      <li><a href="/reviews.html" class="active">Reviews</a></li>
+      <li><a href="/reports.html">Reports</a></li>
+      <li><a href="/academy.html">Academy</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <h1 class="hero-title reveal">Session Reviews</h1>
+    <div class="hero-rule reveal d1"></div>
+    <p class="hero-sub reveal d2">Record what happened. Build the data set.</p>
+  </section>
+
+  <!-- CONTENT -->
+  <main class="content-wrap">
+
+    <!-- SUBMIT FORM -->
+    <div class="review-form reveal">
+      <div class="section-label">New Review</div>
+
+      <!-- Review type -->
+      <div class="form-field">
+        <span class="field-label">Review type</span>
+        <div class="pill-group" id="type-pills">
+          <button class="pill selected" data-value="session">Session</button>
+          <button class="pill" data-value="daily">Daily</button>
+          <button class="pill" data-value="weekly">Weekly</button>
+          <button class="pill" data-value="monthly">Monthly</button>
+        </div>
+      </div>
+
+      <!-- Rules followed -->
+      <div class="form-field">
+        <span class="field-label">Did you follow your rules?</span>
+        <div class="yn-group">
+          <button class="yn-btn" id="yn-yes" data-value="yes">Yes</button>
+          <button class="yn-btn" id="yn-no" data-value="no">No</button>
+        </div>
+      </div>
+
+      <!-- Discipline score -->
+      <div class="form-field">
+        <span class="field-label">Discipline score</span>
+        <div class="slider-wrap">
+          <div class="discipline-word" id="discipline-word">Consistent</div>
+          <div class="range-track">
+            <input type="range" id="discipline-slider" min="0" max="100" value="60" />
+          </div>
+          <div class="slider-markers">
+            <span class="slider-marker">Developing</span>
+            <span class="slider-marker">Building</span>
+            <span class="slider-marker">Consistent</span>
+            <span class="slider-marker">Disciplined</span>
+            <span class="slider-marker">Field Ready</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Emotional state -->
+      <div class="form-field">
+        <span class="field-label">Emotional state</span>
+        <div class="pill-group" id="emotion-pills">
+          <button class="pill" data-value="calm">Calm</button>
+          <button class="pill" data-value="focused">Focused</button>
+          <button class="pill" data-value="anxious">Anxious</button>
+          <button class="pill" data-value="frustrated">Frustrated</button>
+          <button class="pill" data-value="confident">Confident</button>
+          <button class="pill" data-value="distracted">Distracted</button>
+          <button class="pill" data-value="neutral">Neutral</button>
+        </div>
+      </div>
+
+      <!-- What worked -->
+      <div class="form-field">
+        <span class="field-label">What worked</span>
+        <textarea class="form-textarea" id="what-worked" rows="3" placeholder="What did you execute well?"></textarea>
+      </div>
+
+      <!-- What didn't -->
+      <div class="form-field">
+        <span class="field-label">What didn't</span>
+        <textarea class="form-textarea" id="what-didnt" rows="3" placeholder="What broke down?"></textarea>
+      </div>
+
+      <!-- Note -->
+      <div class="form-field">
+        <span class="field-label">Note</span>
+        <input type="text" class="form-input" id="note-input" placeholder="Anything else." />
+      </div>
+
+      <!-- Submit -->
+      <button class="btn-log" id="btn-submit">Log Review</button>
+      <div class="form-status" id="form-status"></div>
+    </div>
+
+    <!-- PAST REVIEWS -->
+    <div class="reviews-list-section reveal d2">
+      <div class="section-label">Past Reviews</div>
+
+      <!-- Filter row -->
+      <div class="filter-row" id="filter-row">
+        <button class="filter-pill active" data-filter="all">All</button>
+        <button class="filter-pill" data-filter="session">Session</button>
+        <button class="filter-pill" data-filter="daily">Daily</button>
+        <button class="filter-pill" data-filter="weekly">Weekly</button>
+        <button class="filter-pill" data-filter="monthly">Monthly</button>
+      </div>
+
+      <!-- List -->
+      <div id="reviews-list">
+        <div class="loading-text">Loading reviews...</div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // ── UTILS ──────────────────────────────────────────────────────
+    function escHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function scoreToWord(score) {
+      const n = parseInt(score, 10);
+      if (n <= 20) return 'Developing';
+      if (n <= 40) return 'Building';
+      if (n <= 60) return 'Consistent';
+      if (n <= 80) return 'Disciplined';
+      return 'Field Ready';
+    }
+
+    function relativeDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      const now = new Date();
+      const diffMs = now - d;
+      const diffDays = Math.floor(diffMs / 86400000);
+      if (diffDays === 0) return 'Today';
+      if (diffDays === 1) return 'Yesterday';
+      if (diffDays < 7) return `${diffDays} days ago`;
+      return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+    }
+
+    // ── CURSOR ─────────────────────────────────────────────────────
+    const cursor = document.getElementById('cursor');
+    const cursorRing = document.getElementById('cursor-ring');
+    document.addEventListener('mousemove', e => {
+      cursor.style.left = e.clientX + 'px';
+      cursor.style.top = e.clientY + 'px';
+      cursorRing.style.left = e.clientX + 'px';
+      cursorRing.style.top = e.clientY + 'px';
+    });
+    document.addEventListener('mousedown', () => {
+      cursor.style.width = '5px'; cursor.style.height = '5px';
+    });
+    document.addEventListener('mouseup', () => {
+      cursor.style.width = '7px'; cursor.style.height = '7px';
+    });
+
+    // ── NAV SCROLL ─────────────────────────────────────────────────
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 20);
+    });
+
+    // ── INTERSECTION OBSERVER ──────────────────────────────────────
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          revealObserver.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.08 });
+    document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+    // ── FORM STATE ─────────────────────────────────────────────────
+    const formState = {
+      review_type: 'session',
+      rule_followed: null,
+      discipline_score: 60,
+      emotional_state: null,
+      what_worked: '',
+      what_didnt: '',
+      note: ''
+    };
+
+    // Type pills
+    document.getElementById('type-pills').addEventListener('click', e => {
+      const pill = e.target.closest('.pill');
+      if (!pill) return;
+      document.querySelectorAll('#type-pills .pill').forEach(p => p.classList.remove('selected'));
+      pill.classList.add('selected');
+      formState.review_type = pill.dataset.value;
+    });
+
+    // Yes / No
+    const ynYes = document.getElementById('yn-yes');
+    const ynNo = document.getElementById('yn-no');
+    function clearYN() {
+      ynYes.classList.remove('selected-yes');
+      ynNo.classList.remove('selected-no');
+    }
+    ynYes.addEventListener('click', () => {
+      clearYN();
+      ynYes.classList.add('selected-yes');
+      formState.rule_followed = true;
+    });
+    ynNo.addEventListener('click', () => {
+      clearYN();
+      ynNo.classList.add('selected-no');
+      formState.rule_followed = false;
+    });
+
+    // Discipline slider
+    const slider = document.getElementById('discipline-slider');
+    const disciplineWord = document.getElementById('discipline-word');
+    function updateSlider() {
+      const val = parseInt(slider.value);
+      formState.discipline_score = val;
+      disciplineWord.textContent = scoreToWord(val);
+      const pct = val + '%';
+      slider.style.setProperty('--fill-pct', pct);
+      // Firefox doesn't support ::webkit-slider-runnable-track inline override easily,
+      // but we set the property for Chromium
+    }
+    slider.addEventListener('input', updateSlider);
+    updateSlider();
+
+    // Emotion pills
+    document.getElementById('emotion-pills').addEventListener('click', e => {
+      const pill = e.target.closest('.pill');
+      if (!pill) return;
+      document.querySelectorAll('#emotion-pills .pill').forEach(p => p.classList.remove('selected'));
+      pill.classList.add('selected');
+      formState.emotional_state = pill.dataset.value;
+    });
+
+    // Textareas and input
+    document.getElementById('what-worked').addEventListener('input', e => {
+      formState.what_worked = e.target.value;
+    });
+    document.getElementById('what-didnt').addEventListener('input', e => {
+      formState.what_didnt = e.target.value;
+    });
+    document.getElementById('note-input').addEventListener('input', e => {
+      formState.note = e.target.value;
+    });
+
+    // ── SUBMIT ─────────────────────────────────────────────────────
+    const btnSubmit = document.getElementById('btn-submit');
+    const formStatus = document.getElementById('form-status');
+
+    btnSubmit.addEventListener('click', async () => {
+      btnSubmit.disabled = true;
+      formStatus.textContent = 'Logging...';
+      formStatus.className = 'form-status';
+
+      const body = {
+        review_type: formState.review_type,
+        discipline_score: formState.discipline_score,
+        rule_followed: formState.rule_followed,
+        emotional_state: formState.emotional_state,
+        what_worked: formState.what_worked,
+        what_didnt: formState.what_didnt,
+        note: formState.note
+      };
+
+      try {
+        const res = await fetch('/api/review', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) throw new Error('Failed');
+        formStatus.textContent = 'Review logged.';
+        formStatus.className = 'form-status ok';
+        // Reset form
+        document.querySelectorAll('#type-pills .pill').forEach(p => p.classList.remove('selected'));
+        document.querySelector('#type-pills .pill[data-value="session"]').classList.add('selected');
+        clearYN();
+        formState.rule_followed = null;
+        slider.value = 60;
+        updateSlider();
+        document.querySelectorAll('#emotion-pills .pill').forEach(p => p.classList.remove('selected'));
+        document.getElementById('what-worked').value = '';
+        document.getElementById('what-didnt').value = '';
+        document.getElementById('note-input').value = '';
+        formState.what_worked = '';
+        formState.what_didnt = '';
+        formState.note = '';
+        formState.emotional_state = null;
+        formState.review_type = 'session';
+        // Reload list
+        loadReviews(currentFilter);
+      } catch (err) {
+        formStatus.textContent = 'Something went wrong. Try again.';
+        formStatus.className = 'form-status err';
+      } finally {
+        btnSubmit.disabled = false;
+      }
+    });
+
+    // ── FILTER ─────────────────────────────────────────────────────
+    let currentFilter = 'all';
+    let allReviews = [];
+
+    document.getElementById('filter-row').addEventListener('click', e => {
+      const pill = e.target.closest('.filter-pill');
+      if (!pill) return;
+      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      currentFilter = pill.dataset.filter;
+      renderReviews(allReviews, currentFilter);
+    });
+
+    // ── LOAD REVIEWS ───────────────────────────────────────────────
+    async function loadReviews(filter = 'all') {
+      const list = document.getElementById('reviews-list');
+      list.innerHTML = '<div class="loading-text">Loading reviews...</div>';
+      try {
+        const url = filter === 'all' ? '/api/reviews' : `/api/reviews?type=${filter}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
+        allReviews = Array.isArray(data) ? data : (data.reviews || []);
+        renderReviews(allReviews, currentFilter);
+      } catch (err) {
+        list.innerHTML = '<div class="loading-text">Could not load reviews.</div>';
+      }
+    }
+
+    function renderReviews(reviews, filter) {
+      const list = document.getElementById('reviews-list');
+      const filtered = filter === 'all' ? reviews : reviews.filter(r => r.review_type === filter);
+
+      if (!filtered.length) {
+        list.innerHTML = '<div class="empty-state">No reviews yet. Start with today\'s session.</div>';
+        return;
+      }
+
+      list.innerHTML = filtered.map(r => {
+        const dateStr = relativeDate(r.created_at || r.date);
+        const scoreWord = scoreToWord(r.discipline_score);
+        const emotion = r.emotional_state ? escHtml(capitalize(r.emotional_state)) : '';
+        const rulesText = r.rule_followed === true ? 'Yes' : r.rule_followed === false ? 'No' : '—';
+        const workedHtml = r.what_worked
+          ? `<div class="review-worked">${escHtml(r.what_worked)}</div>`
+          : '';
+        const didntHtml = r.what_didnt
+          ? `<div class="review-didnt">${escHtml(r.what_didnt)}</div>`
+          : '';
+
+        return `
+          <div class="review-item">
+            <div class="review-top">
+              <div class="review-meta-left">
+                <span class="review-date">${escHtml(dateStr)}</span>
+                <span class="review-type-badge">${escHtml(r.review_type || 'session')}</span>
+              </div>
+              <div class="review-meta-right">
+                <span class="review-discipline-word">${escHtml(scoreWord)}</span>
+                ${emotion ? `<span class="review-emotion">${emotion}</span>` : ''}
+              </div>
+            </div>
+            <div class="review-bottom">
+              <div class="review-rules">Rules followed: <span>${escHtml(rulesText)}</span></div>
+              ${workedHtml}
+              ${didntHtml}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function capitalize(str) {
+      if (!str) return '';
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    // ── INIT ───────────────────────────────────────────────────────
+    async function init() {
+      const res = await fetch('/api/profile');
+      if (!res.ok) { window.location.href = '/auth.html'; return; }
+      const data = await res.json();
+      const profile = data.profile || data;
+
+      // Set accent color based on mentor
+      if (profile.mentor === 'ashley') {
+        document.documentElement.style.setProperty('--accent', '#5EA68A');
+        document.documentElement.style.setProperty('--accent-dim', 'rgba(94,166,138,0.4)');
+      }
+
+      await loadReviews('all');
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
