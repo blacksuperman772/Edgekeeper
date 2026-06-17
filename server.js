@@ -364,6 +364,8 @@ app.get('/network.html',      requireAuthPage, serveInjectedHtml(path.join(__dir
 app.get('/network',           requireAuthPage, serveInjectedHtml(path.join(__dirname, 'network.html')));
 app.get('/research.html',     (req, res) => res.sendFile(path.join(__dirname, 'research.html')));
 app.get('/research',          (req, res) => res.sendFile(path.join(__dirname, 'research.html')));
+app.get('/paths.html',        (req, res) => res.sendFile(path.join(__dirname, 'paths.html')));
+app.get('/paths',             (req, res) => res.sendFile(path.join(__dirname, 'paths.html')));
 
 // ── Admin dashboard (admin only) ──────────────────────────────────────────────
 app.get('/admin.html', requireAuthPage, (req, res, next) => {

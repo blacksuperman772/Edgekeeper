@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Academy — EdgeKeeper</title>
-  <meta name="description" content="The EdgeKeeper Academy. Mentorship-led education for traders at every stage. Not a course. A guided development program." />
+  <meta name="description" content="The EdgeKeeper Academy. Six tracks. Fifty-one modules. From your first trade to full performance." />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -29,6 +29,13 @@
       --mono:          'Space Mono', monospace;
       --serif:         'Cormorant Garamond', Georgia, serif;
       --sans:          'Space Grotesk', 'Manrope', sans-serif;
+
+      --track-1: rgba(100,160,255,0.6);
+      --track-2: rgba(150,220,180,0.6);
+      --track-3: rgba(239,68,68,0.5);
+      --track-4: rgba(201,168,92,0.6);
+      --track-5: rgba(201,168,92,0.9);
+      --track-6: rgba(255,255,255,0.4);
     }
 
     html { scroll-behavior: smooth; font-size: 16px; }
@@ -156,34 +163,61 @@
     }
     @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
 
-    /* ── SECTION SHARED ── */
-    .program-section {
-      padding: 100px 60px;
+    /* ── TRACK SECTIONS ── */
+    .tracks-wrapper {
       max-width: 900px;
       margin: 0 auto;
+      padding: 0 60px;
     }
-    .program-label {
-      font-family: var(--mono); font-size: 0.58rem;
-      letter-spacing: 0.32em; text-transform: uppercase;
-      color: var(--gold-dim); margin-bottom: 16px;
-      display: flex; align-items: center; gap: 16px;
+
+    .track-section {
+      margin-bottom: 80px;
+      padding-bottom: 60px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
     }
-    .program-label::before {
-      content: ''; width: 28px; height: 1px;
-      background: var(--gold-dim); flex-shrink: 0;
+    .track-section:last-child {
+      border-bottom: none;
     }
-    .program-name {
+
+    .track-header {
+      margin-bottom: 32px;
+      padding-top: 80px;
+    }
+    .track-number {
+      display: block;
+      font-family: var(--mono);
+      font-size: 11px; letter-spacing: 0.1em;
+      text-transform: uppercase; opacity: 0.35; font-weight: 400;
+      margin-bottom: 8px;
+    }
+    .track-title {
       font-family: var(--serif);
-      font-size: clamp(2.2rem, 4vw, 3.5rem);
+      font-size: clamp(2rem, 3.5vw, 3rem);
       font-weight: 300; line-height: 1.15;
       color: rgba(255,255,255,0.88);
-      margin-bottom: 20px;
+      margin: 8px 0 12px;
     }
-    .program-desc {
-      font-family: var(--sans); font-size: 0.85rem;
-      color: var(--text-secondary); line-height: 1.85;
-      max-width: 560px; margin-bottom: 56px;
+    .track-desc {
+      font-family: var(--sans);
+      font-size: 0.875rem; opacity: 0.45;
+      max-width: 580px; line-height: 1.6;
+      margin-bottom: 8px;
     }
+    .track-count {
+      display: block;
+      font-family: var(--mono);
+      font-size: 11px; opacity: 0.25;
+      letter-spacing: 0.08em;
+      margin-top: 4px;
+    }
+
+    /* Track accent bars */
+    .track-section[data-track="1"] .track-title { border-left: 2px solid var(--track-1); padding-left: 16px; }
+    .track-section[data-track="2"] .track-title { border-left: 2px solid var(--track-2); padding-left: 16px; }
+    .track-section[data-track="3"] .track-title { border-left: 2px solid var(--track-3); padding-left: 16px; }
+    .track-section[data-track="4"] .track-title { border-left: 2px solid var(--track-4); padding-left: 16px; }
+    .track-section[data-track="5"] .track-title { border-left: 2px solid var(--track-5); padding-left: 16px; }
+    .track-section[data-track="6"] .track-title { border-left: 2px solid var(--track-6); padding-left: 16px; }
 
     /* ── MODULE ROWS ── */
     .module-list {
@@ -193,52 +227,78 @@
       border-top: 1px solid var(--border);
       padding: 20px 0;
       display: grid;
-      grid-template-columns: 36px 1fr 80px auto;
+      grid-template-columns: 36px 1fr 100px auto;
       align-items: center;
       gap: 24px;
       transition: opacity .2s;
     }
     .module-row:last-child { border-bottom: 1px solid var(--border); }
+    .module-row.locked {
+      opacity: 0.28;
+      pointer-events: none;
+    }
     .module-num {
       font-family: var(--mono); font-size: 0.58rem;
       color: var(--text-dim); letter-spacing: 0.06em;
       flex-shrink: 0;
+      min-width: 28px;
     }
-    .module-name {
+    .module-title {
       font-family: var(--sans); font-size: 0.9rem;
       color: rgba(255,255,255,0.75); line-height: 1.5;
       display: flex; align-items: center; gap: 10px;
     }
-    .module-name::before {
+    .module-title::before {
       content: '';
       width: 4px; height: 4px; border-radius: 50%;
       background: var(--gold);
       opacity: 0; flex-shrink: 0;
       transition: opacity .3s;
     }
-    .module-row.started .module-name::before {
+    .module-row.started .module-title::before {
       opacity: 1;
     }
-    .module-mentor {
-      font-family: var(--mono); font-size: 0.56rem;
-      letter-spacing: 0.12em; text-transform: uppercase;
+    .module-row.completed .module-title::before {
+      background: var(--green-bright);
+      opacity: 1;
     }
-    .module-mentor.mike  { color: var(--gold-dim); }
-    .module-mentor.ashley { color: rgba(74,222,128,0.45); }
-    .module-begin {
+    .module-status {
+      font-family: var(--mono); font-size: 0.52rem;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .module-status.is-started { color: var(--gold-dim); }
+    .module-status.is-completed { color: rgba(74,222,128,0.5); }
+
+    .module-link {
       font-family: var(--mono); font-size: 0.6rem;
       letter-spacing: 0.15em; text-transform: uppercase;
-      text-decoration: none;
+      text-decoration: none; color: var(--gold);
+      opacity: 0.35;
       transition: opacity .2s;
       white-space: nowrap;
     }
-    .module-row:hover .module-begin { opacity: 0.7; }
-    .module-begin.mike   { color: var(--gold); }
-    .module-begin.ashley { color: var(--green-bright); }
+    .module-row:hover .module-link { opacity: 0.7; }
 
-    /* ── GATE BANNER ── */
+    /* Track-colored begin links */
+    .track-section[data-track="1"] .module-link { color: rgba(100,160,255,0.9); }
+    .track-section[data-track="2"] .module-link { color: rgba(150,220,180,0.9); }
+    .track-section[data-track="3"] .module-link { color: rgba(239,68,68,0.8); }
+    .track-section[data-track="4"] .module-link { color: var(--gold); }
+    .track-section[data-track="5"] .module-link { color: var(--gold); }
+    .track-section[data-track="6"] .module-link { color: rgba(255,255,255,0.7); }
+
+    /* ── TRACK GATE NOTICE ── */
+    .track-gate {
+      font-family: var(--mono);
+      font-size: 12px; opacity: 0.4;
+      padding: 8px 0; margin-bottom: 16px;
+      letter-spacing: 0.08em;
+    }
+
+    /* ── GATE DIVIDER ── */
     .gate-banner {
-      padding: 40px 60px;
+      padding: 32px 60px;
       max-width: 900px; margin: 0 auto;
       text-align: center;
       display: flex; align-items: center; justify-content: center; gap: 16px;
@@ -317,7 +377,8 @@
       nav { padding: 0 24px; }
       .nav-links { display: none; }
       #hero { padding: 100px 24px 64px; }
-      .program-section { padding: 72px 24px; }
+      .tracks-wrapper { padding: 0 24px; }
+      .track-header { padding-top: 60px; }
       .gate-banner { padding: 32px 24px; }
       .module-row {
         grid-template-columns: 28px 1fr;
@@ -325,8 +386,8 @@
         gap: 8px 12px;
         padding: 16px 0;
       }
-      .module-mentor { grid-column: 2; grid-row: 2; }
-      .module-begin { display: none; }
+      .module-status { grid-column: 2; grid-row: 2; }
+      .module-link { display: none; }
       #academy-cta { padding: 80px 24px; }
       footer { flex-direction: column; gap: 16px; text-align: center; padding: 36px 24px; }
       .footer-links { justify-content: center; }
@@ -358,129 +419,397 @@
 <section>
   <div id="hero">
     <p class="hero-tag">EdgeKeeper Academy</p>
-    <h1 class="hero-heading">The Academy.</h1>
-    <p class="hero-sub">Mentorship-led education for traders at every stage. Not a course. A guided development program.</p>
-    <p class="hero-note">Foundation Program must be completed before discussing live trading.</p>
+    <h1 class="hero-heading">The Curriculum.</h1>
+    <p class="hero-sub">Six tracks. Fifty-one modules. From your first trade to full performance.</p>
+    <p class="hero-note">Track 1 is open. Everything else is earned or unlocked by plan.</p>
   </div>
 </section>
 
-<!-- PROGRAM I — FOUNDATION -->
-<section class="program-section reveal">
-  <p class="program-label">Program I</p>
-  <h2 class="program-name">Foundation.</h2>
-  <p class="program-desc">For traders who are new or want to rebuild from the ground up. Mike won't allow you to discuss live trades until Foundation is complete.</p>
+<div class="tracks-wrapper">
 
-  <ul class="module-list" id="modules-foundation">
-    <li class="module-row" data-module="what_is_trading">
-      <span class="module-num">01</span>
-      <span class="module-name">What Is Trading?</span>
-      <span class="module-mentor mike">Mike</span>
-      <a href="/workspace.html?topic=what_is_trading" class="module-begin mike">Begin with Mike →</a>
-    </li>
-    <li class="module-row" data-module="risk_position_sizing">
-      <span class="module-num">02</span>
-      <span class="module-name">Risk and Position Sizing</span>
-      <span class="module-mentor mike">Mike</span>
-      <a href="/workspace.html?topic=risk_position_sizing" class="module-begin mike">Begin with Mike →</a>
-    </li>
-    <li class="module-row" data-module="market_structure">
-      <span class="module-num">03</span>
-      <span class="module-name">Market Structure</span>
-      <span class="module-mentor mike">Mike</span>
-      <a href="/workspace.html?topic=market_structure" class="module-begin mike">Begin with Mike →</a>
-    </li>
-    <li class="module-row" data-module="psychology_basics">
-      <span class="module-num">04</span>
-      <span class="module-name">Psychology Basics</span>
-      <span class="module-mentor ashley">Ashley</span>
-      <a href="/workspace.html?topic=psychology_basics" class="module-begin ashley">Begin with Ashley →</a>
-    </li>
-    <li class="module-row" data-module="trading_journal_setup">
-      <span class="module-num">05</span>
-      <span class="module-name">The Trading Journal</span>
-      <span class="module-mentor ashley">Ashley</span>
-      <a href="/workspace.html?topic=trading_journal_setup" class="module-begin ashley">Begin with Ashley →</a>
-    </li>
-  </ul>
-</section>
+  <!-- ── TRACK 1: MARKET FOUNDATIONS ── -->
+  <section class="track-section reveal" id="track-1" data-track="1">
+    <div class="track-header">
+      <span class="track-number">Track 1 &mdash; Beginner</span>
+      <h2 class="track-title">Market Foundations</h2>
+      <p class="track-desc">Before you place a single trade, understand the world you're entering.</p>
+      <span class="track-count">10 Modules &mdash; Always Open</span>
+    </div>
+    <ul class="module-list">
+      <li class="module-row reveal" data-module="what_are_markets">
+        <span class="module-num">01</span>
+        <span class="module-title">What Markets Are and Why They Exist</span>
+        <span class="module-status" id="status_what_are_markets"></span>
+        <a href="/workspace.html?topic=what_are_markets" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="asset_classes">
+        <span class="module-num">02</span>
+        <span class="module-title">Asset Classes: Stocks, Forex, Crypto, Futures, Options</span>
+        <span class="module-status" id="status_asset_classes"></span>
+        <a href="/workspace.html?topic=asset_classes" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="how_orders_work">
+        <span class="module-num">03</span>
+        <span class="module-title">How Orders Work: Market, Limit, Stop-Loss, Take-Profit</span>
+        <span class="module-status" id="status_how_orders_work"></span>
+        <a href="/workspace.html?topic=how_orders_work" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="reading_a_chart">
+        <span class="module-num">04</span>
+        <span class="module-title">Reading Your First Price Chart</span>
+        <span class="module-status" id="status_reading_a_chart"></span>
+        <a href="/workspace.html?topic=reading_a_chart" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="candlestick_basics">
+        <span class="module-num">05</span>
+        <span class="module-title">Understanding Candlesticks</span>
+        <span class="module-status" id="status_candlestick_basics"></span>
+        <a href="/workspace.html?topic=candlestick_basics" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="market_sessions">
+        <span class="module-num">06</span>
+        <span class="module-title">Global Market Sessions and Timing</span>
+        <span class="module-status" id="status_market_sessions"></span>
+        <a href="/workspace.html?topic=market_sessions" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="market_participants">
+        <span class="module-num">07</span>
+        <span class="module-title">Who Actually Moves the Market</span>
+        <span class="module-status" id="status_market_participants"></span>
+        <a href="/workspace.html?topic=market_participants" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="paper_trading">
+        <span class="module-num">08</span>
+        <span class="module-title">Your First Simulated Trade</span>
+        <span class="module-status" id="status_paper_trading"></span>
+        <a href="/workspace.html?topic=paper_trading" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="choosing_a_broker">
+        <span class="module-num">09</span>
+        <span class="module-title">Choosing a Broker: What to Look For</span>
+        <span class="module-status" id="status_choosing_a_broker"></span>
+        <a href="/workspace.html?topic=choosing_a_broker" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="what_risk_means">
+        <span class="module-num">10</span>
+        <span class="module-title">What Trading Risk Actually Means</span>
+        <span class="module-status" id="status_what_risk_means"></span>
+        <a href="/workspace.html?topic=what_risk_means" class="module-link">Begin &rarr;</a>
+      </li>
+    </ul>
+  </section>
 
-<!-- GATE BANNER -->
-<div class="gate-banner reveal">
-  <span class="gate-banner-text">You must complete Foundation before Execution modules unlock.</span>
-</div>
+  <!-- ── TRACK 2: TECHNICAL ANALYSIS ── -->
+  <section class="track-section reveal" id="track-2" data-track="2">
+    <div class="track-header">
+      <span class="track-number">Track 2 &mdash; Beginner-Intermediate</span>
+      <h2 class="track-title">Technical Analysis</h2>
+      <p class="track-desc">Learn to read price action. Every pattern is a question the market is asking.</p>
+      <span class="track-count">9 Modules</span>
+    </div>
+    <p class="track-gate" id="gate-track-2">Unlock when you complete Track 1, or available on Starter+ plan.</p>
+    <ul class="module-list" id="modules-track-2">
+      <li class="module-row reveal" data-module="support_resistance">
+        <span class="module-num">01</span>
+        <span class="module-title">Support and Resistance: The Foundation of All Technical Analysis</span>
+        <span class="module-status" id="status_support_resistance"></span>
+        <a href="/workspace.html?topic=support_resistance" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="trend_identification">
+        <span class="module-num">02</span>
+        <span class="module-title">Identifying Trends: Higher Highs and Lower Lows</span>
+        <span class="module-status" id="status_trend_identification"></span>
+        <a href="/workspace.html?topic=trend_identification" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="moving_averages">
+        <span class="module-num">03</span>
+        <span class="module-title">Moving Averages: Smoothing Out the Noise</span>
+        <span class="module-status" id="status_moving_averages"></span>
+        <a href="/workspace.html?topic=moving_averages" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="volume_basics">
+        <span class="module-num">04</span>
+        <span class="module-title">Volume Analysis: What Price Alone Cannot Tell You</span>
+        <span class="module-status" id="status_volume_basics"></span>
+        <a href="/workspace.html?topic=volume_basics" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="rsi_macd">
+        <span class="module-num">05</span>
+        <span class="module-title">RSI and MACD: Momentum Indicators That Matter</span>
+        <span class="module-status" id="status_rsi_macd"></span>
+        <a href="/workspace.html?topic=rsi_macd" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="chart_patterns">
+        <span class="module-num">06</span>
+        <span class="module-title">Chart Patterns: Breakouts, Reversals, and Continuations</span>
+        <span class="module-status" id="status_chart_patterns"></span>
+        <a href="/workspace.html?topic=chart_patterns" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="multi_timeframe">
+        <span class="module-num">07</span>
+        <span class="module-title">Multi-Timeframe Analysis: The Big Picture and the Trade</span>
+        <span class="module-status" id="status_multi_timeframe"></span>
+        <a href="/workspace.html?topic=multi_timeframe" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="entry_exit_mechanics">
+        <span class="module-num">08</span>
+        <span class="module-title">Entry and Exit Mechanics: Getting In and Out Right</span>
+        <span class="module-status" id="status_entry_exit_mechanics"></span>
+        <a href="/workspace.html?topic=entry_exit_mechanics" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="setting_stops_targets">
+        <span class="module-num">09</span>
+        <span class="module-title">Setting Stop Losses and Price Targets</span>
+        <span class="module-status" id="status_setting_stops_targets"></span>
+        <a href="/workspace.html?topic=setting_stops_targets" class="module-link">Begin &rarr;</a>
+      </li>
+    </ul>
+  </section>
 
-<!-- PROGRAM II — EXECUTION -->
-<section class="program-section reveal">
-  <p class="program-label">Program II</p>
-  <h2 class="program-name">Execution.</h2>
-  <p class="program-desc">For traders who understand the basics and are building their process. The gap between knowing and doing is where most traders get stuck.</p>
+  <!-- ── TRACK 3: RISK MANAGEMENT ── -->
+  <section class="track-section reveal" id="track-3" data-track="3">
+    <div class="track-header">
+      <span class="track-number">Track 3 &mdash; All Levels &mdash; Critical</span>
+      <h2 class="track-title">Risk Management</h2>
+      <p class="track-desc">Risk management is not a strategy. It is the strategy. No exceptions.</p>
+      <span class="track-count">8 Modules &mdash; Open to All</span>
+    </div>
+    <ul class="module-list">
+      <li class="module-row reveal" data-module="position_sizing">
+        <span class="module-num">01</span>
+        <span class="module-title">Position Sizing: The Most Important Calculation in Trading</span>
+        <span class="module-status" id="status_position_sizing"></span>
+        <a href="/workspace.html?topic=position_sizing" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="one_percent_rule">
+        <span class="module-num">02</span>
+        <span class="module-title">The 1% Rule and Its Variations</span>
+        <span class="module-status" id="status_one_percent_rule"></span>
+        <a href="/workspace.html?topic=one_percent_rule" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="risk_reward_ratio">
+        <span class="module-num">03</span>
+        <span class="module-title">Risk-to-Reward: Why 2:1 Changes Everything</span>
+        <span class="module-status" id="status_risk_reward_ratio"></span>
+        <a href="/workspace.html?topic=risk_reward_ratio" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="daily_loss_limits">
+        <span class="module-num">04</span>
+        <span class="module-title">Daily and Weekly Loss Limits: When to Stop</span>
+        <span class="module-status" id="status_daily_loss_limits"></span>
+        <a href="/workspace.html?topic=daily_loss_limits" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="drawdown_management">
+        <span class="module-num">05</span>
+        <span class="module-title">Drawdown Management: Protecting the Account</span>
+        <span class="module-status" id="status_drawdown_management"></span>
+        <a href="/workspace.html?topic=drawdown_management" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="account_preservation">
+        <span class="module-num">06</span>
+        <span class="module-title">Account Preservation Over Account Growth</span>
+        <span class="module-status" id="status_account_preservation"></span>
+        <a href="/workspace.html?topic=account_preservation" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="compounding_principles">
+        <span class="module-num">07</span>
+        <span class="module-title">Compounding: How Small Edges Become Large Returns</span>
+        <span class="module-status" id="status_compounding_principles"></span>
+        <a href="/workspace.html?topic=compounding_principles" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="when_to_stop">
+        <span class="module-num">08</span>
+        <span class="module-title">When to Stop Trading and Walk Away</span>
+        <span class="module-status" id="status_when_to_stop"></span>
+        <a href="/workspace.html?topic=when_to_stop" class="module-link">Begin &rarr;</a>
+      </li>
+    </ul>
+  </section>
 
-  <ul class="module-list" id="modules-execution">
-    <li class="module-row" data-module="trading_plan">
-      <span class="module-num">06</span>
-      <span class="module-name">Building Your Trading Plan</span>
-      <span class="module-mentor mike">Mike</span>
-      <a href="/workspace.html?topic=trading_plan" class="module-begin mike">Begin with Mike →</a>
-    </li>
-    <li class="module-row" data-module="discipline_process">
-      <span class="module-num">07</span>
-      <span class="module-name">Discipline and Process</span>
-      <span class="module-mentor ashley">Ashley</span>
-      <a href="/workspace.html?topic=discipline_process" class="module-begin ashley">Begin with Ashley →</a>
-    </li>
-    <li class="module-row" data-module="trade_management">
-      <span class="module-num">08</span>
-      <span class="module-name">Trade Management</span>
-      <span class="module-mentor mike">Mike</span>
-      <a href="/workspace.html?topic=trade_management" class="module-begin mike">Begin with Mike →</a>
-    </li>
-    <li class="module-row" data-module="weekly_review">
-      <span class="module-num">09</span>
-      <span class="module-name">The Weekly Review</span>
-      <span class="module-mentor mike">Mike</span>
-      <a href="/workspace.html?topic=weekly_review" class="module-begin mike">Begin with Mike →</a>
-    </li>
-  </ul>
-</section>
+  <!-- ── TRACK 4: STRATEGY DEVELOPMENT ── -->
+  <section class="track-section reveal" id="track-4" data-track="4">
+    <div class="track-header">
+      <span class="track-number">Track 4 &mdash; Intermediate</span>
+      <h2 class="track-title">Strategy Development</h2>
+      <p class="track-desc">A strategy without an edge is a plan to lose slowly. Build yours correctly.</p>
+      <span class="track-count">6 Modules</span>
+    </div>
+    <p class="track-gate" id="gate-track-4">Unlock when you complete Track 2, or available on Practitioner+ plan.</p>
+    <ul class="module-list" id="modules-track-4">
+      <li class="module-row reveal" data-module="what_is_edge">
+        <span class="module-num">01</span>
+        <span class="module-title">What Is a Trading Edge and How You Find Yours</span>
+        <span class="module-status" id="status_what_is_edge"></span>
+        <a href="/workspace.html?topic=what_is_edge" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="backtesting_basics">
+        <span class="module-num">02</span>
+        <span class="module-title">Backtesting: Testing Strategy Before Real Capital</span>
+        <span class="module-status" id="status_backtesting_basics"></span>
+        <a href="/workspace.html?topic=backtesting_basics" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="journaling_for_refinement">
+        <span class="module-num">03</span>
+        <span class="module-title">The Trading Journal as a Research Tool</span>
+        <span class="module-status" id="status_journaling_for_refinement"></span>
+        <a href="/workspace.html?topic=journaling_for_refinement" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="building_your_rulebook">
+        <span class="module-num">04</span>
+        <span class="module-title">Building Your Trading Rulebook</span>
+        <span class="module-status" id="status_building_your_rulebook"></span>
+        <a href="/workspace.html?topic=building_your_rulebook" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="mechanical_vs_discretionary">
+        <span class="module-num">05</span>
+        <span class="module-title">Mechanical vs Discretionary: Which Is Right for You</span>
+        <span class="module-status" id="status_mechanical_vs_discretionary"></span>
+        <a href="/workspace.html?topic=mechanical_vs_discretionary" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="your_trading_system">
+        <span class="module-num">06</span>
+        <span class="module-title">Building Your Complete Trading System</span>
+        <span class="module-status" id="status_your_trading_system"></span>
+        <a href="/workspace.html?topic=your_trading_system" class="module-link">Begin &rarr;</a>
+      </li>
+    </ul>
+  </section>
 
-<!-- GATE BANNER -->
-<div class="gate-banner reveal">
-  <span class="gate-banner-text">Advanced work. Ashley takes the lead.</span>
-</div>
+  <!-- ── TRACK 5: TRADING PSYCHOLOGY ── -->
+  <section class="track-section reveal" id="track-5" data-track="5">
+    <div class="track-header">
+      <span class="track-number">Track 5 &mdash; Intermediate-Advanced</span>
+      <h2 class="track-title">Trading Psychology</h2>
+      <p class="track-desc">This is where most traders think they need to start. It's actually where the work deepens.</p>
+      <span class="track-count">13 Modules</span>
+    </div>
+    <p class="track-gate" id="gate-track-5">Available to Developing+ members, or after 30 days of membership.</p>
+    <ul class="module-list" id="modules-track-5">
+      <li class="module-row reveal" data-module="what_is_trading">
+        <span class="module-num">01</span>
+        <span class="module-title">What Is Trading?</span>
+        <span class="module-status" id="status_what_is_trading"></span>
+        <a href="/workspace.html?topic=what_is_trading" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="risk_position_sizing">
+        <span class="module-num">02</span>
+        <span class="module-title">Risk and Position Sizing</span>
+        <span class="module-status" id="status_risk_position_sizing"></span>
+        <a href="/workspace.html?topic=risk_position_sizing" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="market_structure">
+        <span class="module-num">03</span>
+        <span class="module-title">Market Structure</span>
+        <span class="module-status" id="status_market_structure"></span>
+        <a href="/workspace.html?topic=market_structure" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="psychology_basics">
+        <span class="module-num">04</span>
+        <span class="module-title">Psychology Basics</span>
+        <span class="module-status" id="status_psychology_basics"></span>
+        <a href="/workspace.html?topic=psychology_basics" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="trading_journal_setup">
+        <span class="module-num">05</span>
+        <span class="module-title">The Trading Journal</span>
+        <span class="module-status" id="status_trading_journal_setup"></span>
+        <a href="/workspace.html?topic=trading_journal_setup" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="trading_plan">
+        <span class="module-num">06</span>
+        <span class="module-title">Building Your Trading Plan</span>
+        <span class="module-status" id="status_trading_plan"></span>
+        <a href="/workspace.html?topic=trading_plan" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="discipline_process">
+        <span class="module-num">07</span>
+        <span class="module-title">Discipline and Process</span>
+        <span class="module-status" id="status_discipline_process"></span>
+        <a href="/workspace.html?topic=discipline_process" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="trade_management">
+        <span class="module-num">08</span>
+        <span class="module-title">Trade Management</span>
+        <span class="module-status" id="status_trade_management"></span>
+        <a href="/workspace.html?topic=trade_management" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="weekly_review">
+        <span class="module-num">09</span>
+        <span class="module-title">The Weekly Review</span>
+        <span class="module-status" id="status_weekly_review"></span>
+        <a href="/workspace.html?topic=weekly_review" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="advanced_psychology">
+        <span class="module-num">10</span>
+        <span class="module-title">Advanced Psychology</span>
+        <span class="module-status" id="status_advanced_psychology"></span>
+        <a href="/workspace.html?topic=advanced_psychology" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="consistency">
+        <span class="module-num">11</span>
+        <span class="module-title">Consistency and Process</span>
+        <span class="module-status" id="status_consistency"></span>
+        <a href="/workspace.html?topic=consistency" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="drawdown_recovery">
+        <span class="module-num">12</span>
+        <span class="module-title">Drawdown Recovery</span>
+        <span class="module-status" id="status_drawdown_recovery"></span>
+        <a href="/workspace.html?topic=drawdown_recovery" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="review_system">
+        <span class="module-num">13</span>
+        <span class="module-title">The Review System</span>
+        <span class="module-status" id="status_review_system"></span>
+        <a href="/workspace.html?topic=review_system" class="module-link">Begin &rarr;</a>
+      </li>
+    </ul>
+  </section>
 
-<!-- PROGRAM III — PERFORMANCE -->
-<section class="program-section reveal">
-  <p class="program-label">Program III</p>
-  <h2 class="program-name">Performance.</h2>
-  <p class="program-desc">For traders who trade consistently and want to go deeper. This is advanced work. Ashley takes the lead here.</p>
+  <!-- ── TRACK 6: PERFORMANCE OS ── -->
+  <section class="track-section reveal" id="track-6" data-track="6">
+    <div class="track-header">
+      <span class="track-number">Track 6 &mdash; Advanced</span>
+      <h2 class="track-title">Performance OS</h2>
+      <p class="track-desc">For traders who have the edge. Now optimize the operator.</p>
+      <span class="track-count">5 Modules &mdash; Practitioner+ Plan</span>
+    </div>
+    <p class="track-gate" id="gate-track-6">Available on Practitioner+ plan.</p>
+    <ul class="module-list" id="modules-track-6">
+      <li class="module-row reveal" data-module="behavioral_analytics">
+        <span class="module-num">01</span>
+        <span class="module-title">Behavioral Analytics: Reading Your Own Data</span>
+        <span class="module-status" id="status_behavioral_analytics"></span>
+        <a href="/workspace.html?topic=behavioral_analytics" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="pattern_recognition_self">
+        <span class="module-num">02</span>
+        <span class="module-title">Identifying Your Own Behavioral Patterns</span>
+        <span class="module-status" id="status_pattern_recognition_self"></span>
+        <a href="/workspace.html?topic=pattern_recognition_self" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="scaling_responsibly">
+        <span class="module-num">03</span>
+        <span class="module-title">Scaling Up: When, How, and How Much</span>
+        <span class="module-status" id="status_scaling_responsibly"></span>
+        <a href="/workspace.html?topic=scaling_responsibly" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="sustained_performance">
+        <span class="module-num">04</span>
+        <span class="module-title">Sustaining High Performance Over Time</span>
+        <span class="module-status" id="status_sustained_performance"></span>
+        <a href="/workspace.html?topic=sustained_performance" class="module-link">Begin &rarr;</a>
+      </li>
+      <li class="module-row reveal" data-module="mentor_candidate">
+        <span class="module-num">05</span>
+        <span class="module-title">The Mentor-Candidate Transition</span>
+        <span class="module-status" id="status_mentor_candidate"></span>
+        <a href="/workspace.html?topic=mentor_candidate" class="module-link">Begin &rarr;</a>
+      </li>
+    </ul>
+  </section>
 
-  <ul class="module-list" id="modules-performance">
-    <li class="module-row" data-module="advanced_psychology">
-      <span class="module-num">10</span>
-      <span class="module-name">Advanced Psychology</span>
-      <span class="module-mentor ashley">Ashley</span>
-      <a href="/workspace.html?topic=advanced_psychology" class="module-begin ashley">Begin with Ashley →</a>
-    </li>
-    <li class="module-row" data-module="consistency">
-      <span class="module-num">11</span>
-      <span class="module-name">Consistency and Process</span>
-      <span class="module-mentor ashley">Ashley</span>
-      <a href="/workspace.html?topic=consistency" class="module-begin ashley">Begin with Ashley →</a>
-    </li>
-    <li class="module-row" data-module="drawdown_recovery">
-      <span class="module-num">12</span>
-      <span class="module-name">Drawdown Recovery</span>
-      <span class="module-mentor ashley">Ashley</span>
-      <a href="/workspace.html?topic=drawdown_recovery" class="module-begin ashley">Begin with Ashley →</a>
-    </li>
-    <li class="module-row" data-module="review_system">
-      <span class="module-num">13</span>
-      <span class="module-name">The Review System</span>
-      <span class="module-mentor mike">Mike</span>
-      <a href="/workspace.html?topic=review_system" class="module-begin mike">Begin with Mike →</a>
-    </li>
-  </ul>
-</section>
+</div><!-- /tracks-wrapper -->
 
 <!-- CTA -->
 <section id="academy-cta">
@@ -488,8 +817,8 @@
     <p class="cta-eyebrow reveal">EdgeKeeper Academy</p>
     <h2 class="cta-headline reveal reveal-delay-1">Your mentor is waiting.</h2>
     <div class="cta-buttons reveal reveal-delay-2">
-      <a href="/workspace.html?mentor=mike" class="cta-link mike">Begin with Mike →</a>
-      <a href="/workspace.html?mentor=ashley" class="cta-link ashley">Begin with Ashley →</a>
+      <a href="/workspace.html?mentor=mike" class="cta-link mike">Begin with Mike &rarr;</a>
+      <a href="/workspace.html?mentor=ashley" class="cta-link ashley">Begin with Ashley &rarr;</a>
     </div>
   </div>
 </section>
@@ -497,7 +826,7 @@
 <!-- FOOTER -->
 <footer>
   <div class="footer-logo">Edge<span>K</span>eeper</div>
-  <p class="footer-copy">© 2025 EdgeKeeper. A Private Mentorship Institution.</p>
+  <p class="footer-copy">&copy; 2025 EdgeKeeper. A Private Mentorship Institution.</p>
   <ul class="footer-links">
     <li><a href="/edgekeeper.html">Home</a></li>
     <li><a href="/academy">Academy</a></li>
@@ -530,21 +859,118 @@ const observer = new IntersectionObserver(entries => {
 }, { threshold: 0.10 });
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-// ── ACADEMY PROGRESS (localStorage) ─────────────────────────────────────
-const moduleKeys = [
-  'what_is_trading', 'risk_position_sizing', 'market_structure',
-  'psychology_basics', 'trading_journal_setup',
-  'trading_plan', 'discipline_process', 'trade_management', 'weekly_review',
-  'advanced_psychology', 'consistency', 'drawdown_recovery', 'review_system',
+// ── ALL MODULE KEYS ─────────────────────────────────────────────────────
+const allModuleKeys = [
+  // Track 1 — Market Foundations
+  'what_are_markets', 'asset_classes', 'how_orders_work', 'reading_a_chart',
+  'candlestick_basics', 'market_sessions', 'market_participants', 'paper_trading',
+  'choosing_a_broker', 'what_risk_means',
+  // Track 2 — Technical Analysis
+  'support_resistance', 'trend_identification', 'moving_averages', 'volume_basics',
+  'rsi_macd', 'chart_patterns', 'multi_timeframe', 'entry_exit_mechanics', 'setting_stops_targets',
+  // Track 3 — Risk Management
+  'position_sizing', 'one_percent_rule', 'risk_reward_ratio', 'daily_loss_limits',
+  'drawdown_management', 'account_preservation', 'compounding_principles', 'when_to_stop',
+  // Track 4 — Strategy Development
+  'what_is_edge', 'backtesting_basics', 'journaling_for_refinement', 'building_your_rulebook',
+  'mechanical_vs_discretionary', 'your_trading_system',
+  // Track 5 — Trading Psychology (original 13)
+  'what_is_trading', 'risk_position_sizing', 'market_structure', 'psychology_basics',
+  'trading_journal_setup', 'trading_plan', 'discipline_process', 'trade_management',
+  'weekly_review', 'advanced_psychology', 'consistency', 'drawdown_recovery', 'review_system',
+  // Track 6 — Performance OS
+  'behavioral_analytics', 'pattern_recognition_self', 'scaling_responsibly',
+  'sustained_performance', 'mentor_candidate',
 ];
 
-moduleKeys.forEach(key => {
-  const started = localStorage.getItem('ek_academy_' + key + '_started');
-  if (started) {
-    const row = document.querySelector('[data-module="' + key + '"]');
-    if (row) row.classList.add('started');
+// ── ACADEMY PROGRESS (localStorage) ─────────────────────────────────────
+function updateModuleStatus(key) {
+  const row = document.querySelector('[data-module="' + key + '"]');
+  if (!row) return;
+  const started   = localStorage.getItem('ek_academy_' + key + '_started');
+  const completed = localStorage.getItem('ek_academy_' + key + '_completed');
+  const statusEl  = document.getElementById('status_' + key);
+
+  if (completed) {
+    row.classList.add('started', 'completed');
+    if (statusEl) { statusEl.textContent = 'Completed'; statusEl.className = 'module-status is-completed'; }
+  } else if (started) {
+    row.classList.add('started');
+    if (statusEl) { statusEl.textContent = 'Started'; statusEl.className = 'module-status is-started'; }
   }
+}
+
+allModuleKeys.forEach(key => updateModuleStatus(key));
+
+// ── TRACK GATE LOGIC ─────────────────────────────────────────────────────
+// Track 1 keys for completion check
+const track1Keys = [
+  'what_are_markets','asset_classes','how_orders_work','reading_a_chart',
+  'candlestick_basics','market_sessions','market_participants','paper_trading',
+  'choosing_a_broker','what_risk_means'
+];
+// Track 2 keys for completion check
+const track2Keys = [
+  'support_resistance','trend_identification','moving_averages','volume_basics',
+  'rsi_macd','chart_patterns','multi_timeframe','entry_exit_mechanics','setting_stops_targets'
+];
+
+function isTrackComplete(keys) {
+  return keys.every(k =>
+    localStorage.getItem('ek_academy_' + k + '_started') ||
+    localStorage.getItem('ek_academy_' + k + '_completed')
+  );
+}
+
+function applyGates() {
+  // Track 2: gate if Track 1 not complete
+  const track2Unlocked = isTrackComplete(track1Keys);
+  if (!track2Unlocked) {
+    document.querySelectorAll('#modules-track-2 .module-row').forEach(r => r.classList.add('locked'));
+  } else {
+    document.getElementById('gate-track-2').style.display = 'none';
+  }
+
+  // Track 3: always open — no gate applied
+  // (gate notice text already says "Open to All")
+
+  // Track 4: gate if Track 2 not complete
+  const track4Unlocked = isTrackComplete(track2Keys);
+  if (!track4Unlocked) {
+    document.querySelectorAll('#modules-track-4 .module-row').forEach(r => r.classList.add('locked'));
+  } else {
+    document.getElementById('gate-track-4').style.display = 'none';
+  }
+
+  // Track 5 and 6 gates — plan-based, left to server-side auth in production.
+  // For now, show gate text but don't lock rows (demo/preview mode).
+}
+
+applyGates();
+
+// ── MODULE STARTED on click ───────────────────────────────────────────────
+document.querySelectorAll('.module-link').forEach(link => {
+  link.addEventListener('click', () => {
+    const row = link.closest('.module-row');
+    if (!row) return;
+    const key = row.getAttribute('data-module');
+    if (key && !localStorage.getItem('ek_academy_' + key + '_started')) {
+      localStorage.setItem('ek_academy_' + key + '_started', Date.now());
+      updateModuleStatus(key);
+    }
+  });
 });
+
+// ── ?topic= URL PARAM: highlight active module ────────────────────────────
+const params = new URLSearchParams(window.location.search);
+const activeTopic = params.get('topic');
+if (activeTopic) {
+  const activeRow = document.querySelector('[data-module="' + activeTopic + '"]');
+  if (activeRow) {
+    activeRow.style.opacity = '1';
+    activeRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
 </script>
 </body>
 </html>

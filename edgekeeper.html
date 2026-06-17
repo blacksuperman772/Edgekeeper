@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EdgeKeeper — Protect Your Psychology Before Your Capital</title>
-  <meta name="description" content="EdgeKeeper — A Trader Development Institution. From first trade to consistent discipline, with Mike and Ashley present through the entire journey." />
-  <meta name="keywords" content="trading psychology, trading mentor, AI trading coach, performance psychology, prop firm, trading discipline" />
-  <meta property="og:title" content="EdgeKeeper — Private Mentorship for Traders" />
-  <meta property="og:description" content="A Trader Development Institution. Not a platform. Not a course. Mike and Ashley build the trader, not just the trade." />
+  <title>EdgeKeeper — Where Traders Are Made</title>
+  <meta name="description" content="EdgeKeeper is the institution where traders are made. From complete beginner to peak performance — Foundation, Development, and Performance tracks for every stage of your trading journey." />
+  <meta name="keywords" content="trading psychology, trading mentor, AI trading coach, performance psychology, prop firm, trading discipline, learn to trade, trading education, trading for beginners, trading institution, trading courses" />
+  <meta property="og:title" content="EdgeKeeper — Where Traders Are Made" />
+  <meta property="og:description" content="EdgeKeeper is the institution where traders are made. From complete beginner to peak performance — Foundation, Development, and Performance tracks for every stage of your trading journey." />
   <meta property="og:type" content="website" />
   <meta property="og:image" content="/assets/hero-landing.png" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="EdgeKeeper — Private Mentorship for Traders" />
-  <meta name="twitter:description" content="Protect your psychology before your capital." />
+  <meta name="twitter:title" content="EdgeKeeper — Where Traders Are Made" />
+  <meta name="twitter:description" content="EdgeKeeper is the institution where traders are made. From complete beginner to peak performance — Foundation, Development, and Performance tracks for every stage of your trading journey." />
   <meta name="twitter:image" content="/assets/hero-landing.png" />
   <link rel="canonical" href="https://edgekeeper.io/" />
 
@@ -1169,6 +1169,91 @@
       .constitution-grid { grid-template-columns: 1fr; gap: 40px; }
     }
 
+    /* ── THREE PATHS ───────────────────────────────────────────── */
+    #three-paths {
+      padding: 140px 0;
+      background: var(--black);
+      border-top: 1px solid var(--border);
+    }
+    .paths-eyebrow {
+      text-align: center;
+      font-family: var(--serif);
+      font-size: 0.95rem;
+      font-style: italic;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+      margin-bottom: 72px;
+    }
+    .paths-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .path-col {
+      padding: 48px 52px;
+      border-right: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      flex-direction: column;
+    }
+    .path-col:last-child { border-right: none; }
+    .path-numeral {
+      font-family: var(--serif);
+      font-size: 0.62rem;
+      font-style: normal;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      margin-bottom: 16px;
+    }
+    .path-name {
+      font-family: var(--serif);
+      font-size: 2rem;
+      font-weight: 300;
+      color: var(--white);
+      line-height: 1.15;
+      margin-bottom: 20px;
+    }
+    .path-desc {
+      font-size: 0.84rem;
+      color: var(--muted);
+      line-height: 1.85;
+      flex: 1;
+      margin-bottom: 36px;
+    }
+    .path-cta {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      text-decoration: none;
+      border-bottom: 1px solid var(--gold-dim);
+      padding-bottom: 4px;
+      transition: color .3s, border-color .3s;
+      align-self: flex-start;
+    }
+    .path-cta:hover {
+      color: var(--gold);
+      border-color: var(--gold);
+    }
+    @media (max-width: 900px) {
+      .paths-grid { grid-template-columns: 1fr; }
+      .path-col {
+        border-right: none;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        padding: 36px 32px;
+      }
+      .path-col:last-child { border-bottom: none; }
+    }
+    @media (max-width: 600px) {
+      #three-paths { padding: 72px 0; }
+      .paths-eyebrow { margin-bottom: 48px; }
+      .path-col { padding: 28px 20px; }
+      .path-name { font-size: 1.6rem; }
+    }
+
     /* ── REVEAL ANIMATIONS ─────────────────────────────────────── */
     .reveal {
       opacity: 0;
@@ -1400,10 +1485,10 @@
   <div class="hero-content" style="z-index:3;">
     <p class="hero-eyebrow">A Trader Development Institution</p>
     <h1 class="hero-headline">
-      Protect your <em>psychology</em><br>before your capital.
+      Where traders<br>are made.
     </h1>
     <p class="hero-sub">
-      Not a platform. Not a course. A Trader Development Institution — where Mike and Ashley build the trader, not just the trade.
+      Whether you've never placed a trade or you've been at this for a decade, EdgeKeeper is the institution where your development begins — and never stops. Foundation. Development. Performance. Every stage, with a mentor who knows the difference.
     </p>
     <div class="hero-ctas">
       <a href="onboarding.html?mentor=mike" class="btn-mentor btn-mike">
@@ -1441,6 +1526,37 @@
     <span class="marquee-item">Execution Consistency</span>
   </div>
 </div>
+
+<!-- THREE PATHS -->
+<section id="three-paths">
+  <div class="section-inner">
+    <p class="paths-eyebrow reveal">Three points of entry.</p>
+    <div class="paths-grid">
+
+      <div class="path-col reveal">
+        <div class="path-numeral">I. Foundation</div>
+        <h2 class="path-name">Foundation</h2>
+        <p class="path-desc">For traders who are starting from scratch. You will learn what markets are, how they work, and how to trade them — before ever touching real capital.</p>
+        <a href="/onboarding.html?path=foundation" class="path-cta">Begin the Foundation Track</a>
+      </div>
+
+      <div class="path-col reveal reveal-delay-1">
+        <div class="path-numeral">II. Development</div>
+        <h2 class="path-name">Development</h2>
+        <p class="path-desc">For traders who have the knowledge but not the consistency. You will build structure around your edge, install the rules, and diagnose what's breaking down.</p>
+        <a href="/onboarding.html?path=development" class="path-cta">Begin the Development Track</a>
+      </div>
+
+      <div class="path-col reveal reveal-delay-2">
+        <div class="path-numeral">III. Performance</div>
+        <h2 class="path-name">Performance</h2>
+        <p class="path-desc">For experienced traders who want to go further. Advanced behavioral analysis, performance optimization, and the psychological OS that separates elite traders.</p>
+        <a href="/onboarding.html?path=performance" class="path-cta">Enter the Performance Track</a>
+      </div>
+
+    </div>
+  </div>
+</section>
 
 <!-- INSTITUTION -->
 <section id="institution">
@@ -1529,14 +1645,14 @@
       </div>
       <div>
         <div class="constitution-beliefs">
-          <div class="belief-line reveal">Consistency beats intensity.</div>
-          <div class="belief-line reveal reveal-delay-1">Process beats outcome.</div>
-          <div class="belief-line reveal reveal-delay-2">Risk management is the beginning, not the end.</div>
-          <div class="belief-line reveal reveal-delay-3">Self-awareness precedes improvement.</div>
-          <div class="belief-line reveal">Discipline can be trained, but not by knowing more.</div>
-          <div class="belief-line reveal reveal-delay-1">Failure is behavioral, not informational.</div>
-          <div class="belief-line reveal reveal-delay-2">Better predictions are not the point. A better decision-maker is.</div>
-          <div class="belief-line reveal reveal-delay-3">An institution that remembers you is more valuable than one that answers you.</div>
+          <div class="belief-line reveal">Every trader starts somewhere. Where you start does not determine where you finish.</div>
+          <div class="belief-line reveal reveal-delay-1">Knowledge without changed behavior is just information.</div>
+          <div class="belief-line reveal reveal-delay-2">The market does not reward effort. It rewards edge.</div>
+          <div class="belief-line reveal reveal-delay-3">Discipline is built, not born.</div>
+          <div class="belief-line reveal">Risk management is not a strategy. It is the strategy.</div>
+          <div class="belief-line reveal reveal-delay-1">Consistency before size. Always.</div>
+          <div class="belief-line reveal reveal-delay-2">Psychology is the final mile, not the starting line.</div>
+          <div class="belief-line reveal reveal-delay-3">The institution holds you accountable to the trader you said you wanted to become.</div>
         </div>
         <p class="constitution-closing reveal reveal-delay-2">These are not aspirations. They are the operating principles of every session, every intervention, every review.</p>
       </div>
@@ -2083,7 +2199,7 @@
 <!-- INVITATION -->
 <section id="invitation">
   <div class="section-inner">
-    <div class="inv-eyebrow reveal">EdgeKeeper — Private Membership</div>
+    <div class="inv-eyebrow reveal">EdgeKeeper — A Trader Development Institution</div>
     <h2 class="inv-headline reveal reveal-delay-1">
       Who do you become<br>when <em>pressure arrives?</em>
     </h2>
@@ -2109,7 +2225,7 @@
     <div class="divisions-header">
       <div class="section-label reveal" style="justify-content:center;">The Institution</div>
       <h2 class="divisions-headline reveal reveal-delay-1">Eight divisions. One purpose.</h2>
-      <p class="divisions-body reveal reveal-delay-2">EdgeKeeper is not built to give you information. It is built to change how you behave under pressure.</p>
+      <p class="divisions-body reveal reveal-delay-2">Eight divisions. One institution. Built to take a trader from first principles to peak performance — and hold them there.</p>
     </div>
     <div class="divisions-grid">
       <div class="division-item reveal">

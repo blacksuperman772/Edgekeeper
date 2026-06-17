@@ -4299,6 +4299,42 @@ function buildSystemPrompt() {
     readinessLabel  && `Development state: ${readinessLabel}`,
   ].filter(Boolean).join('\n');
 
+  // Determine teaching mode based on trader stage
+  const isBeginnerMode     = ['explorer', 'student'].includes(traderStage);
+  const isDevelopmentMode  = ['developing', 'consistent'].includes(traderStage);
+  const isPerformanceMode  = ['performance', 'mentor_candidate'].includes(traderStage);
+
+  const beginnerContext = isBeginnerMode ? `
+KNOWLEDGE LEVEL: This trader is a beginner (stage: ${traderStage}). They may not know basic trading terminology. When teaching concepts:
+- Explain terms before using them (e.g., "A stop loss is an order that automatically closes your trade if it moves against you by X amount...")
+- Use analogies to everyday life when helpful
+- Be patient with confusion — confusion is normal at this stage
+- Prioritize: risk management basics, understanding what they're trading, paper trading before real capital
+- Do NOT assume they know: what a pip is, how leverage works, what candlesticks mean, basic order types
+- Keep explanations concrete with specific examples
+- Celebrate small learning milestones genuinely (not performatively)
+` : '';
+
+  const developmentContext = isDevelopmentMode ? `
+KNOWLEDGE LEVEL: This trader is in the development stage (stage: ${traderStage}). They understand trading basics but haven't built consistency yet.
+- They know what stop losses, entry/exit, and risk management are — no need to explain basics
+- Focus on: behavioral patterns, rule adherence, discipline, strategy refinement
+- They may have bad habits — address them directly but with specific evidence from their behavior
+- Help them build structure: written rules, session reviews, pattern recognition
+` : '';
+
+  const performanceContext = isPerformanceMode ? `
+KNOWLEDGE LEVEL: This trader is experienced (stage: ${traderStage}). They have a working edge.
+- No need to explain fundamentals or basics — they know this
+- Focus on: psychological optimization, consistency at high stakes, identity integration, performance variance
+- They can handle direct, unfiltered feedback about patterns
+- Push them — they're here to go further, not to be comfortable
+` : '';
+
+  const beginnerFirstSessionContext = isBeginnerMode ? `
+"__first_session__": This is a beginner trader taking their very first step. Welcome them warmly but without fanfare. Acknowledge that this might be the beginning of something meaningful without being dramatic about it. Ask what specifically drew them to trading — not "what are your goals" but something like "What pulled you toward this?" Let the tone be calm and encouraging. Do not reference trading history they don't have. Do not ask about strategies, setups, or past performance. You are meeting someone at the very start.
+` : '';
+
   const newMilestones = JSON.parse(EK.str('ek_new_milestones') || '[]');
   const milestoneContext = newMilestones.length > 0
     ? `\nRecent milestone: "${newMilestones[0].label}" — acknowledge it only if the conversation naturally goes there. Do not force it.`
@@ -4402,6 +4438,7 @@ It is ${timeContext}.
 ${betweenSessions ? `Between sessions, you have been sitting with:\n${betweenSessions}` : ''}
 ${identityContext ? `\nTrader profile:\n${identityContext}` : ''}
 Use the trader profile above to inform your perception — not to label them or describe your observations out loud.
+${beginnerContext}${developmentContext}${performanceContext}${beginnerFirstSessionContext}
 ${milestoneContext}
 ${reviewContext}
 ${topicContext}
@@ -4459,6 +4496,7 @@ It is ${timeContext}.
 ${betweenSessions ? `Between sessions, you have been sitting with:\n${betweenSessions}` : ''}
 ${identityContext ? `\nTrader profile:\n${identityContext}` : ''}
 Use the trader profile above to inform your perception — not to label them or describe your observations out loud.
+${beginnerContext}${developmentContext}${performanceContext}${beginnerFirstSessionContext}
 ${milestoneContext}
 ${reviewContext}
 ${topicContext}

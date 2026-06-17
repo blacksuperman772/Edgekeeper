@@ -148,6 +148,8 @@
       max-width: 860px;
       margin: 0 auto;
       padding: 0 80px 120px;
+      position: relative;
+      z-index: 1;
     }
 
     /* ── SECTION LABELS ── */
@@ -515,10 +517,19 @@
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); }
+
+    /* ── AMBIENT BACKGROUND ── */
+    .page-ambient {
+      position: fixed; inset: 0; z-index: 0;
+      background: url('/assets/workspace-ambient.png') center/cover no-repeat;
+      opacity: 0.04;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
 
+  <div class="page-ambient" aria-hidden="true"></div>
   <div id="cursor"></div>
   <div id="cursor-ring"></div>
 

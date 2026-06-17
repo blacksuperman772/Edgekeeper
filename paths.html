@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your Path — EdgeKeeper</title>
+  <meta name="description" content="Three entry points into the EdgeKeeper institution. Foundation for beginners, Development for developing traders, Performance for the experienced. Find where you start." />
+  <meta property="og:title" content="Find Your Path — EdgeKeeper" />
+  <meta property="og:description" content="Whether you've never placed a trade or you've been at this for a decade — EdgeKeeper has a track built for where you are right now." />
+  <link rel="canonical" href="https://edgekeeper.io/paths" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black:    #050505;
+      --obsidian: #0a0a0a;
+      --stone:    #111111;
+      --border:   #1e1e1e;
+      --muted:    #555555;
+      --faint:    #888888;
+      --text:     #d4d0c8;
+      --bright:   #e8e4dc;
+      --white:    #f5f2ec;
+      --gold:     #b8a06a;
+      --gold-dim: #7a6a45;
+      --serif:    'Cormorant Garamond', Georgia, serif;
+      --sans:     'Inter', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; font-size: 16px; }
+
+    body {
+      background: var(--black);
+      color: var(--text);
+      font-family: var(--sans);
+      font-weight: 300;
+      line-height: 1.7;
+      cursor: none;
+      overflow-x: hidden;
+    }
+
+    /* ── CURSOR ──────────────────────────────────────────────── */
+    #cursor {
+      position: fixed; width: 8px; height: 8px;
+      background: var(--gold); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: transform 0.1s ease, opacity 0.2s ease;
+    }
+    #cursor-ring {
+      position: fixed; width: 32px; height: 32px;
+      border: 1px solid rgba(184,160,106,0.3); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%, -50%);
+      transition: opacity 0.3s ease;
+    }
+
+    /* ── AMBIENT ─────────────────────────────────────────────── */
+    .page-ambient {
+      position: fixed; inset: 0; z-index: 0;
+      background: url('/assets/hero-landing.png') center/cover no-repeat;
+      opacity: 0.03;
+      pointer-events: none;
+    }
+
+    /* ── NAV ─────────────────────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 24px 48px;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.4s ease, background 0.4s ease;
+    }
+    nav.scrolled {
+      background: rgba(5,5,5,0.9);
+      border-color: rgba(255,255,255,0.05);
+      backdrop-filter: blur(8px);
+    }
+    .nav-logo {
+      font-family: var(--serif);
+      font-size: 1.25rem;
+      font-weight: 300;
+      letter-spacing: 0.02em;
+      color: var(--white);
+      text-decoration: none;
+    }
+    .nav-links {
+      display: flex; align-items: center; gap: 36px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 0.8125rem;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      color: rgba(255,255,255,0.45);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--white); }
+    .nav-cta {
+      font-size: 0.8125rem;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      color: var(--gold);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(184,160,106,0.3);
+      padding-bottom: 1px;
+      transition: border-color 0.2s;
+    }
+    .nav-cta:hover { border-color: var(--gold); }
+
+    /* ── PAGE WRAPPER ────────────────────────────────────────── */
+    .page-wrap {
+      position: relative; z-index: 1;
+      min-height: 100vh;
+    }
+
+    /* ── HERO ────────────────────────────────────────────────── */
+    .hero {
+      padding: 180px 48px 100px;
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .hero-eyebrow {
+      font-family: var(--serif);
+      font-size: 1rem;
+      font-weight: 300;
+      font-style: italic;
+      color: rgba(255,255,255,0.3);
+      margin-bottom: 24px;
+      letter-spacing: 0.01em;
+    }
+    .hero h1 {
+      font-family: var(--serif);
+      font-size: clamp(2.8rem, 6vw, 5rem);
+      font-weight: 300;
+      line-height: 1.1;
+      color: var(--white);
+      margin-bottom: 28px;
+      letter-spacing: -0.01em;
+    }
+    .hero-sub {
+      font-size: 1.0625rem;
+      font-weight: 300;
+      color: rgba(255,255,255,0.4);
+      max-width: 540px;
+      margin: 0 auto;
+      line-height: 1.75;
+    }
+
+    /* ── PATHS GRID ──────────────────────────────────────────── */
+    .paths-section {
+      padding: 60px 48px 120px;
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+    .paths-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0;
+      border-top: 1px solid rgba(255,255,255,0.07);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .path-col {
+      padding: 64px 48px 64px;
+      border-right: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      flex-direction: column;
+    }
+    .path-col:last-child { border-right: none; }
+    .path-numeral {
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      font-weight: 400;
+      margin-bottom: 14px;
+    }
+    .path-name {
+      font-family: var(--serif);
+      font-size: 2rem;
+      font-weight: 300;
+      color: var(--white);
+      margin-bottom: 8px;
+      line-height: 1.15;
+    }
+    .path-tagline {
+      font-size: 0.8125rem;
+      color: rgba(255,255,255,0.3);
+      margin-bottom: 36px;
+      font-style: italic;
+    }
+    .path-covers-label,
+    .path-who-label {
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.2);
+      margin-bottom: 10px;
+      font-weight: 400;
+    }
+    .path-covers {
+      list-style: none;
+      margin-bottom: 32px;
+    }
+    .path-covers li {
+      font-size: 0.8125rem;
+      color: rgba(255,255,255,0.42);
+      line-height: 1.8;
+      font-weight: 300;
+    }
+    .path-covers li::before {
+      content: '— ';
+      color: rgba(255,255,255,0.2);
+    }
+    .path-who {
+      font-size: 0.8125rem;
+      color: rgba(255,255,255,0.38);
+      line-height: 1.75;
+      font-weight: 300;
+      flex: 1;
+    }
+    .path-cta {
+      display: inline-block;
+      margin-top: 32px;
+      font-size: 0.8125rem;
+      color: var(--gold);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(184,160,106,0.3);
+      padding-bottom: 2px;
+      letter-spacing: 0.02em;
+      transition: border-color 0.2s, opacity 0.2s;
+    }
+    .path-cta:hover {
+      border-color: var(--gold);
+      opacity: 0.9;
+    }
+
+    /* ── FALLBACK NOTE ───────────────────────────────────────── */
+    .paths-fallback {
+      text-align: center;
+      padding: 40px 48px 0;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .paths-fallback p {
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.25);
+      font-weight: 300;
+      font-style: italic;
+    }
+
+    /* ── COMPARISON TABLE ────────────────────────────────────── */
+    .compare-section {
+      padding: 100px 48px 60px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .compare-heading {
+      font-family: var(--serif);
+      font-size: 1.25rem;
+      font-weight: 300;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 48px;
+      font-style: italic;
+      text-align: center;
+    }
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .compare-table th {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.25);
+      font-weight: 400;
+      text-align: left;
+      padding: 0 0 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .compare-table th:first-child { width: 30%; }
+    .compare-table td {
+      padding: 18px 16px 18px 0;
+      font-size: 0.875rem;
+      font-weight: 300;
+      color: rgba(255,255,255,0.4);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      vertical-align: top;
+    }
+    .compare-table td:first-child {
+      color: rgba(255,255,255,0.6);
+      font-weight: 400;
+    }
+    .compare-table td .yes { color: var(--gold-dim); }
+    .compare-table td .no  { color: rgba(255,255,255,0.15); }
+
+    /* ── DISCLAIMER ──────────────────────────────────────────── */
+    .disclaimer {
+      text-align: center;
+      padding: 24px 48px 60px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.15);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* ── FOOTER ──────────────────────────────────────────────── */
+    footer {
+      padding: 40px 48px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .footer-copy {
+      font-size: 0.8125rem;
+      color: rgba(255,255,255,0.2);
+      font-weight: 300;
+    }
+    .footer-links {
+      display: flex; gap: 24px; list-style: none;
+    }
+    .footer-links a {
+      font-size: 0.8125rem;
+      color: rgba(255,255,255,0.2);
+      text-decoration: none;
+    }
+    .footer-links a:hover { color: rgba(255,255,255,0.5); }
+
+    /* ── REVEAL ANIMATION ────────────────────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.in {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* ── RESPONSIVE ──────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      nav { padding: 20px 24px; }
+      .nav-links { display: none; }
+      .hero { padding: 140px 24px 80px; }
+      .paths-section { padding: 40px 24px 80px; }
+      .paths-grid {
+        grid-template-columns: 1fr;
+        border: none;
+      }
+      .path-col {
+        padding: 40px 24px;
+        border-right: none;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+      }
+      .path-col:last-child { border-bottom: none; }
+      .compare-section { padding: 60px 24px 40px; }
+      footer { padding: 32px 24px; flex-direction: column; gap: 16px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="cursor"></div>
+  <div id="cursor-ring"></div>
+  <div class="page-ambient" aria-hidden="true"></div>
+
+  <!-- NAV -->
+  <nav id="site-nav">
+    <a href="/edgekeeper.html" class="nav-logo">EdgeKeeper</a>
+    <ul class="nav-links">
+      <li><a href="/edgekeeper.html">Home</a></li>
+      <li><a href="/method.html">Method</a></li>
+      <li><a href="/research.html">Research</a></li>
+      <li><a href="/mike.html">Mike</a></li>
+      <li><a href="/ashley.html">Ashley</a></li>
+    </ul>
+    <a href="/onboarding.html" class="nav-cta">Enroll Now</a>
+  </nav>
+
+  <div class="page-wrap">
+
+    <!-- HERO -->
+    <header class="hero">
+      <p class="hero-eyebrow reveal">Find your starting point.</p>
+      <h1 class="reveal">Three paths.<br>One institution.</h1>
+      <p class="hero-sub reveal">Whether you've never placed a trade or you've been at this for a decade, EdgeKeeper has a track built for where you are right now — and where you're going.</p>
+    </header>
+
+    <!-- PATHS -->
+    <section class="paths-section">
+      <div class="paths-grid">
+
+        <!-- PATH I -->
+        <div class="path-col reveal">
+          <div class="path-numeral">I</div>
+          <div class="path-name">Foundation</div>
+          <div class="path-tagline">For traders starting from scratch.</div>
+
+          <div class="path-covers-label">What this covers</div>
+          <ul class="path-covers">
+            <li>How markets work and why</li>
+            <li>Asset classes: stocks, forex, crypto, futures</li>
+            <li>Reading price charts and candlesticks</li>
+            <li>Risk management before real capital</li>
+            <li>Paper trading and broker selection</li>
+            <li>Your first structured strategy</li>
+          </ul>
+
+          <div class="path-who-label">Who this is for</div>
+          <div class="path-who">You've never placed a real trade, or you've made a few without really understanding what you were doing. You want to learn correctly — with structure — before you risk real money. The foundation is not the easy part. It is the most important part.</div>
+
+          <a href="/onboarding.html?path=foundation" class="path-cta">Begin the Foundation Track →</a>
+        </div>
+
+        <!-- PATH II -->
+        <div class="path-col reveal">
+          <div class="path-numeral">II</div>
+          <div class="path-name">Development</div>
+          <div class="path-tagline">For traders who have knowledge but not consistency.</div>
+
+          <div class="path-covers-label">What this covers</div>
+          <ul class="path-covers">
+            <li>Rule architecture and trading structure</li>
+            <li>Behavioral pattern diagnosis</li>
+            <li>Guardian Layer and accountability</li>
+            <li>Session reviews and discipline scoring</li>
+            <li>Identity work and stage progression</li>
+            <li>Strategy refinement and backtesting</li>
+          </ul>
+
+          <div class="path-who-label">Who this is for</div>
+          <div class="path-who">You've been trading for at least a few months. You have some wins but no consistency. Something breaks down under pressure — you break your rules, revenge trade, or overtrade. The knowledge is there. The behavior isn't locked in yet. That's what this track is for.</div>
+
+          <a href="/onboarding.html?path=development" class="path-cta">Begin the Development Track →</a>
+        </div>
+
+        <!-- PATH III -->
+        <div class="path-col reveal">
+          <div class="path-numeral">III</div>
+          <div class="path-name">Performance</div>
+          <div class="path-tagline">For experienced traders optimizing at the edge.</div>
+
+          <div class="path-covers-label">What this covers</div>
+          <ul class="path-covers">
+            <li>Advanced behavioral analytics</li>
+            <li>The full Psychology OS</li>
+            <li>Monthly behavioral case reports</li>
+            <li>Identity-to-performance mapping</li>
+            <li>Research Division behavioral insights</li>
+            <li>Mandatory and voluntary review sessions</li>
+          </ul>
+
+          <div class="path-who-label">Who this is for</div>
+          <div class="path-who">You trade with a real edge. You've been doing this for years. You want to eliminate the remaining variance in your performance and understand your own patterns at a level most traders never reach. The work at this stage is not about knowledge. It is about the operator behind the strategy.</div>
+
+          <a href="/onboarding.html?path=performance" class="path-cta">Enter the Performance Track →</a>
+        </div>
+
+      </div>
+
+      <div class="paths-fallback reveal">
+        <p>Not sure where you fit? Start with the Foundation Track. You can always move forward — the institution moves with you.</p>
+      </div>
+    </section>
+
+    <!-- COMPARISON TABLE -->
+    <section class="compare-section">
+      <p class="compare-heading reveal">What each path includes.</p>
+      <table class="compare-table reveal">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Foundation</th>
+            <th>Development</th>
+            <th>Performance</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Curriculum access</td>
+            <td>Tracks 1–3</td>
+            <td>Tracks 1–5</td>
+            <td>All 6 tracks</td>
+          </tr>
+          <tr>
+            <td>AI mentor sessions</td>
+            <td><span class="yes">30/month</span></td>
+            <td><span class="yes">100/month</span></td>
+            <td><span class="yes">Unlimited</span></td>
+          </tr>
+          <tr>
+            <td>Trading journal</td>
+            <td><span class="yes">Included</span></td>
+            <td><span class="yes">Included</span></td>
+            <td><span class="yes">Included</span></td>
+          </tr>
+          <tr>
+            <td>Guardian Layer</td>
+            <td><span class="no">—</span></td>
+            <td><span class="yes">Active</span></td>
+            <td><span class="yes">Active</span></td>
+          </tr>
+          <tr>
+            <td>Behavioral reports</td>
+            <td><span class="no">—</span></td>
+            <td><span class="no">—</span></td>
+            <td><span class="yes">Monthly</span></td>
+          </tr>
+          <tr>
+            <td>Voice mentor sessions</td>
+            <td><span class="no">—</span></td>
+            <td><span class="no">—</span></td>
+            <td><span class="yes">Included</span></td>
+          </tr>
+          <tr>
+            <td>Research insights</td>
+            <td><span class="no">—</span></td>
+            <td><span class="no">—</span></td>
+            <td><span class="yes">Weekly</span></td>
+          </tr>
+          <tr>
+            <td>Community network</td>
+            <td><span class="no">—</span></td>
+            <td><span class="yes">Read access</span></td>
+            <td><span class="yes">Full access</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="disclaimer">
+      Trading involves significant risk of loss. EdgeKeeper provides education and behavioral development — not financial advice, investment recommendations, or trading signals. Past results do not guarantee future performance.
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+      <p class="footer-copy">© 2026 EdgeKeeper. A Trader Development Institution.</p>
+      <ul class="footer-links">
+        <li><a href="/privacy.html">Privacy</a></li>
+        <li><a href="/terms.html">Terms</a></li>
+        <li><a href="/pricing.html">Pricing</a></li>
+      </ul>
+    </footer>
+
+  </div>
+
+  <script>
+    // Cursor
+    const cur = document.getElementById('cursor');
+    const ring = document.getElementById('cursor-ring');
+    let mx = 0, my = 0, rx = 0, ry = 0;
+    document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+    (function animCursor() {
+      cur.style.left = mx + 'px'; cur.style.top = my + 'px';
+      rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12;
+      ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+      requestAnimationFrame(animCursor);
+    })();
+
+    // Nav scroll
+    const nav = document.getElementById('site-nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 40);
+    });
+
+    // Reveal
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); observer.unobserve(e.target); } });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>

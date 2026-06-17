@@ -187,6 +187,60 @@
       border-bottom-color: rgba(255,255,255,0.22);
     }
 
+    /* ── SMALL TEXT INPUT (one-word answers) ── */
+    #answer-short {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      outline: none;
+      padding: 0 0 14px 0;
+      font-family: var(--serif);
+      font-size: 1rem;
+      font-weight: 300;
+      line-height: 1.9;
+      color: rgba(212,208,200,0.8);
+      cursor: none;
+      transition: border-color 0.3s ease;
+      display: none;
+    }
+    #answer-short::placeholder {
+      color: rgba(255,255,255,0.18);
+    }
+    #answer-short:focus {
+      border-bottom-color: rgba(255,255,255,0.22);
+    }
+
+    /* ── PILL OPTIONS ── */
+    #pill-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 4px;
+      display: none;
+    }
+    .pill {
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(212,208,200,0.55);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 9px 18px;
+      cursor: none;
+      transition: color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+      user-select: none;
+    }
+    .pill:hover {
+      color: var(--mc);
+      border-color: rgba(184,160,106,0.3);
+    }
+    .pill.selected {
+      color: var(--mc);
+      border-color: var(--mc-dim);
+      background: var(--mc-bg);
+    }
+
     /* ── CONTINUE BUTTON ── */
     #continue-btn {
       margin-top: 32px;
@@ -243,6 +297,147 @@
       transition: color 0.4s ease;
     }
 
+    /* ── PATH SELECTION SCREEN ── */
+    #path-field {
+      max-width: 580px;
+      width: 100%;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 500ms ease, transform 500ms ease;
+    }
+    #path-field.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    #path-field.hiding {
+      opacity: 0;
+      transform: translateY(-4px);
+      transition: opacity 300ms ease, transform 300ms ease;
+    }
+
+    #path-header {
+      font-family: var(--mono);
+      font-size: 0.52rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--mc-dim);
+      margin-bottom: 28px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    #path-header::before {
+      content: '';
+      width: 24px; height: 1px;
+      background: var(--mc-dim);
+      flex-shrink: 0;
+    }
+
+    #path-question {
+      font-family: var(--serif);
+      font-size: clamp(1.3rem, 2vw, 1.55rem);
+      font-weight: 300;
+      line-height: 1.75;
+      color: rgba(245,242,236,0.85);
+      margin-bottom: 44px;
+    }
+
+    #path-options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .path-block {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 22px 28px;
+      border: 1px solid rgba(255,255,255,0.07);
+      cursor: none;
+      transition: border-color 0.4s ease, background 0.4s ease;
+      min-height: 80px;
+    }
+    .path-block:hover {
+      border-color: rgba(184,160,106,0.35);
+      background: rgba(184,160,106,0.03);
+    }
+    .path-block.selected {
+      border-color: var(--gold);
+      background: rgba(184,160,106,0.05);
+    }
+
+    /* override for ashley */
+    body.ashley .path-block:hover {
+      border-color: rgba(107,140,107,0.35);
+      background: rgba(74,92,74,0.03);
+    }
+    body.ashley .path-block.selected {
+      border-color: var(--green-b);
+      background: rgba(74,92,74,0.05);
+    }
+
+    .path-numeral {
+      font-family: var(--serif);
+      font-size: 1.1rem;
+      font-weight: 300;
+      color: rgba(184,160,106,0.35);
+      flex-shrink: 0;
+      width: 28px;
+      transition: color 0.4s ease;
+    }
+    .path-block.selected .path-numeral,
+    .path-block:hover .path-numeral {
+      color: var(--mc-dim);
+    }
+
+    .path-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .path-name {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(212,208,200,0.7);
+      transition: color 0.3s ease;
+    }
+    .path-block.selected .path-name,
+    .path-block:hover .path-name {
+      color: var(--mc);
+    }
+    .path-desc {
+      font-family: var(--serif);
+      font-size: 0.9rem;
+      font-weight: 300;
+      color: rgba(212,208,200,0.35);
+      line-height: 1.5;
+    }
+
+    #path-continue {
+      margin-top: 36px;
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--mc);
+      background: transparent;
+      border: none;
+      padding: 0;
+      cursor: none;
+      opacity: 0.3;
+      transition: opacity 0.3s ease, color 0.4s ease;
+      pointer-events: none;
+    }
+    #path-continue.enabled {
+      opacity: 1;
+      pointer-events: all;
+    }
+    #path-continue.enabled:hover {
+      opacity: 0.7;
+    }
+
     /* ── SCROLLBAR ── */
     * { scrollbar-width: none; }
     *::-webkit-scrollbar { display: none; }
@@ -252,7 +447,10 @@
       #top-label { padding: 16px 22px; }
       #assessment-shell { padding: 32px 20px; }
       #question-text { font-size: 1.2rem; }
+      #path-question { font-size: 1.2rem; }
       #progress-label { right: 22px; bottom: 20px; }
+      .path-block { padding: 18px 20px; gap: 18px; min-height: 72px; }
+      .path-numeral { font-size: 1rem; }
     }
   </style>
 </head>
@@ -274,10 +472,43 @@
 
   <!-- main field -->
   <div id="assessment-shell">
-    <div id="question-field">
-      <div class="q-mentor-sig" id="mentor-sig">Mike</div>
+
+    <!-- Step 0: path selection -->
+    <div id="path-field">
+      <div id="path-header" class="q-mentor-sig-el"></div>
+      <div id="path-question">Which best describes you right now?</div>
+      <div id="path-options">
+        <div class="path-block" data-path="foundation">
+          <div class="path-numeral">I</div>
+          <div class="path-copy">
+            <div class="path-name">Foundation</div>
+            <div class="path-desc">I'm new to trading. I want to learn from scratch.</div>
+          </div>
+        </div>
+        <div class="path-block" data-path="development">
+          <div class="path-numeral">II</div>
+          <div class="path-copy">
+            <div class="path-name">Development</div>
+            <div class="path-desc">I trade but struggle with consistency or discipline.</div>
+          </div>
+        </div>
+        <div class="path-block" data-path="performance">
+          <div class="path-numeral">III</div>
+          <div class="path-copy">
+            <div class="path-name">Performance</div>
+            <div class="path-desc">I'm an experienced trader looking to optimize.</div>
+          </div>
+        </div>
+      </div>
+      <button id="path-continue" type="button">Continue &rarr;</button>
+    </div>
+
+    <!-- Step 1+: questions -->
+    <div id="question-field" style="display:none;">
+      <div class="q-mentor-sig" id="mentor-sig"></div>
       <div id="question-text"></div>
       <div class="q-divider" id="q-divider"></div>
+      <!-- textarea for long answers -->
       <textarea
         id="answer-textarea"
         rows="3"
@@ -285,12 +516,23 @@
         spellcheck="false"
         autocomplete="off"
       ></textarea>
+      <!-- small input for one-word answers -->
+      <input
+        id="answer-short"
+        type="text"
+        placeholder="..."
+        spellcheck="false"
+        autocomplete="off"
+      />
+      <!-- pill options for choice questions -->
+      <div id="pill-container"></div>
       <button id="continue-btn" type="button">Continue &rarr;</button>
     </div>
+
   </div>
 
   <!-- progress -->
-  <div id="progress-label">1 of 9</div>
+  <div id="progress-label"></div>
 
   <!-- closing screen -->
   <div id="closing-screen">
@@ -316,9 +558,15 @@
     document.documentElement.style.setProperty('--mc-dim', ACCENT_DIM);
     document.documentElement.style.setProperty('--mc-bg',  ACCENT_BG);
 
+    /* body class for ashley overrides */
+    if (!isMike) document.body.classList.add('ashley');
+
     /* update text labels */
     document.getElementById('mentor-name-label').textContent = MENTOR_LABEL;
     document.getElementById('mentor-sig').textContent        = MENTOR_LABEL;
+
+    /* path screen header */
+    document.getElementById('path-header').textContent = MENTOR_LABEL;
 
     /* cursor ring border color */
     document.getElementById('cursor-ring').style.borderColor =
@@ -343,128 +591,329 @@
       requestAnimationFrame(animRing);
     })();
 
-    /* ── QUESTIONS ──────────────────────────── */
-    const QUESTIONS = [
+    /* ── QUESTION SETS ──────────────────────── */
+
+    const QUESTIONS_FOUNDATION = [
       {
-        type: 'experience',
-        mike:   "Before we start — how long have you been trading? Give me the honest version, not the one that sounds better.",
-        ashley: "Tell me about your relationship with trading so far. How long has it been going?"
+        key: 'motivation',
+        type: 'textarea',
+        text: "What drew you to trading?",
+        placeholder: "Tell us what sparked this..."
       },
       {
-        type: 'biggest_challenge',
-        mike:   "What's the one thing that keeps costing you? Not the market — you.",
-        ashley: "What pattern keeps showing up for you, even when you know better?"
+        key: 'time_commitment',
+        type: 'pills',
+        text: "How much time can you commit to learning each week?",
+        options: [
+          { label: '1–2 hours',       value: 'light' },
+          { label: '3–5 hours',       value: 'moderate' },
+          { label: '5–10 hours',      value: 'intensive' },
+          { label: 'More than 10',    value: 'full_time' }
+        ]
       },
       {
-        type: 'emotional_response_loss',
-        mike:   "Walk me through what happens in your head after a bad trade. Specifically.",
-        ashley: "After a loss, what's the first thing you feel? And what do you do with it?"
+        key: 'market_interest',
+        type: 'multi-pills',
+        text: "Which markets are you most interested in?",
+        options: [
+          { label: 'Stocks',   value: 'stocks' },
+          { label: 'Forex',    value: 'forex' },
+          { label: 'Crypto',   value: 'crypto' },
+          { label: 'Futures',  value: 'futures' }
+        ]
       },
       {
-        type: 'emotional_response_win',
-        mike:   "What happens after a good trade? Be honest about the temptation.",
-        ashley: "After a win, what changes for you? In your thinking, your risk, your confidence?"
+        key: 'biggest_concern',
+        type: 'pills',
+        text: "What's your biggest concern about learning to trade?",
+        options: [
+          { label: 'Losing money',              value: 'loss_fear' },
+          { label: 'Information overload',      value: 'overwhelm' },
+          { label: 'Not knowing where to start', value: 'direction' },
+          { label: 'Finding time',              value: 'time' }
+        ]
       },
       {
-        type: 'biggest_goal',
-        mike:   "What are you actually trying to build here? In real terms.",
-        ashley: "What does success look like for you — not in money, but in who you want to be as a trader?"
+        key: 'emotional_state_entry',
+        type: 'short',
+        text: "One word that describes how you feel right now about trading:",
+        placeholder: "excited, nervous, curious..."
+      }
+    ];
+
+    const QUESTIONS_DEVELOPMENT = [
+      {
+        key: 'experience_duration',
+        type: 'pills',
+        text: "How long have you been trading actively?",
+        options: [
+          { label: 'Less than 6 months', value: 'new' },
+          { label: '6 months to 2 years', value: 'developing' },
+          { label: '2 to 5 years',        value: 'intermediate' },
+          { label: '5+ years',            value: 'veteran' }
+        ]
       },
       {
-        type: 'what_tried',
-        mike:   "What have you already tried? Courses, books, other platforms, coaches. All of it.",
-        ashley: "What have you tried before EdgeKeeper? I want to know what hasn't worked and why."
+        key: 'biggest_challenge',
+        type: 'pills',
+        text: "What breaks down most often for you?",
+        options: [
+          { label: 'I break my own rules', value: 'rule_breaks' },
+          { label: 'I revenge trade',      value: 'revenge' },
+          { label: 'I overtrade',          value: 'overtrade' },
+          { label: 'I freeze up',          value: 'paralysis' }
+        ]
       },
       {
-        type: 'what_went_wrong',
-        mike:   "What's the hardest thing you've done in trading that you'd take back?",
-        ashley: "Is there a trade or a period you'd describe as your lowest point? What happened?"
+        key: 'loss_response',
+        type: 'pills',
+        text: "How do you respond after a losing session?",
+        options: [
+          { label: 'I stop for the day',     value: 'stop' },
+          { label: 'I try to recover it',    value: 'recover' },
+          { label: 'I get angry',            value: 'anger' },
+          { label: 'I analyze and move on',  value: 'analyze' }
+        ]
       },
       {
-        type: 'current_rules',
-        mike:   "Do you have trading rules right now? Tell me what they are and whether you follow them.",
-        ashley: "What rules have you set for yourself? And how consistent are you actually being with them?"
+        key: 'rules_status',
+        type: 'pills',
+        text: "Do you have written trading rules?",
+        options: [
+          { label: 'Yes, I follow them',       value: 'follows' },
+          { label: 'Yes, but I break them',    value: 'breaks' },
+          { label: 'No, I trade intuitively',  value: 'none' },
+          { label: "I'm building them now",    value: 'building' }
+        ]
       },
       {
-        type: 'honest_admission',
-        mike:   "One thing about your trading that you haven't told anyone. I'll find out anyway — might as well start here.",
-        ashley: "What's something true about how you trade that you haven't said out loud before?"
+        key: 'non_monetary_cost',
+        type: 'textarea',
+        text: "What has trading cost you that wasn't money?",
+        placeholder: "Time, relationships, sleep, confidence..."
+      },
+      {
+        key: 'consistency_goal',
+        type: 'textarea',
+        text: "What would consistent trading change for you?",
+        placeholder: "What becomes possible..."
+      }
+    ];
+
+    const QUESTIONS_PERFORMANCE = [
+      {
+        key: 'biggest_challenge',
+        type: 'textarea',
+        text: isMike
+          ? "What's the one thing that keeps costing you? Not the market — you."
+          : "What pattern keeps showing up for you, even when you know better?",
+        placeholder: "Be specific..."
+      },
+      {
+        key: 'emotional_response_loss',
+        type: 'pills',
+        text: isMike
+          ? "How do you respond emotionally to a significant loss?"
+          : "After a loss, what's the first thing you feel — and what do you do with it?",
+        options: [
+          { label: 'I stop and reflect',           value: 'reflective' },
+          { label: 'I try to recover it',          value: 'recover' },
+          { label: 'I get angry or frustrated',    value: 'anger' },
+          { label: 'I feel numb or dissociated',   value: 'numb' }
+        ]
+      },
+      {
+        key: 'biggest_goal',
+        type: 'textarea',
+        text: isMike
+          ? "What are you actually trying to build here? In real terms."
+          : "What does success look like for you — not in money, but in who you want to be as a trader?",
+        placeholder: "Beyond profit..."
+      },
+      {
+        key: 'what_tried',
+        type: 'textarea',
+        text: isMike
+          ? "What have you already tried? Courses, books, other platforms, coaches. All of it."
+          : "What have you tried before EdgeKeeper? I want to know what hasn't worked and why.",
+        placeholder: "Everything counts..."
+      },
+      {
+        key: 'current_rules',
+        type: 'pills',
+        text: isMike
+          ? "Do you have trading rules you follow consistently?"
+          : "What rules have you set for yourself — and how consistent are you actually being?",
+        options: [
+          { label: 'Yes, mostly',                       value: 'yes' },
+          { label: 'Yes, but I break them under pressure', value: 'pressure_breaks' },
+          { label: "I'm still building them",           value: 'building' },
+          { label: 'No structured rules',               value: 'none' }
+        ]
+      },
+      {
+        key: 'honest_admission',
+        type: 'textarea',
+        text: isMike
+          ? "One thing about your trading that you haven't told anyone. I'll find out anyway — might as well start here."
+          : "What's something true about how you trade that you haven't said out loud before?",
+        placeholder: "Not what you tell other people. What you know."
       }
     ];
 
     const CLOSING_LINE = isMike
       ? 'Alright. Give me a moment with this.'
-      : 'Thank you. I\'ve been listening.';
+      : "Thank you. I've been listening.";
 
     /* ── STATE ──────────────────────────────── */
-    let currentIndex = 0;
-    const answers    = {};
+    let selectedPath    = null;
+    let currentQuestions = [];
+    let currentIndex    = 0;
+    let currentAnswer   = null; /* for pill/multi-pill */
+    const answers       = {};
 
-    const qField    = document.getElementById('question-field');
-    const qText     = document.getElementById('question-text');
-    const textarea  = document.getElementById('answer-textarea');
-    const continueBtn = document.getElementById('continue-btn');
+    const pathField     = document.getElementById('path-field');
+    const qField        = document.getElementById('question-field');
+    const qText         = document.getElementById('question-text');
+    const textarea      = document.getElementById('answer-textarea');
+    const shortInput    = document.getElementById('answer-short');
+    const pillContainer = document.getElementById('pill-container');
+    const continueBtn   = document.getElementById('continue-btn');
+    const pathContinue  = document.getElementById('path-continue');
     const progressLabel = document.getElementById('progress-label');
 
-    /* ── STAGE INFERENCE ────────────────────── */
-    function inferStage(experienceAnswer) {
-      const a = experienceAnswer.toLowerCase();
-      if (/never|never traded|just started|no trades|no experience/.test(a)) return 'explorer';
-      if (/few months|6 months|started recently|beginner/.test(a)) return 'student';
-      if (/year|years|actively|regularly/.test(a)) return 'developing';
-      return 'explorer';
-    }
+    /* ── PATH SELECTION ─────────────────────── */
+    document.querySelectorAll('.path-block').forEach(block => {
+      block.addEventListener('click', () => {
+        document.querySelectorAll('.path-block').forEach(b => b.classList.remove('selected'));
+        block.classList.add('selected');
+        selectedPath = block.dataset.path;
+        pathContinue.classList.add('enabled');
+      });
+    });
 
-    function inferIdentity(lossAnswer) {
-      const a = lossAnswer.toLowerCase();
-      if (/revenge|double down|angry|frustrated|trade again/.test(a)) return 'Reactive Trader';
-      if (/nothing|fine|moves on|detach/.test(a)) return 'Detached Trader';
-      if (/analyze|review|learn from/.test(a)) return 'Reflective Trader';
-      return 'Developing Trader';
-    }
+    pathContinue.addEventListener('click', () => {
+      if (!selectedPath) return;
+
+      if (selectedPath === 'foundation') {
+        currentQuestions = QUESTIONS_FOUNDATION;
+      } else if (selectedPath === 'development') {
+        currentQuestions = QUESTIONS_DEVELOPMENT;
+      } else {
+        currentQuestions = QUESTIONS_PERFORMANCE;
+      }
+
+      /* hide path screen */
+      pathField.classList.add('hiding');
+      setTimeout(() => {
+        pathField.classList.remove('hiding');
+        pathField.style.display = 'none';
+        qField.style.display    = 'block';
+        /* force reflow so transition fires */
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            showQuestion(0);
+          });
+        });
+      }, 300);
+    });
 
     /* ── SHOW QUESTION ──────────────────────── */
     function showQuestion(index) {
-      const q = QUESTIONS[index];
-      const text = isMike ? q.mike : q.ashley;
+      const q = currentQuestions[index];
+      currentAnswer = null;
 
-      qText.textContent = text;
-      textarea.value    = '';
-      textarea.style.height = 'auto';
+      qText.textContent = q.text;
+      progressLabel.textContent = 'Question ' + (index + 1) + ' of ' + currentQuestions.length;
+
+      /* hide all input types first */
+      textarea.style.display    = 'none';
+      shortInput.style.display  = 'none';
+      pillContainer.style.display = 'none';
+      pillContainer.innerHTML   = '';
       continueBtn.classList.remove('enabled');
-      progressLabel.textContent = (index + 1) + ' of ' + QUESTIONS.length;
 
-      // reset and animate in
+      if (q.type === 'textarea') {
+        textarea.style.display    = 'block';
+        textarea.value            = '';
+        textarea.style.height     = 'auto';
+        textarea.placeholder      = q.placeholder || '...';
+        continueBtn.classList.remove('enabled');
+      } else if (q.type === 'short') {
+        shortInput.style.display  = 'block';
+        shortInput.value          = '';
+        shortInput.placeholder    = q.placeholder || '...';
+        continueBtn.classList.remove('enabled');
+      } else if (q.type === 'pills' || q.type === 'multi-pills') {
+        pillContainer.style.display = 'flex';
+        const isMulti = q.type === 'multi-pills';
+        q.options.forEach(opt => {
+          const pill = document.createElement('div');
+          pill.className   = 'pill';
+          pill.textContent = opt.label;
+          pill.dataset.value = opt.value;
+          pill.addEventListener('click', () => {
+            if (isMulti) {
+              pill.classList.toggle('selected');
+              const selected = [...pillContainer.querySelectorAll('.pill.selected')]
+                .map(p => p.dataset.value);
+              currentAnswer = selected.length > 0 ? selected : null;
+              continueBtn.classList.toggle('enabled', selected.length > 0);
+            } else {
+              pillContainer.querySelectorAll('.pill').forEach(p => p.classList.remove('selected'));
+              pill.classList.add('selected');
+              currentAnswer = opt.value;
+              continueBtn.classList.add('enabled');
+            }
+          });
+          pillContainer.appendChild(pill);
+        });
+      }
+
+      /* divider only meaningful for text inputs */
+      const divider = document.getElementById('q-divider');
+      divider.style.display = (q.type === 'textarea' || q.type === 'short') ? 'block' : 'none';
+
+      /* animate in */
       qField.classList.remove('visible', 'hiding');
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           qField.classList.add('visible');
-          textarea.focus();
+          if (q.type === 'textarea') textarea.focus();
+          if (q.type === 'short')    shortInput.focus();
         });
       });
     }
 
     /* ── ADVANCE ────────────────────────────── */
     function advance() {
-      const val = textarea.value.trim();
-      if (val.length < 3) return;
+      const q   = currentQuestions[currentIndex];
+      let val   = null;
 
-      // store answer
-      answers[QUESTIONS[currentIndex].type] = val;
+      if (q.type === 'textarea') {
+        val = textarea.value.trim();
+        if (val.length < 3) return;
+      } else if (q.type === 'short') {
+        val = shortInput.value.trim();
+        if (val.length < 1) return;
+      } else if (q.type === 'pills' || q.type === 'multi-pills') {
+        val = currentAnswer;
+        if (!val) return;
+      }
 
-      // hide current
+      answers[q.key] = val;
+
+      /* hide current */
       qField.classList.remove('visible');
       qField.classList.add('hiding');
 
       setTimeout(() => {
         qField.classList.remove('hiding');
-
         currentIndex++;
 
-        if (currentIndex < QUESTIONS.length) {
+        if (currentIndex < currentQuestions.length) {
           setTimeout(() => showQuestion(currentIndex), 60);
         } else {
-          // all answered — show closing
           showClosing();
         }
       }, 300);
@@ -483,13 +932,41 @@
       setTimeout(() => submitAndRedirect(), 2000);
     }
 
+    /* ── STAGE + IDENTITY INFERENCE ─────────── */
+    function inferStageAndIdentity() {
+      let initial_stage, initial_identity;
+
+      if (selectedPath === 'foundation') {
+        initial_stage    = 'explorer';
+        initial_identity = 'Curious Beginner';
+      } else if (selectedPath === 'development') {
+        const dur = answers.experience_duration || '';
+        initial_stage = (dur === 'new' || dur === 'developing') ? 'student' : 'developing';
+
+        const challenge = answers.biggest_challenge || '';
+        initial_identity =
+          challenge === 'rule_breaks' ? 'Reactive Trader' :
+          challenge === 'revenge'     ? 'Revenge Trader'  :
+          challenge === 'overtrade'   ? 'Impulsive Trader' : 'Developing Trader';
+      } else {
+        /* performance path */
+        const lossResp = answers.emotional_response_loss || '';
+        initial_stage    = 'developing'; /* default — performance users are at least developing */
+        initial_identity =
+          lossResp === 'anger'      ? 'Reactive Trader'   :
+          lossResp === 'recover'    ? 'Chasing Trader'    :
+          lossResp === 'numb'       ? 'Detached Trader'   : 'Reflective Trader';
+      }
+
+      return { initial_stage, initial_identity };
+    }
+
     /* ── SUBMIT ─────────────────────────────── */
     async function submitAndRedirect() {
-      const initial_stage    = inferStage(answers.experience || '');
-      const initial_identity = inferIdentity(answers.emotional_response_loss || '');
+      const { initial_stage, initial_identity } = inferStageAndIdentity();
 
       const payload = {
-        answers,
+        answers: { ...answers, trading_path: selectedPath },
         initial_stage,
         initial_identity,
         mentor: isMike ? 'mike' : 'ashley'
@@ -503,29 +980,37 @@
           body: JSON.stringify(payload)
         });
       } catch (err) {
-        // non-blocking — redirect regardless
         console.warn('Assessment submission failed:', err);
       }
 
-      window.location.href = '/workspace.html';
+      if (selectedPath === 'foundation') {
+        window.location.href = '/academy.html?track=1';
+      } else {
+        window.location.href = '/workspace.html';
+      }
     }
 
     /* ── TEXTAREA AUTO-EXPAND ───────────────── */
     textarea.addEventListener('input', () => {
       textarea.style.height = 'auto';
       textarea.style.height = textarea.scrollHeight + 'px';
+      continueBtn.classList.toggle('enabled', textarea.value.trim().length >= 3);
+    });
 
-      const val = textarea.value.trim();
-      if (val.length >= 3) {
-        continueBtn.classList.add('enabled');
-      } else {
-        continueBtn.classList.remove('enabled');
+    shortInput.addEventListener('input', () => {
+      continueBtn.classList.toggle('enabled', shortInput.value.trim().length >= 1);
+    });
+
+    /* ── KEYBOARD SHORTCUTS ─────────────────── */
+    textarea.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        if (continueBtn.classList.contains('enabled')) advance();
       }
     });
 
-    /* ── KEYBOARD SHORTCUT ──────────────────── */
-    textarea.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+    shortInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
         e.preventDefault();
         if (continueBtn.classList.contains('enabled')) advance();
       }
@@ -537,8 +1022,9 @@
     });
 
     /* ── INIT ───────────────────────────────── */
-    // small delay so fonts have settled
-    setTimeout(() => showQuestion(0), 200);
+    setTimeout(() => {
+      pathField.classList.add('visible');
+    }, 200);
   </script>
 </body>
 </html>

@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pricing — EdgeKeeper</title>
-  <meta name="description" content="EdgeKeeper membership — Resident $59/mo, Fellow $119/mo, Private Office $349/mo. Choose your depth of AI mentorship." />
-  <meta property="og:title" content="EdgeKeeper Pricing — Private Mentorship Plans" />
-  <meta property="og:description" content="Resident, Fellow, or Private Office. Choose the depth of your EdgeKeeper mentorship relationship." />
+  <meta name="description" content="EdgeKeeper membership — Student $29/mo, Practitioner $69/mo, Professional $129/mo, Institution $249/mo. Choose your depth of AI mentorship." />
+  <meta property="og:title" content="EdgeKeeper Pricing — Trader Development Plans" />
+  <meta property="og:description" content="Student, Practitioner, Professional, or Institution. Choose the depth of your EdgeKeeper mentorship relationship." />
   <meta property="og:type" content="website" />
   <link rel="canonical" href="https://edgekeeper.io/pricing.html" />
 
@@ -294,10 +294,10 @@
     }
     .cards-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 2px;
       background: var(--border);
-      max-width: 1000px;
+      max-width: 1280px;
       margin: 0 auto;
     }
     .price-card {
@@ -754,11 +754,14 @@
     .footer-links a:hover { color: var(--muted); }
 
     /* ── RESPONSIVE ───────────────────────────────────────────── */
+    @media (max-width: 1200px) {
+      .cards-grid { grid-template-columns: repeat(3, 1fr); }
+    }
     @media (max-width: 900px) {
       nav { padding: 20px 24px; }
       .nav-links { display: none; }
       .section-inner { padding: 0 24px; }
-      .cards-grid { grid-template-columns: 1fr; }
+      .cards-grid { grid-template-columns: repeat(2, 1fr); }
       .comparison-table { font-size: 0.78rem; }
       .comparison-table th,
       .comparison-table td { padding: 14px 16px; }
@@ -767,6 +770,7 @@
     @media (max-width: 640px) {
       .hero-headline { font-size: 2.2rem; }
       .billing-toggle { flex-wrap: wrap; justify-content: center; }
+      .cards-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -799,8 +803,8 @@
     <img src="/assets/workspace-ambient.png" alt="" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;opacity:0.06;pointer-events:none;z-index:0;" />
     <div class="section-inner" style="position:relative;z-index:1;">
       <p class="hero-label">Pricing</p>
-      <h1 class="hero-headline">Protection for serious traders.</h1>
-      <p class="hero-sub">Not a subscription. A commitment to the version of yourself that doesn't break under pressure.</p>
+      <h1 class="hero-headline">Built for every stage of the journey.</h1>
+      <p class="hero-sub">From your first trade to your best performance. Choose the depth of mentorship that matches where you are now.</p>
       <div class="billing-toggle" id="billingToggle">
         <span class="toggle-label active" id="labelMonthly">Monthly</span>
         <div class="toggle-track" id="toggleTrack">
@@ -815,93 +819,123 @@
   <!-- PRICING CARDS -->
   <section class="cards-section">
     <div class="section-inner">
-      <div class="cards-grid reveal" style="grid-template-columns: repeat(4, 1fr);">
+      <div class="cards-grid reveal">
 
-        <!-- TRIAL -->
+        <!-- FREE TRIAL -->
         <div class="price-card">
-          <div class="card-tier">Trial</div>
+          <div class="card-tier">Free Trial</div>
           <div class="card-price">
             <span class="price-num" style="font-size:2rem;">Free</span>
           </div>
-          <div class="card-cadence">7 exchanges · one real session</div>
+          <div class="card-cadence">Track 1 preview · 5 questions</div>
+          <div class="save-inline hidden">&nbsp;</div>
           <ul class="card-features">
-            <li class="included"><span class="check">✓</span> Choose Mike or Ashley</li>
-            <li class="included"><span class="check">✓</span> 7 mentor exchanges</li>
-            <li class="included"><span class="check">✓</span> 3 journal entries</li>
+            <li class="included"><span class="check">✓</span> Track 1 preview — first 3 modules</li>
+            <li class="included"><span class="check">✓</span> 5 AI questions per month</li>
+            <li><span class="dash">—</span> Journal or rules access</li>
             <li><span class="dash">—</span> Persistent memory</li>
-            <li><span class="dash">—</span> Rule engine</li>
-            <li class="included"><span class="check">✓</span> Voice sessions — 1 / month</li>
             <li><span class="dash">—</span> Guardian Layer</li>
+            <li><span class="dash">—</span> Session review log</li>
+            <li><span class="dash">—</span> Voice mentor sessions</li>
           </ul>
-          <button class="card-cta" onclick="window.location='/onboarding.html?plan=free'">Start your first session</button>
+          <button class="card-cta" onclick="window.location='/onboarding.html?plan=free'">Start Free</button>
         </div>
 
-        <!-- RESIDENT -->
+        <!-- STUDENT -->
         <div class="price-card">
-          <div class="card-tier">Resident</div>
+          <div class="card-tier">Student</div>
+          <div class="card-subtitle" style="font-family:var(--mono);font-size:0.58rem;letter-spacing:0.1em;color:var(--muted);margin-bottom:20px;">For traders building their foundation</div>
           <div class="card-price">
-            <span class="currency">$</span><span class="price-num" data-monthly="59" data-annual="590">59</span><span class="period"> <span class="cadence-inline">/mo</span></span>
+            <span class="currency">$</span><span class="price-num" data-monthly="29" data-annual="290">29</span><span class="period"> <span class="cadence-inline">/mo</span></span>
           </div>
           <div class="card-cadence" id="cadence-starter">Billed monthly</div>
-          <div class="save-inline hidden" id="save-starter">Save $118 / year</div>
+          <div class="save-inline hidden" id="save-starter">Save $58 / year</div>
           <ul class="card-features">
-            <li class="included"><span class="check">✓</span> Both mentors — Mike and Ashley</li>
-            <li class="included"><span class="check">✓</span> 500 mentor exchanges / month</li>
-            <li class="included"><span class="check">✓</span> Full memory — grows every session</li>
-            <li class="included"><span class="check">✓</span> Journal — unlimited</li>
-            <li class="included"><span class="check">✓</span> Trading rules engine</li>
-            <li class="included"><span class="check">✓</span> Behavior analytics</li>
-            <li class="included"><span class="check">✓</span> Decision Passport</li>
-            <li class="included"><span class="check">✓</span> Voice sessions — 3 / month</li>
+            <li class="included"><span class="check">✓</span> Full Track 1, 2 &amp; 3 curriculum</li>
+            <li class="included"><span class="check">✓</span> Market Foundations, Technical Analysis, Risk Management</li>
+            <li class="included"><span class="check">✓</span> 30 AI mentor questions / month</li>
+            <li class="included"><span class="check">✓</span> Trading Journal access</li>
+            <li class="included"><span class="check">✓</span> Basic rule tracking</li>
+            <li class="included"><span class="check">✓</span> Session review log</li>
             <li><span class="dash">—</span> Guardian Layer</li>
           </ul>
-          <button class="card-cta" data-plan="starter" onclick="initiateCheckout('starter')">Become a Resident</button>
+          <!-- TODO: Create separate Paystack plan IDs for each tier in Paystack dashboard -->
+          <!-- Student plan maps to existing starter plan; price has changed to $29 -->
+          <button class="card-cta" data-plan="starter" onclick="initiateCheckout('starter')">Enroll as Student</button>
         </div>
 
-        <!-- FELLOW (featured) -->
+        <!-- PRACTITIONER (featured) -->
         <div class="price-card featured">
-          <div class="featured-badge">The Full System</div>
-          <div class="card-tier">Fellow</div>
+          <div class="featured-badge">Most Popular</div>
+          <div class="card-tier">Practitioner</div>
+          <div class="card-subtitle" style="font-family:var(--mono);font-size:0.58rem;letter-spacing:0.1em;color:var(--muted);margin-bottom:20px;">For developing traders building consistency</div>
           <div class="card-price">
-            <span class="currency">$</span><span class="price-num" data-monthly="119" data-annual="1190">119</span><span class="period"> <span class="cadence-inline">/mo</span></span>
+            <span class="currency">$</span><span class="price-num" data-monthly="69" data-annual="690">69</span><span class="period"> <span class="cadence-inline">/mo</span></span>
           </div>
           <div class="card-cadence" id="cadence-pro">Billed monthly</div>
-          <div class="save-inline hidden" id="save-pro">Save $238 / year</div>
+          <div class="save-inline hidden" id="save-pro">Save $138 / year</div>
           <ul class="card-features">
-            <li class="included"><span class="check">✓</span> Both mentors — Mike and Ashley</li>
-            <li class="included"><span class="check">✓</span> 2,000 mentor exchanges / month</li>
-            <li class="included"><span class="check">✓</span> Voice sessions — 8 / month (30 min)</li>
-            <li class="included"><span class="check">✓</span> Guardian Layer — live account monitoring</li>
-            <li class="included"><span class="check">✓</span> The Vault — intervention archive</li>
-            <li class="included"><span class="check">✓</span> Break Room — mandatory pause system</li>
-            <li class="included"><span class="check">✓</span> Monthly behavioral report</li>
-            <li class="included"><span class="check">✓</span> Priority response speed</li>
+            <li class="included"><span class="check">✓</span> Full 6-track curriculum</li>
+            <li class="included"><span class="check">✓</span> 100 AI mentor questions / month</li>
+            <li class="included"><span class="check">✓</span> Guardian Layer active</li>
+            <li class="included"><span class="check">✓</span> Journal + Rules + Session Reviews</li>
+            <li class="included"><span class="check">✓</span> Behavioral analytics</li>
+            <li class="included"><span class="check">✓</span> Weekly research insights</li>
+            <li><span class="dash">—</span> Voice mentor sessions</li>
           </ul>
-          <button class="card-cta" data-plan="pro" onclick="initiateCheckout('pro')">Become a Fellow</button>
+          <!-- Practitioner plan maps to existing pro plan -->
+          <button class="card-cta" data-plan="pro" onclick="initiateCheckout('pro')">Become a Practitioner</button>
         </div>
 
-        <!-- PRIVATE OFFICE -->
-        <div class="price-card institutional">
-          <div class="card-tier">Private Office</div>
+        <!-- PROFESSIONAL -->
+        <div class="price-card">
+          <div class="card-tier">Professional</div>
+          <div class="card-subtitle" style="font-family:var(--mono);font-size:0.58rem;letter-spacing:0.1em;color:var(--muted);margin-bottom:20px;">For serious traders optimizing performance</div>
           <div class="card-price">
-            <span class="currency">$</span><span class="price-num" data-monthly="349" data-annual="3490">349</span><span class="period"> <span class="cadence-inline">/mo</span></span>
+            <span class="currency">$</span><span class="price-num" data-monthly="129" data-annual="1290">129</span><span class="period"> <span class="cadence-inline">/mo</span></span>
+          </div>
+          <div class="card-cadence" id="cadence-professional">Billed monthly</div>
+          <div class="save-inline hidden" id="save-professional">Save $258 / year</div>
+          <ul class="card-features">
+            <li class="included"><span class="check">✓</span> Everything in Practitioner</li>
+            <li class="included"><span class="check">✓</span> Voice mentor sessions</li>
+            <li class="included"><span class="check">✓</span> Monthly behavioral reports</li>
+            <li class="included"><span class="check">✓</span> Decision Passport</li>
+            <li class="included"><span class="check">✓</span> Priority mentor response</li>
+            <li class="included"><span class="check">✓</span> Performance OS (full)</li>
+          </ul>
+          <!-- Professional plan maps to existing institutional plan -->
+          <!-- TODO: Create separate Paystack plan IDs for each tier in Paystack dashboard -->
+          <button class="card-cta" data-plan="institutional" onclick="initiateCheckout('institutional')">Go Professional</button>
+        </div>
+
+        <!-- INSTITUTION -->
+        <div class="price-card institutional">
+          <div class="card-tier">Institution</div>
+          <div class="card-subtitle" style="font-family:var(--mono);font-size:0.58rem;letter-spacing:0.1em;color:var(--muted);margin-bottom:20px;">Complete institutional access</div>
+          <div class="card-price">
+            <span class="currency">$</span><span class="price-num" data-monthly="249" data-annual="2490">249</span><span class="period"> <span class="cadence-inline">/mo</span></span>
           </div>
           <div class="card-cadence" id="cadence-institutional">Billed monthly</div>
-          <div class="save-inline hidden" id="save-institutional">Save $698 / year</div>
+          <div class="save-inline hidden" id="save-institutional">Save $498 / year</div>
           <ul class="card-features">
-            <li class="included"><span class="check">✓</span> Everything in Fellow</li>
-            <li class="included"><span class="check">✓</span> Up to 5 team seats</li>
-            <li class="included"><span class="check">✓</span> Admin dashboard — team oversight</li>
-            <li class="included"><span class="check">✓</span> Custom Guardian thresholds</li>
-            <li class="included"><span class="check">✓</span> Quarterly deep behavioral reviews</li>
-            <li class="included"><span class="check">✓</span> API access</li>
-            <li class="included"><span class="check">✓</span> White-glove onboarding</li>
-            <li class="included"><span class="check">✓</span> SLA + dedicated support</li>
+            <li class="included"><span class="check">✓</span> Everything in Professional</li>
+            <li class="included"><span class="check">✓</span> Network community rooms</li>
+            <li class="included"><span class="check">✓</span> Research Division insights</li>
+            <li class="included"><span class="check">✓</span> Admin-level oversight tools</li>
+            <li class="included"><span class="check">✓</span> Direct office access</li>
+            <li class="included"><span class="check">✓</span> Unlimited AI questions</li>
           </ul>
-          <button class="card-cta" data-plan="institutional" onclick="initiateCheckout('institutional')">Apply for Private Office</button>
+          <!-- Institution plan maps to existing institutional plan — separate plan ID needed -->
+          <!-- TODO: Create separate Paystack plan IDs for each tier in Paystack dashboard -->
+          <button class="card-cta" data-plan="institutional" onclick="initiateCheckout('institutional')">Enter the Institution</button>
         </div>
 
       </div>
+
+      <!-- Pricing footnotes -->
+      <p style="text-align:center;font-family:var(--mono);font-size:0.58rem;letter-spacing:0.12em;color:var(--muted);margin-top:32px;">Prices in USD. Billed monthly. Cancel anytime.</p>
+      <p style="text-align:center;font-family:var(--mono);font-size:0.55rem;letter-spacing:0.1em;color:var(--dim);margin-top:10px;">Trading involves significant risk. EdgeKeeper provides education only. Past results do not guarantee future performance.</p>
     </div>
   </section>
 
@@ -915,76 +949,70 @@
         <table class="comparison-table">
           <thead>
             <tr>
-              <th style="width:30%">Feature</th>
-              <th>Trial</th>
-              <th>Resident</th>
-              <th class="featured-col">Fellow</th>
-              <th>Private Office</th>
+              <th style="width:25%">Feature</th>
+              <th>Free Trial</th>
+              <th>Student</th>
+              <th class="featured-col">Practitioner</th>
+              <th>Professional</th>
+              <th>Institution</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td>Price</td>
               <td class="val-text">Free</td>
-              <td class="val-text">$59 / mo</td>
-              <td class="featured-col val-text">$119 / mo</td>
-              <td class="val-text">$349 / mo</td>
+              <td class="val-text">$29 / mo</td>
+              <td class="featured-col val-text">$69 / mo</td>
+              <td class="val-text">$129 / mo</td>
+              <td class="val-text">$249 / mo</td>
             </tr>
             <tr>
-              <td>Mentor exchanges</td>
-              <td class="val-text">7 total</td>
-              <td class="val-text">500 / month</td>
-              <td class="featured-col val-text">2,000 / mo</td>
+              <td>AI mentor questions</td>
+              <td class="val-text">5 / month</td>
+              <td class="val-text">30 / month</td>
+              <td class="featured-col val-text">100 / month</td>
+              <td class="val-text">Included</td>
               <td class="val-text">Unlimited</td>
             </tr>
             <tr>
-              <td>Mentors</td>
-              <td class="val-text">1</td>
-              <td class="val-text">Both (Mike &amp; Ashley)</td>
-              <td class="featured-col val-text">Both</td>
-              <td class="val-text">Both + custom</td>
+              <td>Curriculum access</td>
+              <td class="val-text">Track 1 preview</td>
+              <td class="val-text">Tracks 1–3</td>
+              <td class="featured-col val-text">All 6 tracks</td>
+              <td class="val-text">All 6 tracks</td>
+              <td class="val-text">All 6 tracks</td>
             </tr>
             <tr>
-              <td>Persistent memory</td>
+              <td>Trading Journal</td>
               <td><span class="dash-muted">—</span></td>
               <td><span class="check-gold">✓</span></td>
               <td class="featured-col"><span class="check-gold">✓</span></td>
               <td><span class="check-gold">✓</span></td>
+              <td><span class="check-gold">✓</span></td>
             </tr>
             <tr>
-              <td>Journal</td>
-              <td class="val-text">3 entries</td>
-              <td><span class="check-gold">✓</span></td>
+              <td>Rule tracking</td>
+              <td><span class="dash-muted">—</span></td>
+              <td class="val-text">Basic</td>
               <td class="featured-col"><span class="check-gold">✓</span></td>
               <td><span class="check-gold">✓</span></td>
+              <td><span class="check-gold">✓</span></td>
             </tr>
             <tr>
-              <td>Trading rules engine</td>
+              <td>Session review log</td>
               <td><span class="dash-muted">—</span></td>
               <td><span class="check-gold">✓</span></td>
               <td class="featured-col"><span class="check-gold">✓</span></td>
               <td><span class="check-gold">✓</span></td>
+              <td><span class="check-gold">✓</span></td>
             </tr>
             <tr>
-              <td>Behavior analytics</td>
+              <td>Behavioral analytics</td>
               <td><span class="dash-muted">—</span></td>
-              <td><span class="check-gold">✓</span></td>
+              <td><span class="dash-muted">—</span></td>
               <td class="featured-col"><span class="check-gold">✓</span></td>
               <td><span class="check-gold">✓</span></td>
-            </tr>
-            <tr>
-              <td>Decision Passport</td>
-              <td><span class="dash-muted">—</span></td>
               <td><span class="check-gold">✓</span></td>
-              <td class="featured-col"><span class="check-gold">✓</span></td>
-              <td><span class="check-gold">✓</span></td>
-            </tr>
-            <tr>
-              <td>Voice sessions</td>
-              <td class="val-text">1 / mo</td>
-              <td class="val-text">3 / mo</td>
-              <td class="featured-col val-text">8 / month (30 min)</td>
-              <td class="val-text">8 / month + custom</td>
             </tr>
             <tr>
               <td>Guardian Layer</td>
@@ -992,61 +1020,86 @@
               <td><span class="dash-muted">—</span></td>
               <td class="featured-col"><span class="check-gold">✓</span></td>
               <td><span class="check-gold">✓</span></td>
+              <td><span class="check-gold">✓</span></td>
             </tr>
             <tr>
-              <td>The Vault</td>
+              <td>Weekly research insights</td>
               <td><span class="dash-muted">—</span></td>
               <td><span class="dash-muted">—</span></td>
               <td class="featured-col"><span class="check-gold">✓</span></td>
               <td><span class="check-gold">✓</span></td>
-            </tr>
-            <tr>
-              <td>Break Room</td>
-              <td><span class="dash-muted">—</span></td>
-              <td><span class="dash-muted">—</span></td>
-              <td class="featured-col"><span class="check-gold">✓</span></td>
               <td><span class="check-gold">✓</span></td>
             </tr>
             <tr>
-              <td>Priority response speed</td>
-              <td><span class="dash-muted">—</span></td>
-              <td><span class="dash-muted">—</span></td>
-              <td class="featured-col"><span class="check-gold">✓</span></td>
-              <td><span class="check-gold">✓</span></td>
-            </tr>
-            <tr>
-              <td>Team seats</td>
-              <td><span class="dash-muted">—</span></td>
-              <td><span class="dash-muted">—</span></td>
-              <td class="featured-col"><span class="dash-muted">—</span></td>
-              <td class="val-text">Up to 5</td>
-            </tr>
-            <tr>
-              <td>Admin dashboard</td>
+              <td>Voice mentor sessions</td>
               <td><span class="dash-muted">—</span></td>
               <td><span class="dash-muted">—</span></td>
               <td class="featured-col"><span class="dash-muted">—</span></td>
               <td><span class="check-gold">✓</span></td>
+              <td><span class="check-gold">✓</span></td>
             </tr>
             <tr>
-              <td>Custom Guardian thresholds</td>
+              <td>Monthly behavioral reports</td>
               <td><span class="dash-muted">—</span></td>
               <td><span class="dash-muted">—</span></td>
               <td class="featured-col"><span class="dash-muted">—</span></td>
               <td><span class="check-gold">✓</span></td>
+              <td><span class="check-gold">✓</span></td>
             </tr>
             <tr>
-              <td>Quarterly deep reviews</td>
+              <td>Decision Passport</td>
               <td><span class="dash-muted">—</span></td>
               <td><span class="dash-muted">—</span></td>
               <td class="featured-col"><span class="dash-muted">—</span></td>
               <td><span class="check-gold">✓</span></td>
+              <td><span class="check-gold">✓</span></td>
             </tr>
             <tr>
-              <td>API access</td>
+              <td>Priority mentor response</td>
               <td><span class="dash-muted">—</span></td>
               <td><span class="dash-muted">—</span></td>
               <td class="featured-col"><span class="dash-muted">—</span></td>
+              <td><span class="check-gold">✓</span></td>
+              <td><span class="check-gold">✓</span></td>
+            </tr>
+            <tr>
+              <td>Performance OS (full)</td>
+              <td><span class="dash-muted">—</span></td>
+              <td><span class="dash-muted">—</span></td>
+              <td class="featured-col"><span class="dash-muted">—</span></td>
+              <td><span class="check-gold">✓</span></td>
+              <td><span class="check-gold">✓</span></td>
+            </tr>
+            <tr>
+              <td>Network community rooms</td>
+              <td><span class="dash-muted">—</span></td>
+              <td><span class="dash-muted">—</span></td>
+              <td class="featured-col"><span class="dash-muted">—</span></td>
+              <td><span class="dash-muted">—</span></td>
+              <td><span class="check-gold">✓</span></td>
+            </tr>
+            <tr>
+              <td>Research Division insights</td>
+              <td><span class="dash-muted">—</span></td>
+              <td><span class="dash-muted">—</span></td>
+              <td class="featured-col"><span class="dash-muted">—</span></td>
+              <td><span class="dash-muted">—</span></td>
+              <td><span class="check-gold">✓</span></td>
+            </tr>
+            <tr>
+              <td>Admin oversight tools</td>
+              <td><span class="dash-muted">—</span></td>
+              <td><span class="dash-muted">—</span></td>
+              <td class="featured-col"><span class="dash-muted">—</span></td>
+              <td><span class="dash-muted">—</span></td>
+              <td><span class="check-gold">✓</span></td>
+            </tr>
+            <tr>
+              <td>Direct office access</td>
+              <td><span class="dash-muted">—</span></td>
+              <td><span class="dash-muted">—</span></td>
+              <td class="featured-col"><span class="dash-muted">—</span></td>
+              <td><span class="dash-muted">—</span></td>
               <td><span class="check-gold">✓</span></td>
             </tr>
           </tbody>
@@ -1188,25 +1241,34 @@ const labelAnnual   = document.getElementById('labelAnnual');
 const billingToggle = document.getElementById('billingToggle');
 
 // Price display data
+// TODO: Create separate Paystack plan IDs for each tier in Paystack dashboard
+// Plan code mapping: Student→starter, Practitioner→pro, Professional→institutional, Institution→institutional
 const plans = {
   starter: {
-    monthly: 59,  annual: 590,
-    saveMonthly: 59 * 12,
-    saveAnnual:  590,
+    monthly: 29,  annual: 290,
+    saveMonthly: 29 * 12,
+    saveAnnual:  290,
     cadenceId: 'cadence-starter',
     saveId:    'save-starter',
   },
   pro: {
-    monthly: 119, annual: 1190,
-    saveMonthly: 119 * 12,
-    saveAnnual:  1190,
+    monthly: 69, annual: 690,
+    saveMonthly: 69 * 12,
+    saveAnnual:  690,
     cadenceId: 'cadence-pro',
     saveId:    'save-pro',
   },
+  professional: {
+    monthly: 129, annual: 1290,
+    saveMonthly: 129 * 12,
+    saveAnnual:  1290,
+    cadenceId: 'cadence-professional',
+    saveId:    'save-professional',
+  },
   institutional: {
-    monthly: 349, annual: 3490,
-    saveMonthly: 349 * 12,
-    saveAnnual:  3490,
+    monthly: 249, annual: 2490,
+    saveMonthly: 249 * 12,
+    saveAnnual:  2490,
     cadenceId: 'cadence-institutional',
     saveId:    'save-institutional',
   },
