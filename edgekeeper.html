@@ -896,6 +896,8 @@
       background: var(--black);
       position: relative;
       transition: background .3s;
+      display: flex;
+      flex-direction: column;
     }
     .price-card:hover { background: var(--stone); }
     .price-card.featured {
@@ -927,7 +929,7 @@
     }
     .price-amount span { font-size: 1rem; color: var(--muted); }
     .price-period { font-size: 0.75rem; color: var(--muted); margin-bottom: 36px; }
-    .price-features { list-style: none; margin-bottom: 44px; }
+    .price-features { list-style: none; margin-bottom: 0; flex: 1; }
     .price-features li {
       font-size: 0.82rem;
       color: var(--muted);
@@ -958,6 +960,7 @@
       text-decoration: none;
       cursor: none;
       transition: all .3s;
+      margin-top: 44px;
     }
     .price-card:not(.featured) .price-cta {
       color: var(--muted);
@@ -2131,7 +2134,7 @@
       <div class="price-card reveal">
         <div class="price-tier">Free Trial</div>
         <div class="price-amount">Free</div>
-        <div class="price-period">One real session. No card required.</div>
+        <div class="price-period">10 real exchanges. No card, no commitment.</div>
         <ul class="price-features">
           <li class="included">10 mentor exchanges</li>
           <li class="included">Choose Mike or Ashley</li>
@@ -2146,13 +2149,13 @@
       <div class="price-card reveal reveal-delay-1">
         <div class="price-tier">Resident</div>
         <div class="price-amount">$79<span>/mo</span></div>
-        <div class="price-period">Build the daily practice.</div>
+        <div class="price-period">Build the discipline habit.</div>
         <ul class="price-features">
           <li class="included">30 mentor exchanges / month</li>
           <li class="included">Both mentors — Mike and Ashley</li>
-          <li class="included">Full memory — grows across every session</li>
+          <li class="included">Memory grows across every session</li>
           <li class="included">Trading journal — unlimited entries</li>
-          <li class="included">Rules engine — define your own guardrails</li>
+          <li class="included">Rules engine — define your guardrails</li>
           <li>Guardian Layer</li>
           <li>Voice sessions</li>
         </ul>
@@ -2161,14 +2164,14 @@
       <div class="price-card featured reveal reveal-delay-2">
         <div class="price-tier">Fellow</div>
         <div class="price-amount">$149<span>/mo</span></div>
-        <div class="price-period">Add the protection layer.</div>
+        <div class="price-period">Stop the trades you'll regret.</div>
         <ul class="price-features">
           <li class="included">100 mentor exchanges / month</li>
           <li class="included">Everything in Resident</li>
-          <li class="included">Guardian Layer — live account monitoring</li>
-          <li class="included">Custom drawdown & loss limits</li>
-          <li class="included">Break Room — mandatory pause enforcement</li>
-          <li class="included">Behavior analytics dashboard</li>
+          <li class="included">Guardian Layer — hooks into your live account</li>
+          <li class="included">Custom drawdown &amp; loss limits</li>
+          <li class="included">Break Room — mandatory pause before re-entry</li>
+          <li class="included">Analytics — see which conditions break your discipline</li>
           <li>Voice sessions</li>
         </ul>
         <a href="onboarding.html?plan=pro" class="price-cta">Become a Fellow</a>
@@ -2176,26 +2179,20 @@
       <div class="price-card reveal reveal-delay-3">
         <div class="price-tier">Private Office</div>
         <div class="price-amount">$299<span>/mo</span></div>
-        <div class="price-period">The complete system.</div>
+        <div class="price-period">Voice coaching. No ceiling. Full record.</div>
         <ul class="price-features">
           <li class="included">Unlimited mentor exchanges</li>
           <li class="included">Everything in Fellow</li>
-          <li class="included">Voice sessions — 5 / month</li>
-          <li class="included">The Vault — intervention archive</li>
-          <li class="included">Decision Passport — behavioral identity record</li>
-          <li class="included">Monthly behavioral reports</li>
-          <li class="included">Performance analytics suite</li>
+          <li class="included">5 voice sessions / month</li>
+          <li class="included">The Vault — every intervention, archived</li>
+          <li class="included">Decision Passport — your psychological profile, built from real behavior</li>
+          <li class="included">Monthly behavioral report from your mentor</li>
         </ul>
-        <a href="onboarding.html?plan=professional" class="price-cta">Apply for Private Office</a>
+        <a href="onboarding.html?plan=professional" class="price-cta">Enter Private Office</a>
       </div>
     </div>
-    <div class="reveal" style="text-align:center;margin-top:40px;padding:32px 40px;background:var(--obsidian);border:1px solid var(--border);max-width:680px;margin-left:auto;margin-right:auto;">
-      <div style="font-family:var(--mono);font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:12px;">Institution</div>
-      <p style="font-size:0.92rem;color:var(--text);line-height:1.7;margin-bottom:20px;">Prop firms, trading floors, and multi-seat deployments. Custom Guardian thresholds, team behavioral oversight, admin dashboard, and white-glove onboarding. Pricing on application.</p>
-      <a href="mailto:hello@edgekeeper.io?subject=EdgeKeeper%20Institution%20Enquiry" class="price-cta" style="display:inline-block;">Contact for Institution pricing →</a>
-    </div>
     <div class="reveal" style="text-align:center;margin-top:48px;">
-      <a href="/pricing.html" style="font-family:var(--mono);font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-dim);text-decoration:none;border-bottom:1px solid rgba(184,160,106,0.25);padding-bottom:3px;transition:color .3s,border-color .3s;" onmouseover="this.style.color='var(--gold)';this.style.borderColor='rgba(184,160,106,0.6)'" onmouseout="this.style.color='var(--gold-dim)';this.style.borderColor='rgba(184,160,106,0.25)'">Compare all features in detail →</a>
+      <a href="/pricing.html" style="font-family:var(--mono);font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-dim);text-decoration:none;border-bottom:1px solid rgba(184,160,106,0.25);padding-bottom:3px;transition:color .3s,border-color .3s;" onmouseover="this.style.color='var(--gold)';this.style.borderColor='rgba(184,160,106,0.6)'" onmouseout="this.style.color='var(--gold-dim)';this.style.borderColor='rgba(184,160,106,0.25)'">Full feature breakdown — including Institution →</a>
     </div>
   </div>
 </section>
