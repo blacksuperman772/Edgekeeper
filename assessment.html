@@ -599,7 +599,7 @@
         key: 'motivation',
         type: 'textarea',
         text: "What drew you to trading?",
-        placeholder: "Tell us what sparked this..."
+        placeholder: "What brought you here..."
       },
       {
         key: 'time_commitment',
@@ -706,7 +706,7 @@
         key: 'biggest_challenge',
         type: 'textarea',
         text: isMike
-          ? "What's the one thing that keeps costing you? Not the market — you."
+          ? "What's the one thing about your own behavior that keeps costing you?"
           : "What pattern keeps showing up for you, even when you know better?",
         placeholder: "Be specific..."
       },
@@ -756,7 +756,7 @@
         key: 'honest_admission',
         type: 'textarea',
         text: isMike
-          ? "One thing about your trading that you haven't told anyone. I'll find out anyway — might as well start here."
+          ? "One thing about your trading you haven't told anyone. I'll find out anyway, so you might as well start here."
           : "What's something true about how you trade that you haven't said out loud before?",
         placeholder: "Not what you tell other people. What you know."
       }
@@ -764,7 +764,7 @@
 
     const CLOSING_LINE = isMike
       ? 'Alright. Give me a moment with this.'
-      : "Thank you. I've been listening.";
+      : "I've heard enough to start.";
 
     /* ── STATE ──────────────────────────────── */
     let selectedPath    = null;
