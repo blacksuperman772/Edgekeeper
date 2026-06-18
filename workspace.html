@@ -3179,13 +3179,13 @@ async function loadMessagesPanel(body) {
   });
 }
 
-// ── REPORTS PANEL — monthly behavioral reports (Fellow+) ──────────────
+// ── REPORTS PANEL — monthly behavioral reports (Professional+) ──────────
 async function loadReportsPanel(body) {
   try {
     const res = await fetch('/api/reports', { credentials: 'include' });
     if (res.status === 403) {
       body.innerHTML = `<div style="padding:40px 32px;text-align:center;">
-        <div style="font-family:var(--serif);font-size:1.1rem;font-style:italic;color:var(--text);margin-bottom:16px;">Monthly reports are a Fellow feature.</div>
+        <div style="font-family:var(--serif);font-size:1.1rem;font-style:italic;color:var(--text);margin-bottom:16px;">Monthly reports are a Private Office feature.</div>
         <div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-bottom:24px;">Upgrade to access your full behavioral performance history — generated on the 1st of each month by your mentor.</div>
         <a href="/pricing.html" style="color:var(--gold);font-family:var(--mono);font-size:0.62rem;letter-spacing:0.12em;text-decoration:none;border-bottom:1px solid rgba(184,160,106,0.4);padding-bottom:2px;">View Plans →</a>
       </div>`;

@@ -5,32 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Privacy Policy — EdgeKeeper</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400&family=Space+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&family=Space+Mono&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --bg: #07050E; --border: rgba(255,255,255,0.07);
-      --text: rgba(255,255,255,0.82); --muted: rgba(255,255,255,0.4);
-      --dim: rgba(255,255,255,0.18); --gold: #b8a06a;
+      --text: rgba(255,255,255,0.82); --muted: rgba(255,255,255,0.45);
+      --dim: rgba(255,255,255,0.18); --gold: #b8a06a; --gold-dim: rgba(184,160,106,0.3);
       --mono: 'Space Mono', monospace; --sans: 'Space Grotesk', sans-serif;
     }
-    html, body { background: var(--bg); color: var(--text); font-family: var(--sans); font-weight: 300; }
+    html, body { background: var(--bg); color: var(--text); font-family: var(--sans); font-weight: 300; line-height: 1.7; }
     .topbar { height: 52px; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 28px; gap: 20px; position: sticky; top: 0; background: var(--bg); z-index: 10; }
     .topbar-logo { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); text-decoration: none; }
     .topbar-logo span { color: var(--gold); }
     .topbar-back { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); text-decoration: none; margin-left: auto; transition: color 0.2s; }
     .topbar-back:hover { color: var(--muted); }
-    .page { max-width: 660px; margin: 0 auto; padding: 52px 24px 80px; }
-    .page-label { font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--dim); margin-bottom: 8px; }
-    h1 { font-size: 1.6rem; font-weight: 300; color: var(--text); margin-bottom: 8px; }
+    .page { max-width: 680px; margin: 0 auto; padding: 56px 24px 100px; }
+    .page-label { font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--dim); margin-bottom: 10px; }
+    h1 { font-size: 1.7rem; font-weight: 300; color: var(--text); margin-bottom: 8px; letter-spacing: -0.01em; }
     .updated { font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.12em; color: var(--dim); margin-bottom: 52px; }
-    h2 { font-size: 0.78rem; font-weight: 400; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); margin: 40px 0 14px; }
-    p { font-size: 0.9rem; color: var(--muted); line-height: 1.85; margin-bottom: 16px; }
-    ul { padding-left: 20px; margin-bottom: 16px; }
-    li { font-size: 0.9rem; color: var(--muted); line-height: 1.85; margin-bottom: 6px; }
-    a { color: var(--muted); } a:hover { color: var(--text); }
-    .divider { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+    h2 { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); margin: 48px 0 14px; }
+    h3 { font-size: 0.88rem; font-weight: 400; color: var(--text); margin: 24px 0 10px; }
+    p { font-size: 0.9rem; color: var(--muted); line-height: 1.9; margin-bottom: 14px; }
+    ul, ol { padding-left: 20px; margin-bottom: 14px; }
+    li { font-size: 0.9rem; color: var(--muted); line-height: 1.85; margin-bottom: 7px; }
+    a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+    a:hover { color: var(--text); }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
+    .callout { background: rgba(184,160,106,0.04); border: 1px solid var(--gold-dim); padding: 18px 20px; margin: 20px 0; border-radius: 2px; }
+    .callout p { margin-bottom: 0; font-size: 0.88rem; }
+    strong { color: var(--text); font-weight: 400; }
     code { font-family: var(--mono); font-size: 0.8em; color: var(--dim); }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+    th { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); text-align: left; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--border); }
+    td { font-size: 0.88rem; color: var(--muted); padding: 10px 12px 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: top; }
   </style>
 </head>
 <body>
@@ -41,52 +49,161 @@
   <div class="page">
     <div class="page-label">Legal</div>
     <h1>Privacy Policy</h1>
-    <div class="updated">Last updated: June 2026</div>
+    <div class="updated">Last updated: June 2026 &nbsp;·&nbsp; Version 1.2</div>
 
-    <p>EdgeKeeper ("we", "us", "our") is committed to protecting your privacy. This policy explains what data we collect, how we use it, and what controls you have over it.</p>
+    <p>EdgeKeeper ("we", "us", "our") respects your privacy and is committed to being transparent about how we handle your data. This policy explains what personal information we collect, why we collect it, how we use and protect it, and what rights you have over it.</p>
+    <p>By using EdgeKeeper, you agree to the practices described in this policy. If you do not agree, please do not use the Service.</p>
 
-    <h2>1. What We Collect</h2>
-    <p>We collect only what is necessary to deliver the service:</p>
+    <div class="callout">
+      <p><strong>The short version:</strong> Your conversation content is yours. We do not sell it, share it beyond what's necessary to run the platform, or use it to train AI models. The only third parties who receive any of your data are the infrastructure providers that power the platform — listed in full below.</p>
+    </div>
+
+    <h2>1. Who We Are</h2>
+    <p>EdgeKeeper is operated by EdgeKeeper Ltd, registered in Nigeria. For the purposes of data protection law, we are the data controller for personal information processed through the platform.</p>
+    <p>Data protection contact: <a href="mailto:privacy@edgekeeper.io">privacy@edgekeeper.io</a></p>
+
+    <h2>2. Data We Collect</h2>
+    <p>We collect only what is necessary to operate the Service:</p>
+
+    <h3>Account data</h3>
     <ul>
-      <li><strong>Account data</strong> — email address and hashed password (stored by Supabase Auth)</li>
-      <li><strong>Session data</strong> — mentor conversations, journal entries, trading rules, and notebook content you create</li>
-      <li><strong>Behavioral data</strong> — discipline scores, rule violations, and Vault entries generated from your sessions</li>
-      <li><strong>Account state data</strong> — Guardian Layer metrics you submit (balance, P&amp;L, drawdown), if used</li>
-      <li><strong>Usage data</strong> — message counts per month, voice session timestamps</li>
-      <li><strong>Payment data</strong> — processed entirely by Polar.sh. We store only your subscription status, never card numbers or credentials</li>
+      <li>Email address — used to create and identify your account, send transactional emails</li>
+      <li>Password — stored as a bcrypt hash by Supabase Auth; we never store or see your plaintext password</li>
+      <li>Mentor preference (Mike or Ashley) and plan tier</li>
     </ul>
 
-    <h2>2. How We Use It</h2>
+    <h3>Session and conversation data</h3>
     <ul>
-      <li>To provide your mentorship sessions and maintain continuity of memory across sessions</li>
-      <li>To enforce plan limits and billing</li>
-      <li>To trigger proactive mentor outreach (if you have enabled this in Settings)</li>
-      <li>To send transactional emails: billing receipts, password resets</li>
-      <li>To generate behavioral analytics visible only to you in your workspace</li>
+      <li>Messages exchanged with your AI mentor — stored to maintain continuity across sessions</li>
+      <li>The mentor's private notebook — observations, patterns, and notes generated during sessions</li>
+      <li>Journal entries, trading rules, and Guardian Layer configurations you create</li>
+      <li>Assessment responses submitted during onboarding</li>
     </ul>
-    <p>We do not sell your data. We do not use your session content to train AI models.</p>
 
-    <h2>3. AI Processing</h2>
-    <p>Your messages are sent to OpenAI's API to generate mentor responses. Only conversation content required for a response is transmitted — not your name, email, or payment information. OpenAI's data processing terms govern their handling of this data.</p>
-    <p>Voice sessions are processed by ElevenLabs. Audio is streamed in real time and is not stored by EdgeKeeper.</p>
+    <h3>Behavioral and performance data</h3>
+    <ul>
+      <li>Behavioral analytics derived from your session patterns (visible only to you)</li>
+      <li>Guardian Layer metrics you choose to submit — account balance, P&amp;L, drawdown levels</li>
+      <li>Rule violation records and Vault intervention entries generated when Guardian triggers fire</li>
+      <li>Discipline scores and streak data generated from your activity</li>
+    </ul>
 
-    <h2>4. Data Storage</h2>
-    <p>All data is stored in Supabase (PostgreSQL) on AWS infrastructure, encrypted at rest. Row-level security policies ensure your data is accessible only to you and to server-side operations acting on your behalf.</p>
+    <h3>Usage and technical data</h3>
+    <ul>
+      <li>Message exchange counts — used to enforce plan limits</li>
+      <li>Voice session timestamps — used to enforce voice session limits</li>
+      <li>Session timestamps and login activity</li>
+      <li>Error logs that may contain request metadata (no conversation content)</li>
+    </ul>
 
-    <h2>5. Cookies</h2>
-    <p>We use a single HttpOnly session cookie (<code>ek_session</code>) to maintain your authenticated session. It is not accessible to JavaScript and cannot be read by third-party scripts. We do not use advertising cookies or tracking pixels.</p>
+    <h3>Payment data</h3>
+    <p>Payment processing is handled entirely by Polar.sh. We store only your subscription status (plan tier and renewal date). We never receive, see, or store your card number, bank account details, or any raw payment instrument data.</p>
 
-    <h2>6. Data Retention</h2>
-    <p>Your data is retained for as long as your account is active. If you close your account, all personal data is deleted within 30 days. You may request deletion at any time by emailing <a href="mailto:privacy@edgekeeper.io">privacy@edgekeeper.io</a>.</p>
+    <h3>Data we do not collect</h3>
+    <ul>
+      <li>We do not collect device fingerprints, advertising IDs, or location data</li>
+      <li>We do not use third-party analytics trackers or advertising pixels</li>
+      <li>We do not read or access your browser history or data from other websites</li>
+    </ul>
 
-    <h2>7. Your Rights</h2>
-    <p>Depending on your jurisdiction, you may have the right to access, correct, or delete your data; to withdraw consent; or to lodge a complaint with a supervisory authority. Contact <a href="mailto:privacy@edgekeeper.io">privacy@edgekeeper.io</a> to exercise these rights.</p>
+    <h2>3. Legal Basis for Processing</h2>
+    <p>We process your personal data on the following legal bases:</p>
+    <table>
+      <thead><tr><th>Purpose</th><th>Legal basis</th></tr></thead>
+      <tbody>
+        <tr><td>Providing mentor sessions and maintaining conversation memory</td><td>Performance of contract</td></tr>
+        <tr><td>Account creation and authentication</td><td>Performance of contract</td></tr>
+        <tr><td>Billing and subscription management</td><td>Performance of contract</td></tr>
+        <tr><td>Sending transactional emails (billing receipts, password resets)</td><td>Performance of contract</td></tr>
+        <tr><td>Enforcing plan usage limits</td><td>Performance of contract</td></tr>
+        <tr><td>Detecting abuse and maintaining platform security</td><td>Legitimate interests</td></tr>
+        <tr><td>Proactive mentor outreach (if enabled in Settings)</td><td>Consent (opt-in, revocable)</td></tr>
+        <tr><td>Compliance with legal obligations</td><td>Legal obligation</td></tr>
+      </tbody>
+    </table>
 
-    <h2>8. Changes to This Policy</h2>
-    <p>We may update this policy as the product evolves. Material changes will be communicated by email or via a workspace notice. Continued use after notification constitutes acceptance.</p>
+    <h2>4. How We Use Your Data</h2>
+    <ul>
+      <li><strong>Delivering the Service</strong> — your conversation history is retrieved each session to give your mentor memory and continuity</li>
+      <li><strong>Generating behavioral insights</strong> — patterns, discipline scores, and analytics visible only to you in your workspace</li>
+      <li><strong>Enforcing limits</strong> — message counts and voice session counts are checked against your plan tier</li>
+      <li><strong>Transactional email</strong> — billing confirmations, plan changes, password resets sent via Resend</li>
+      <li><strong>Proactive outreach</strong> — if you have opted in, your mentor may send a check-in message if you have been inactive. This can be disabled in Settings at any time</li>
+      <li><strong>Security and abuse prevention</strong> — rate limiting and request validation to protect the platform</li>
+    </ul>
+    <p>We do not use your conversation content or behavioral data to train AI models — ours or anyone else's. We do not sell, rent, or trade your personal data for any commercial purpose.</p>
 
-    <h2>9. Contact</h2>
-    <p><a href="mailto:privacy@edgekeeper.io">privacy@edgekeeper.io</a></p>
+    <h2>5. AI Processing and Third-Party Transmission</h2>
+
+    <h3>OpenAI</h3>
+    <p>Your messages are transmitted to OpenAI's API to generate mentor responses in real time. Only the conversation content required to produce a response is sent — your name, email address, and payment information are never included. Transmission occurs over TLS. OpenAI's <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener">Privacy Policy</a> and API data processing terms govern their handling of this data.</p>
+
+    <h3>ElevenLabs</h3>
+    <p>Voice sessions are processed by ElevenLabs. Your voice is not used — the AI mentor's synthesised speech is streamed to you in real time. No audio is stored by EdgeKeeper. ElevenLabs' <a href="https://elevenlabs.io/privacy" target="_blank" rel="noopener">Privacy Policy</a> applies.</p>
+
+    <h2>6. Third-Party Service Providers</h2>
+    <p>We share only the minimum data necessary with the following providers to operate the platform:</p>
+    <table>
+      <thead><tr><th>Provider</th><th>Data shared</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>Supabase</td><td>All stored data (encrypted at rest on AWS)</td><td>Database, authentication, and storage</td></tr>
+        <tr><td>OpenAI</td><td>Conversation messages per request</td><td>AI mentor text generation</td></tr>
+        <tr><td>ElevenLabs</td><td>Text to be synthesised (no personal data)</td><td>Voice session audio synthesis</td></tr>
+        <tr><td>Polar.sh</td><td>Email address, subscription events</td><td>Payment processing and billing</td></tr>
+        <tr><td>Resend</td><td>Email address, email content</td><td>Transactional email delivery</td></tr>
+      </tbody>
+    </table>
+    <p>All providers are required to process your data only for the purpose we specify and to maintain appropriate security measures. We do not authorise any provider to use your data for their own independent purposes.</p>
+
+    <h2>7. Cookies and Session Management</h2>
+    <p>EdgeKeeper uses a single session cookie:</p>
+    <ul>
+      <li><code>ek_session</code> — an HttpOnly, SameSite=Strict cookie that holds your authenticated session token. It cannot be read by JavaScript, browser extensions, or third-party scripts. It expires after 7 days of inactivity.</li>
+    </ul>
+    <p>We do not use advertising cookies, tracking cookies, or analytics cookies. We do not embed any third-party tracking scripts on the platform.</p>
+
+    <h2>8. Data Storage and Security</h2>
+    <p>Your data is stored in Supabase's PostgreSQL database on AWS infrastructure. Data is encrypted at rest and in transit (TLS). Row-level security policies in the database ensure your data can only be accessed by authenticated server-side operations acting on your behalf — no other user can access your data.</p>
+    <p>We implement rate limiting, input validation, HTTPS enforcement, and HTTP security headers (HSTS, CSP, X-Frame-Options) on all endpoints. Despite these measures, no system is perfectly secure. We will notify you promptly in the event of a data breach that affects your personal information.</p>
+
+    <h2>9. Data Retention</h2>
+    <p>We retain your personal data for as long as your account remains active. If you close your account:</p>
+    <ul>
+      <li>Your personal data (email, conversation history, journal, rules, Guardian data) is deleted within 30 days</li>
+      <li>Anonymised aggregate usage statistics may be retained indefinitely</li>
+      <li>Billing records may be retained for up to 7 years to comply with financial record-keeping obligations</li>
+    </ul>
+    <p>You may request deletion of your data at any time — even without closing your account — by emailing <a href="mailto:privacy@edgekeeper.io">privacy@edgekeeper.io</a>. We will confirm deletion within 30 days.</p>
+
+    <h2>10. International Data Transfers</h2>
+    <p>EdgeKeeper is operated from Nigeria. Our infrastructure providers (Supabase/AWS, OpenAI, ElevenLabs, Polar.sh, Resend) may process or store your data in the United States or other countries. Where data is transferred outside your country of residence, we ensure that appropriate safeguards are in place — including relying on providers that have executed Standard Contractual Clauses or equivalent mechanisms where required by applicable data protection law.</p>
+
+    <h2>11. Your Rights</h2>
+    <p>Depending on your jurisdiction, you may have the following rights:</p>
+    <ul>
+      <li><strong>Access</strong> — request a copy of the personal data we hold about you</li>
+      <li><strong>Correction</strong> — ask us to correct inaccurate or incomplete data</li>
+      <li><strong>Deletion</strong> — request that we delete your personal data ("right to be forgotten")</li>
+      <li><strong>Restriction</strong> — ask us to restrict processing of your data in certain circumstances</li>
+      <li><strong>Portability</strong> — request your data in a structured, machine-readable format</li>
+      <li><strong>Objection</strong> — object to processing based on legitimate interests</li>
+      <li><strong>Withdraw consent</strong> — withdraw consent for optional processing (such as proactive outreach) at any time via Settings</li>
+    </ul>
+    <p>To exercise any of these rights, email <a href="mailto:privacy@edgekeeper.io">privacy@edgekeeper.io</a> with the subject line "Privacy Request." We will respond within 30 days. We may ask you to verify your identity before actioning a request.</p>
+    <p>If you are located in the EU or UK and believe we have not handled your data lawfully, you have the right to lodge a complaint with your local supervisory authority (e.g. the ICO in the UK, or your national DPA in the EU).</p>
+
+    <h2>12. Children</h2>
+    <p>EdgeKeeper is not directed at, and does not knowingly collect data from, individuals under the age of 18. If we become aware that we have collected personal data from a person under 18, we will delete it promptly. If you believe we have received data from a minor, contact <a href="mailto:privacy@edgekeeper.io">privacy@edgekeeper.io</a> immediately.</p>
+
+    <h2>13. Changes to This Policy</h2>
+    <p>We may update this policy as the Service evolves. When we make material changes, we will notify you by email and update the "Last updated" date above at least 14 days before the changes take effect. Continued use of the Service after changes take effect constitutes your acceptance of the revised policy.</p>
+    <p>Prior versions of this policy are available on request.</p>
+
+    <h2>14. Contact</h2>
+    <p>For all privacy-related queries, requests, and concerns:<br>
+    <a href="mailto:privacy@edgekeeper.io">privacy@edgekeeper.io</a></p>
+    <p>For general enquiries:<br>
+    <a href="mailto:hello@edgekeeper.io">hello@edgekeeper.io</a></p>
 
     <hr class="divider">
     <p style="font-size:0.78rem;color:var(--dim);">

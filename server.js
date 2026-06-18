@@ -165,6 +165,14 @@ const chatLimiter = rateLimit({
   message: { error: 'Too many requests. Please slow down.' },
 });
 
+const intakeLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many intake requests. Please slow down.' },
+});
+
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 60,
@@ -217,6 +225,22 @@ async function requireAdmin(req, res, next) {
     next();
   } catch (_) {
     return res.status(503).json({ error: 'Could not verify admin status' });
+  }
+}
+
+// ── Admin page middleware — same DB check but redirects instead of JSON ───────
+async function requireAdminPage(req, res, next) {
+  if (!req.user) return res.redirect('/auth.html');
+  try {
+    const { data: profile } = await supabaseAdmin
+      .from('user_profiles')
+      .select('is_admin')
+      .eq('id', req.user.id)
+      .maybeSingle();
+    if (!profile?.is_admin) return res.redirect('/workspace.html');
+    next();
+  } catch (_) {
+    return res.redirect('/workspace.html');
   }
 }
 
@@ -353,13 +377,7 @@ app.post('/api/onboarding/register', apiLimiter, async (req, res) => {
   sendEmail(
     email,
     `${mentorDisplay} is ready for you.`,
-    mentorEmailHtml(
-      mentorDisplay,
-      `Your intake is saved. ${mentorDisplay} has already started building your profile.<br><br>
-      Head into your workspace whenever you're ready — the conversation picks up exactly where the intake left off.`,
-      'Open Your Workspace',
-      (process.env.APP_URL || 'https://edgekeeper.io') + '/workspace.html'
-    )
+    welcomeEmailHtml(mentorDisplay)
   ).catch(() => {});
 });
 app.get('/profile.html',     requireAuthPage, serveInjectedHtml(path.join(__dirname, 'profile.html')));
@@ -378,24 +396,16 @@ app.get('/integrations.html', requireAuthPage, serveInjectedHtml(path.join(__dir
 app.get('/integrations',      requireAuthPage, serveInjectedHtml(path.join(__dirname, 'integrations.html')));
 app.get('/network.html',      requireAuthPage, serveInjectedHtml(path.join(__dirname, 'network.html')));
 app.get('/network',           requireAuthPage, serveInjectedHtml(path.join(__dirname, 'network.html')));
-app.get('/research.html',     (req, res) => res.sendFile(path.join(__dirname, 'research.html')));
-app.get('/research',          (req, res) => res.sendFile(path.join(__dirname, 'research.html')));
+app.get('/research.html',     requireAuthPage, serveInjectedHtml(path.join(__dirname, 'research.html')));
+app.get('/research',          requireAuthPage, serveInjectedHtml(path.join(__dirname, 'research.html')));
 app.get('/paths.html',        (req, res) => res.sendFile(path.join(__dirname, 'paths.html')));
 app.get('/paths',             (req, res) => res.sendFile(path.join(__dirname, 'paths.html')));
 
 // ── Admin dashboard (admin only) ──────────────────────────────────────────────
-app.get('/admin.html', requireAuthPage, (req, res, next) => {
-  const adminEmail = process.env.ADMIN_EMAIL || 'alexandermwhitmore@gmail.com';
-  if (req.user.email !== adminEmail) return res.redirect('/workspace.html');
-  next();
-}, serveInjectedHtml(path.join(__dirname, 'admin.html')));
+app.get('/admin.html', requireAuthPage, requireAdminPage, serveInjectedHtml(path.join(__dirname, 'admin.html')));
 
 // ── Internal office (admin only) ─────────────────────────────────────────────
-app.get('/office.html', requireAuthPage, (req, res, next) => {
-  const adminEmail = process.env.ADMIN_EMAIL || 'alexandermwhitmore@gmail.com';
-  if (req.user.email !== adminEmail) return res.redirect('/workspace.html');
-  next();
-}, serveInjectedHtml(path.join(__dirname, 'office.html')));
+app.get('/office.html', requireAuthPage, requireAdminPage, serveInjectedHtml(path.join(__dirname, 'office.html')));
 
 // ── Static files (JS, CSS, images, etc.) ─────────────────────────────────────
 // HTML files handled above via explicit routes; block direct .html fallthrough
@@ -480,8 +490,8 @@ app.post('/api/chat', requireAuthApi, chatLimiter, async (req, res) => {
         console.error('Usage RPC error:', usageErr.message);
       } else if (usage?.[0]?.limit_reached) {
         const plan = profile?.subscription_status || 'free';
-        const PLAN_DISPLAY = { free: 'Free Trial', starter: 'Student', pro: 'Practitioner', professional: 'Professional', institutional: 'Institution' };
-        const NEXT_PLAN    = { free: 'Student', starter: 'Practitioner', pro: 'Professional', professional: 'Institution' };
+        const PLAN_DISPLAY = { free: 'Free Trial', starter: 'Resident', pro: 'Fellow', professional: 'Private Office', institutional: 'Institution' };
+        const NEXT_PLAN    = { free: 'Resident', starter: 'Fellow', pro: 'Private Office', professional: 'Institution' };
         const nextPlan = NEXT_PLAN[plan] || null;
         return res.status(429).json({
           error: 'Message limit reached for this month.',
@@ -528,6 +538,70 @@ app.post('/api/chat', requireAuthApi, chatLimiter, async (req, res) => {
 
   } catch (err) {
     console.error('Chat proxy error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── Intake chat (no auth — user not registered yet during onboarding) ─────────
+app.post('/api/intake-chat', intakeLimiter, async (req, res) => {
+  const { messages, systemPrompt } = req.body;
+
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return res.status(400).json({ error: 'messages must be a non-empty array' });
+  }
+  if (messages.length > 20) {
+    return res.status(400).json({ error: 'Too many messages in context' });
+  }
+  if (typeof systemPrompt !== 'string' || systemPrompt.length > 16000) {
+    return res.status(400).json({ error: 'Invalid systemPrompt' });
+  }
+
+  for (const msg of messages) {
+    if (!msg || typeof msg.role !== 'string' || typeof msg.content !== 'string') {
+      return res.status(400).json({ error: 'Invalid message format' });
+    }
+    if (!['user', 'assistant'].includes(msg.role)) {
+      return res.status(400).json({ error: 'Invalid message role' });
+    }
+    if (msg.content.length > 4000) {
+      return res.status(400).json({ error: 'Message content too long' });
+    }
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey || apiKey === 'your-openai-key-here') {
+    return res.status(503).json({ error: 'AI service not configured' });
+  }
+
+  try {
+    const upstream = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...messages,
+        ],
+        max_completion_tokens: 500,
+      }),
+    });
+
+    if (!upstream.ok) {
+      const err = await upstream.json().catch(() => ({}));
+      console.error('OpenAI intake error:', upstream.status, err);
+      return res.status(502).json({ error: 'AI service error' });
+    }
+
+    const data    = await upstream.json();
+    const content = (data.choices?.[0]?.message?.content || '').trim();
+    res.json({ content });
+
+  } catch (err) {
+    console.error('Intake chat error:', err.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -1558,11 +1632,7 @@ app.patch('/api/identity', requireAuthApi, apiLimiter, async (req, res) => {
 
 // PATCH /api/readiness — update readiness score (server-computed, not user-settable directly)
 // Called internally after assessment or after significant events; can also be called by admin
-app.patch('/api/readiness', requireAuthApi, adminLimiter, async (req, res) => {
-  const adminEmail = process.env.ADMIN_EMAIL || 'alexandermwhitmore@gmail.com';
-  if (req.user.email !== adminEmail) {
-    return res.status(403).json({ error: 'Forbidden' });
-  }
+app.patch('/api/readiness', requireAuthApi, requireAdmin, adminLimiter, async (req, res) => {
 
   const { user_id, score } = req.body || {};
   if (!user_id || typeof score !== 'number' || score < 0 || score > 100) {
@@ -1716,7 +1786,7 @@ app.post('/api/assessment', requireAuthApi, apiLimiter, async (req, res) => {
 });
 
 // ── Email helpers ─────────────────────────────────────────────────────────────
-const FROM_EMAIL = process.env.FROM_EMAIL || 'EdgeKeeper <mentor@edgekeeper.io>';
+const FROM_EMAIL = process.env.RESEND_FROM || 'EdgeKeeper <noreply@edgekeeper.io>';
 const APP_URL    = process.env.APP_URL     || 'https://edgekeeper.io';
 
 async function sendEmail(to, subject, html) {
@@ -1728,16 +1798,67 @@ async function sendEmail(to, subject, html) {
   }
 }
 
-function mentorEmailHtml(mentorName, content, ctaText = 'Open EdgeKeeper', ctaUrl = APP_URL + '/workspace.html') {
-  const color = mentorName.toLowerCase() === 'ashley' ? '#6b8c6b' : '#b8a06a';
+function _emailShell(accentColor, body) {
   return `<!DOCTYPE html><html><body style="background:#050505;color:#d4d0c8;font-family:'Georgia',serif;margin:0;padding:40px 20px;">
-  <div style="max-width:520px;margin:0 auto;">
-    <div style="font-size:0.65rem;letter-spacing:0.25em;text-transform:uppercase;color:${color};margin-bottom:32px;">EdgeKeeper · ${mentorName}</div>
-    <div style="font-size:1.05rem;line-height:1.9;color:#d4d0c8;margin-bottom:36px;">${content}</div>
-    <a href="${ctaUrl}" style="display:inline-block;padding:12px 28px;border:1px solid ${color};color:${color};text-decoration:none;font-family:monospace;font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;">${ctaText}</a>
-    <div style="margin-top:48px;font-size:0.6rem;color:#2a2a2a;font-family:monospace;">EdgeKeeper · Private mentorship for serious traders<br>
-    <a href="${APP_URL}/settings.html" style="color:#2a2a2a;">Manage notification preferences</a></div>
-  </div></body></html>`;
+<div style="max-width:540px;margin:0 auto;">
+  <div style="font-size:0.55rem;letter-spacing:0.3em;text-transform:uppercase;color:#333;margin-bottom:40px;">EdgeKeeper</div>
+  ${body}
+  <div style="margin-top:56px;padding-top:24px;border-top:1px solid #111;font-size:0.55rem;color:#222;font-family:monospace;line-height:1.8;">
+    EdgeKeeper &middot; Private mentorship for serious traders<br>
+    <a href="${APP_URL}/settings.html" style="color:#333;">Manage notifications</a>
+  </div>
+</div></body></html>`;
+}
+
+function _cta(text, url, color) {
+  return `<a href="${url}" style="display:inline-block;margin-top:32px;padding:12px 28px;border:1px solid ${color};color:${color};text-decoration:none;font-family:monospace;font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;">${text}</a>`;
+}
+
+function welcomeEmailHtml(mentorName) {
+  const color = mentorName.toLowerCase() === 'ashley' ? '#6b8c6b' : '#b8a06a';
+  return _emailShell(color, `
+    <div style="font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:${color};margin-bottom:28px;">${mentorName} &middot; EdgeKeeper</div>
+    <div style="font-size:1.1rem;line-height:1.9;color:#d4d0c8;">
+      Your intake is saved. ${mentorName} has already started building your profile.<br><br>
+      The conversation picks up exactly where you left off. No re-introduction needed.
+    </div>
+    ${_cta('Enter the workspace', APP_URL + '/workspace.html', color)}
+  `);
+}
+
+function outreachEmailHtml(mentorName, messageContent) {
+  const color = mentorName.toLowerCase() === 'ashley' ? '#6b8c6b' : '#b8a06a';
+  const safe  = messageContent.replace(/\n/g, '<br>').slice(0, 1200);
+  return _emailShell(color, `
+    <div style="font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:${color};margin-bottom:28px;">${mentorName} &middot; Checking in</div>
+    <div style="font-size:1.05rem;line-height:1.95;color:#d4d0c8;">${safe}</div>
+    ${_cta('Resume your session', APP_URL + '/workspace.html', color)}
+  `);
+}
+
+function billingEmailHtml(mentorName, planLabel) {
+  const color = mentorName.toLowerCase() === 'ashley' ? '#6b8c6b' : '#b8a06a';
+  return _emailShell(color, `
+    <div style="font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:${color};margin-bottom:28px;">${mentorName} &middot; Plan confirmed</div>
+    <div style="font-size:1.05rem;line-height:1.9;color:#d4d0c8;">
+      Your <span style="color:${color};">${planLabel}</span> plan is active.<br><br>
+      Everything you've unlocked is ready in the workspace. ${mentorName} will pick up from where you left off.
+    </div>
+    ${_cta('Open your workspace', APP_URL + '/workspace.html', color)}
+  `);
+}
+
+function reportEmailHtml(mentorName, reportMonth) {
+  const color = mentorName.toLowerCase() === 'ashley' ? '#6b8c6b' : '#b8a06a';
+  const label = new Date(reportMonth + '-02').toLocaleString('en-US', { month: 'long', year: 'numeric' });
+  return _emailShell(color, `
+    <div style="font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:${color};margin-bottom:28px;">${mentorName} &middot; Monthly report</div>
+    <div style="font-size:1.05rem;line-height:1.9;color:#d4d0c8;">
+      Your ${label} behavioral report is ready.<br><br>
+      ${mentorName} has gone through your journal entries, rule violations, and discipline scores for the month.
+    </div>
+    ${_cta('Read your report', APP_URL + '/reports.html', color)}
+  `);
 }
 
 // ── Decision Passport ─────────────────────────────────────────────────────────
@@ -2067,7 +2188,7 @@ async function runProactiveOutreach() {
           await sendEmail(
             email,
             `${mentorName} wants to check in`,
-            mentorEmailHtml(mentorName, content.replace(/\n/g, '<br>'), 'Resume your session', APP_URL + '/workspace.html')
+            outreachEmailHtml(mentorName, content)
           );
         }
       }
@@ -2094,7 +2215,7 @@ app.delete('/api/account', requireAuthApi, apiLimiter, async (req, res) => {
     // Delete the auth user last
     await supabaseAdmin.auth.admin.deleteUser(userId);
     // Clear session cookie
-    res.clearCookie('ek_session', { httpOnly: true, sameSite: 'lax', path: '/' });
+    res.clearCookie('ek_session', { httpOnly: true, sameSite: 'strict', path: '/' });
     res.json({ ok: true });
   } catch (err) {
     console.error('Account delete error:', err.message);
@@ -2229,16 +2350,14 @@ app.get('/billing/success', requireAuthPage, async (req, res) => {
       }, { onConflict: 'user_id' });
 
       // Confirmation email
-      const PLAN_DISPLAY = { starter: 'Student', pro: 'Practitioner', professional: 'Professional', institutional: 'Institution' };
+      const PLAN_DISPLAY = { free: 'Free Trial', starter: 'Resident', pro: 'Fellow', professional: 'Private Office', institutional: 'Institution' };
       const mentorName = req.user.user_metadata?.mentor === 'ashley' ? 'Ashley' : 'Mike';
       sendEmail(
         req.user.email,
         `You're on the ${PLAN_DISPLAY[plan] || plan} plan.`,
-        mentorEmailHtml(
+        billingEmailHtml(
           mentorName,
-          `Your ${PLAN_DISPLAY[plan] || plan} plan is active. Everything you've unlocked is waiting for you in the workspace.`,
-          'Open Your Workspace',
-          (process.env.APP_URL || 'https://edgekeeper.io') + '/workspace.html'
+          PLAN_DISPLAY[plan] || plan
         )
       ).catch(() => {});
 
@@ -2767,6 +2886,18 @@ Journal excerpts:\n${journalExcerpts || '(no entries this month)'}`;
       },
     }, { onConflict: 'user_id,report_month' });
 
+    // Notify user their report is ready
+    const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId);
+    const userEmail = authUser?.user?.email;
+    if (userEmail) {
+      const mentorName = mentor === 'ashley' ? 'Ashley' : 'Mike';
+      await sendEmail(
+        userEmail,
+        `Your ${new Date(reportMonth + '-02').toLocaleString('en-US', { month: 'long', year: 'numeric' })} report is ready`,
+        reportEmailHtml(mentorName, reportMonth)
+      );
+    }
+
   } catch (err) {
     console.error('Report GPT error:', err.message);
   }
@@ -3065,7 +3196,7 @@ app.use((err, req, res, _next) => {
 // A shared secret prevents public abuse — set CRON_SECRET in Vercel env vars.
 function verifyCronSecret(req, res, next) {
   const secret = process.env.CRON_SECRET;
-  if (secret && req.headers.authorization !== `Bearer ${secret}`) {
+  if (!secret || req.headers.authorization !== `Bearer ${secret}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   next();

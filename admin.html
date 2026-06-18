@@ -443,7 +443,7 @@
   }
 
   // ── TABLE RENDER ──────────────────────────────────────────────────────────────
-  const PLAN_LABELS = { free: 'Free', starter: 'Resident', pro: 'Fellow', institutional: 'Private Office' };
+  const PLAN_LABELS = { free: 'Free Trial', starter: 'Resident', pro: 'Fellow', professional: 'Private Office', institutional: 'Institution' };
 
   function renderTable(users) {
     const tbody = document.getElementById('user-tbody');
@@ -463,10 +463,11 @@
         </td>
         <td>
           <select class="plan-select" onchange="changePlan('${u.id}', this.value)">
-            <option value="free"          ${u.subscription_status === 'free'          ? 'selected' : ''}>Free</option>
+            <option value="free"          ${u.subscription_status === 'free'          ? 'selected' : ''}>Free Trial</option>
             <option value="starter"       ${u.subscription_status === 'starter'       ? 'selected' : ''}>Resident</option>
             <option value="pro"           ${u.subscription_status === 'pro'           ? 'selected' : ''}>Fellow</option>
-            <option value="institutional" ${u.subscription_status === 'institutional' ? 'selected' : ''}>Private Office</option>
+            <option value="professional"  ${u.subscription_status === 'professional'  ? 'selected' : ''}>Private Office</option>
+            <option value="institutional" ${u.subscription_status === 'institutional' ? 'selected' : ''}>Institution</option>
           </select>
         </td>
         <td>

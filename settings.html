@@ -474,14 +474,15 @@
 </main>
 
 <script>
-  const SUPABASE_URL  = '%%SUPABASE_URL%%';
-  const SUPABASE_ANON = '%%SUPABASE_ANON_KEY%%';
+  const SUPABASE_URL  = window.__EK_SUPABASE_URL__;
+  const SUPABASE_ANON = window.__EK_SUPABASE_ANON__;
 
   const PLAN_LABELS = {
-    free:          { name: 'Explorer',       price: 'Free' },
-    starter:       { name: 'Resident',       price: '$59 / month' },
-    pro:           { name: 'Fellow',         price: '$119 / month' },
-    institutional: { name: 'Private Office', price: '$349 / month' },
+    free:          { name: 'Free Trial',     price: 'Free' },
+    starter:       { name: 'Resident',       price: '$79 / month' },
+    pro:           { name: 'Fellow',         price: '$149 / month' },
+    professional:  { name: 'Private Office', price: '$299 / month' },
+    institutional: { name: 'Institution',    price: 'Custom' },
   };
 
   let currentEmail = null;

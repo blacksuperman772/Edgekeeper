@@ -478,7 +478,8 @@
           <div class="stat-row"><span class="stat-k">Free</span><span class="stat-v" id="s-free">—</span></div>
           <div class="stat-row"><span class="stat-k">Resident</span><span class="stat-v gold" id="s-starter">—</span></div>
           <div class="stat-row"><span class="stat-k">Fellow</span><span class="stat-v gold" id="s-pro">—</span></div>
-          <div class="stat-row"><span class="stat-k">Private Office</span><span class="stat-v gold" id="s-institutional">—</span></div>
+          <div class="stat-row"><span class="stat-k">Private Office</span><span class="stat-v gold" id="s-professional">—</span></div>
+          <div class="stat-row"><span class="stat-k">Institution</span><span class="stat-v gold" id="s-institutional">—</span></div>
           <div class="stat-row"><span class="stat-k">AI exchanges (mo)</span><span class="stat-v" id="s-ai">—</span></div>
           <div class="stat-row"><span class="stat-k">Voice sessions (mo)</span><span class="stat-v" id="s-voice">—</span></div>
           <div class="stat-row"><span class="stat-k">Journal entries</span><span class="stat-v" id="s-journal">—</span></div>
@@ -492,7 +493,7 @@
           Run Mentor Outreach
         </button>
         <div style="font-size:0.63rem;color:var(--muted);margin-bottom:10px;line-height:1.5;">
-          Sends proactive check-ins to Fellow+ users inactive 3+ days.
+          Sends proactive check-ins to Student+ users inactive 3+ days.
         </div>
 
         <div style="margin-bottom:6px;">
@@ -779,9 +780,10 @@ async function loadStats() {
     const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val ?? '—'; };
     set('s-users',       d.users?.total        ?? '—');
     set('s-onboarded',   d.users?.onboarded    ?? '—');
-    set('s-free',        d.users?.by_plan?.free        ?? 0);
-    set('s-starter',     d.users?.by_plan?.starter     ?? 0);
-    set('s-pro',         d.users?.by_plan?.pro         ?? 0);
+    set('s-free',         d.users?.by_plan?.free         ?? 0);
+    set('s-starter',      d.users?.by_plan?.starter      ?? 0);
+    set('s-pro',          d.users?.by_plan?.pro          ?? 0);
+    set('s-professional', d.users?.by_plan?.professional ?? 0);
     set('s-institutional', d.users?.by_plan?.institutional ?? 0);
     set('s-ai',          d.this_month?.ai_exchanges   ?? '—');
     set('s-voice',       d.this_month?.voice_sessions ?? '—');
