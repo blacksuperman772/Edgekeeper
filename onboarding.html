@@ -682,6 +682,7 @@ async function registerAndProceed() {
     } catch (_) {}
 
     if (assessComplete) {
+      clearIntakeProgress();
       window.location.href = isPaid
         ? `/workspace.html?mentor=${mentorKey}&newplan=${_plan}`
         : `/workspace.html?mentor=${mentorKey}`;
@@ -1038,6 +1039,7 @@ async function startIntake() {
   awaitingReply = true;
   showInput();
   document.getElementById('user-input').focus();
+  saveIntakeProgress();
 }
 
 // ── QUESTION DISPLAY ──────────────────────────────────────────────────
@@ -1127,6 +1129,7 @@ async function sendMessage() {
   awaitingReply = true;
   showInput();
   document.getElementById('user-input').focus();
+  saveIntakeProgress();
 }
 
 // ── OBSERVATION CARD ──────────────────────────────────────────────────
@@ -1303,11 +1306,13 @@ function buildPrompt() {
 
   const phaseInstructions = {
     ARRIVAL: `PHASE: ARRIVAL
-This is their first moment. You know nothing yet except that they showed up.
-Open with recognition — not a question about trading.
-One or two warm, direct sentences. Then one human question (not about trading).
+This is their first moment. Introduce yourself by name first — just your name, said the way you'd say it walking into a room, not an announcement. Then one warm sentence. Then one human question that has nothing to do with trading.
 Make them feel noticed as a person before you assess them as a trader.
-Your theory field: null — you haven't formed one yet.`,
+Your theory field: null — you haven't formed one yet.
+
+Examples:
+Mike: "Mike. Good that you're here. Before we get into any of it — what finally made you do this?"
+Ashley: "Ashley. Glad you came. Tell me something — what's going on in your life outside the markets right now?"`,
 
     OPENING: `PHASE: OPENING — First impressions forming
 You have their first answer. Patterns are beginning to show.
@@ -1486,19 +1491,32 @@ document.getElementById('user-input').addEventListener('keydown', e => {
 // ── UTILS ─────────────────────────────────────────────────────────────
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+// ── INTAKE CONTINUITY ─────────────────────────────────────────────────
+const INTAKE_SAVE_KEY = 'ek_intake_progress';
+
+function saveIntakeProgress() {
+  if (!mentor || exchangeCount === 0) return;
+  try {
+    localStorage.setItem(INTAKE_SAVE_KEY, JSON.stringify({
+      mentor:       mentor.name.toLowerCase(),
+      exchangeCount,
+      history:      history.slice(-30),
+      level:        sessionStorage.getItem('ek_selected_level') || localStorage.getItem('ek_selected_level_onboarding') || '',
+      savedAt:      Date.now(),
+    }));
+  } catch (_) {}
+}
+
+function clearIntakeProgress() {
+  localStorage.removeItem(INTAKE_SAVE_KEY);
+}
+
 // ── AUTO INIT ─────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   const p = new URLSearchParams(window.location.search);
 
-  // Clear stale level from any prior visit — user must pick fresh every time
-  // (unless a ?path= URL param explicitly pre-selects it below)
-  sessionStorage.removeItem('ek_selected_level');
-  sessionStorage.removeItem('ek_path_preselected');
-
   // Capture plan selection from pricing CTAs
   _plan = p.get('plan') || null;
-
-  // Both free and paid get 7 exchanges — enough for the mentor's value to land.
   const isFreeFlow = !_plan || _plan === 'free';
   TOTAL_EXCHANGES  = 7;
   STAGES           = isFreeFlow ? STAGES_FREE : STAGES_PAID;
@@ -1512,12 +1530,59 @@ window.addEventListener('DOMContentLoaded', () => {
   if (incomingPath && ['foundation','development','performance'].includes(incomingPath)) {
     sessionStorage.setItem('ek_preselected_path', incomingPath);
     sessionStorage.setItem('ek_selected_level', incomingPath);
-    sessionStorage.setItem('ek_path_preselected', '1'); // skip level screen for URL-driven entry
+    sessionStorage.setItem('ek_path_preselected', '1');
     const stageMap = { foundation: 'explorer', development: 'developing', performance: 'performance' };
     localStorage.setItem('ek_trader_stage_onboarding', stageMap[incomingPath] || 'explorer');
   }
 
-  // URL param takes precedence; fall back to sessionStorage (legacy path)
+  // ── Refresh recovery: restore mid-intake session ───────────────────
+  // Only restore when arriving fresh (no ?mentor= means it's not a forced new session)
+  const savedRaw = !p.get('mentor') && localStorage.getItem(INTAKE_SAVE_KEY);
+  if (savedRaw) {
+    try {
+      const saved = JSON.parse(savedRaw);
+      const m = MENTORS[saved.mentor];
+      if (m && saved.history?.length && Date.now() - (saved.savedAt || 0) < 7200000) {
+        mentor = m;
+        applyTheme(m);
+        history.push(...saved.history);
+        exchangeCount = saved.exchangeCount || 0;
+
+        if (saved.level) {
+          sessionStorage.setItem('ek_selected_level', saved.level);
+          const stageMap = { foundation: 'explorer', development: 'developing', performance: 'performance' };
+          localStorage.setItem('ek_trader_stage_onboarding', stageMap[saved.level] || 'explorer');
+          localStorage.setItem('ek_selected_level_onboarding', saved.level);
+        }
+
+        document.getElementById('selector').style.display = 'none';
+        document.getElementById('level-selector')?.classList.remove('visible', 'active');
+
+        const room = document.getElementById('intake-room');
+        room.classList.add('visible');
+        buildDots();
+
+        const lastMentorMsg = [...saved.history].reverse().find(msg => msg.role === 'assistant');
+        if (lastMentorMsg) {
+          const qt = document.getElementById('question-text');
+          if (qt) { qt.textContent = lastMentorMsg.content; qt.classList.add('active'); }
+          const sn = document.getElementById('stage-name');
+          if (sn) sn.textContent = STAGES[Math.min(exchangeCount, STAGES.length - 1)] || '';
+        }
+
+        setState('Listening');
+        awaitingReply = true;
+        showInput();
+        setTimeout(() => document.getElementById('user-input')?.focus(), 100);
+        return;
+      }
+    } catch (_) { localStorage.removeItem(INTAKE_SAVE_KEY); }
+  }
+
+  // Normal fresh flow
+  sessionStorage.removeItem('ek_selected_level');
+  sessionStorage.removeItem('ek_path_preselected');
+
   const m = p.get('mentor') || sessionStorage.getItem('ek_mentor');
   if (m && MENTORS[m]) {
     sessionStorage.removeItem('ek_mentor');

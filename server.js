@@ -922,6 +922,60 @@ Never hallucinate rule IDs — only use IDs from the list provided.`;
   }
 }
 
+// ── Voice agent brain ─────────────────────────────────────────────────────────
+const MIKE_VOICE_PERSONA = `You are Mike — 52, former prop trader, 28 years on the desk. Now a trading psychology mentor. You are in a live voice call with a trader you have been working with in text sessions. You already know them.
+
+Your voice: direct, unhurried, occasionally dry. You do not explain yourself. You say what you observe. You pause before you respond. You do not perform patience — you just have it.
+
+You reference what you know about them from text sessions. You do not open by summarizing your notes. You talk to them like someone you have already met.
+
+Do not ask more than one question at a time. Do not fill silence with talking. Keep responses short — one to three sentences unless something genuinely requires more.
+
+Never say: "Great question", "I understand", "How can I assist", "As your mentor", "Let me help you with that".
+
+You can end the call when it feels natural. "Alright. Think on that. Talk soon." or similar. Not formal.`;
+
+const ASHLEY_VOICE_PERSONA = `You are Ashley — 42, performance coach. Background in sports psychology before trading. You have been working with this trader in text sessions and this is a live voice call. You already know them.
+
+Your voice: warm, present, unhurried. You notice things. You listen to the spaces between their words. You are not soft — you are clear. You hold what you observe without needing to fix it immediately.
+
+You reference what you know about them from text sessions. You do not open by summarizing your notes. You talk to them like someone you have already been in a room with.
+
+Do not ask more than one question at a time. Keep responses short — one to three sentences unless the person genuinely needs more. Follow their energy, not a script.
+
+Never say: "Great question", "I understand", "How can I assist", "As your mentor", "Let me help you with that".
+
+You can end the call when it feels natural. "Take care of yourself. I will be here." or similar.`;
+
+function buildVoiceContext(nb) {
+  const parts = [];
+  if (nb.running_narrative) {
+    parts.push(`WHO THIS PERSON IS:\n${nb.running_narrative}`);
+  }
+  if (nb.current_theory) {
+    parts.push(`YOUR CURRENT READ ON THEM:\n${nb.current_theory}`);
+  }
+  let commitments = nb.commitments;
+  if (typeof commitments === 'string') { try { commitments = JSON.parse(commitments); } catch (_) {} }
+  if (Array.isArray(commitments) && commitments.length) {
+    const last = commitments[commitments.length - 1];
+    const text  = typeof last === 'string' ? last : (last?.text || JSON.stringify(last));
+    parts.push(`LAST COMMITMENT THEY MADE:\n${text}`);
+  }
+  let patterns = nb.patterns;
+  if (typeof patterns === 'string') { try { patterns = JSON.parse(patterns); } catch (_) {} }
+  if (Array.isArray(patterns) && patterns.length) {
+    parts.push(`PATTERNS YOU HAVE NOTICED:\n${patterns.slice(0, 4).join('\n')}`);
+  }
+  let breakthroughs = nb.breakthroughs;
+  if (typeof breakthroughs === 'string') { try { breakthroughs = JSON.parse(breakthroughs); } catch (_) {} }
+  if (Array.isArray(breakthroughs) && breakthroughs.length) {
+    parts.push(`BREAKTHROUGHS:\n${breakthroughs.slice(-2).join('\n')}`);
+  }
+  if (!parts.length) return '';
+  return `\n\n---\nSESSION CONTEXT — what you know about this person from your text sessions:\n\n${parts.join('\n\n')}`;
+}
+
 // ── Voice session — ElevenLabs signed URL proxy ───────────────────────────────
 // Returns a signed WebSocket URL so the browser SDK can connect directly to
 // ElevenLabs. Audio never transits our server; only the token exchange does.
@@ -991,14 +1045,39 @@ app.post('/api/voice/session', requireAuthApi, apiLimiter, async (req, res) => {
     return res.status(501).json({ error: 'Voice sessions not yet configured' });
   }
 
+  // Fetch notebook for brain injection — best-effort, never blocks the call
+  let brainContext = '';
+  try {
+    const { data: nb } = await supabaseAdmin
+      .from('notebooks')
+      .select('running_narrative, current_theory, commitments, patterns, breakthroughs')
+      .eq('user_id', req.user.id)
+      .eq('mentor', mentor)
+      .maybeSingle();
+    if (nb) brainContext = buildVoiceContext(nb);
+  } catch (_) {}
+
+  const voicePersona = mentor === 'ashley' ? ASHLEY_VOICE_PERSONA : MIKE_VOICE_PERSONA;
+  const voicePrompt  = voicePersona + brainContext;
+
   // Abort if ElevenLabs does not respond within 8 seconds
   const controller = new AbortController();
   const timeout    = setTimeout(() => controller.abort(), 8000);
 
   try {
     const upstream = await fetch(
-      `https://api.elevenlabs.io/v1/convai/conversations/get_signed_url?agent_id=${encodeURIComponent(agentId)}`,
-      { headers: { 'xi-api-key': apiKey }, signal: controller.signal }
+      'https://api.elevenlabs.io/v1/convai/conversations/get_signed_url',
+      {
+        method:  'POST',
+        headers: { 'xi-api-key': apiKey, 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          agent_id: agentId,
+          conversation_config_override: {
+            agent: { prompt: { prompt: voicePrompt } },
+          },
+        }),
+        signal: controller.signal,
+      }
     );
     clearTimeout(timeout);
 
