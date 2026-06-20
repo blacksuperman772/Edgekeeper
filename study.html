@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Study — EdgeKeeper Academy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Space+Grotesk:wght@300;400;500&family=Space+Mono:wght@400&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --void:      #07050E;
+      --surface:   #0D0B16;
+      --panel:     #0F0D18;
+      --border:    rgba(255,255,255,0.07);
+      --border-hi: rgba(255,255,255,0.12);
+      --gold:      #C9A85C;
+      --gold-d:    rgba(201,168,92,0.25);
+      --text:      rgba(255,255,255,0.82);
+      --muted:     rgba(255,255,255,0.42);
+      --dim:       rgba(255,255,255,0.18);
+      --serif:     'Cormorant Garamond', Georgia, serif;
+      --sans:      'Space Grotesk', sans-serif;
+      --mono:      'Space Mono', monospace;
+    }
+
+    html, body { height: 100%; font-size: 16px; }
+    body {
+      background: var(--void);
+      color: var(--text);
+      font-family: var(--sans);
+      font-weight: 300;
+      line-height: 1.7;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+
+    /* ── TOP BAR ── */
+    #top-bar {
+      flex-shrink: 0;
+      height: 52px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 28px;
+      border-bottom: 1px solid var(--border);
+      background: var(--void);
+      z-index: 10;
+    }
+    .top-left { display: flex; align-items: center; gap: 20px; }
+    .brand {
+      font-family: var(--serif); font-size: 0.9rem; font-weight: 400;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: rgba(255,255,255,0.7); text-decoration: none;
+    }
+    .brand span { color: var(--gold); }
+    .top-divider { width: 1px; height: 18px; background: var(--border); }
+    .top-track-label {
+      font-family: var(--mono); font-size: 0.58rem;
+      letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold);
+    }
+    .top-right { display: flex; align-items: center; gap: 16px; }
+    .curriculum-link {
+      font-family: var(--mono); font-size: 0.58rem;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--muted); text-decoration: none;
+      transition: color 0.2s;
+    }
+    .curriculum-link:hover { color: var(--text); }
+
+    /* ── BODY SPLIT ── */
+    #split {
+      flex: 1; display: flex; overflow: hidden;
+    }
+
+    /* ── LEFT: MODULE PANEL ── */
+    #module-panel {
+      width: 300px; flex-shrink: 0;
+      border-right: 1px solid var(--border);
+      background: var(--panel);
+      display: flex; flex-direction: column;
+      overflow-y: auto;
+      padding: 36px 28px 32px;
+    }
+
+    .mod-track-tag {
+      font-family: var(--mono); font-size: 0.55rem;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 20px;
+    }
+    .mod-title {
+      font-family: var(--serif); font-size: 1.6rem;
+      font-weight: 300; line-height: 1.25;
+      color: rgba(255,255,255,0.92); margin-bottom: 16px;
+    }
+    .mod-desc {
+      font-size: 0.8rem; color: var(--muted);
+      line-height: 1.75; margin-bottom: 32px;
+    }
+
+    .mod-divider { height: 1px; background: var(--border); margin-bottom: 28px; }
+
+    /* progress */
+    .mod-progress-label {
+      font-family: var(--mono); font-size: 0.55rem;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--dim); margin-bottom: 12px;
+    }
+    .mod-status-row {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 28px;
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--border); border: 1px solid var(--muted); flex-shrink: 0;
+    }
+    .status-dot.started { background: var(--gold-d); border-color: var(--gold); }
+    .status-dot.completed { background: var(--gold); border-color: var(--gold); }
+    .status-text { font-size: 0.78rem; color: var(--muted); }
+
+    /* complete button */
+    .btn-complete {
+      width: 100%; padding: 13px;
+      background: transparent; border: 1px solid var(--gold-d);
+      border-radius: 2px; cursor: pointer;
+      font-family: var(--mono); font-size: 0.6rem;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--gold); transition: background 0.2s, border-color 0.2s;
+      margin-bottom: 16px;
+    }
+    .btn-complete:hover { background: rgba(201,168,92,0.08); border-color: var(--gold); }
+    .btn-complete.done {
+      background: rgba(201,168,92,0.12); border-color: var(--gold);
+      cursor: default; opacity: 0.7;
+    }
+
+    /* nav */
+    .mod-nav { display: flex; gap: 10px; }
+    .nav-btn {
+      flex: 1; padding: 11px 8px;
+      background: transparent; border: 1px solid var(--border);
+      border-radius: 2px; cursor: pointer;
+      font-family: var(--mono); font-size: 0.58rem;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--muted); transition: border-color 0.2s, color 0.2s;
+      text-decoration: none; text-align: center;
+    }
+    .nav-btn:hover { border-color: var(--border-hi); color: var(--text); }
+    .nav-btn:disabled, .nav-btn.disabled {
+      opacity: 0.25; pointer-events: none;
+    }
+
+    .mod-spacer { flex: 1; }
+
+    .companion-badge {
+      margin-top: 32px; padding: 14px 16px;
+      border: 1px solid var(--border); border-radius: 3px;
+      background: rgba(201,168,92,0.03);
+    }
+    .companion-badge-label {
+      font-family: var(--mono); font-size: 0.52rem;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 6px;
+    }
+    .companion-badge-desc {
+      font-size: 0.73rem; color: var(--dim); line-height: 1.6;
+    }
+
+    /* ── RIGHT: COMPANION PANEL ── */
+    #companion-panel {
+      flex: 1; display: flex; flex-direction: column;
+      overflow: hidden; background: var(--void);
+    }
+
+    #thread {
+      flex: 1; overflow-y: auto;
+      padding: 40px 48px;
+      display: flex; flex-direction: column; gap: 28px;
+    }
+    #thread::-webkit-scrollbar { width: 4px; }
+    #thread::-webkit-scrollbar-track { background: transparent; }
+    #thread::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+
+    .msg { max-width: 680px; }
+    .msg.companion { align-self: flex-start; }
+    .msg.user { align-self: flex-end; }
+
+    .msg-label {
+      font-family: var(--mono); font-size: 0.52rem;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--dim); margin-bottom: 7px;
+    }
+    .msg.user .msg-label { text-align: right; }
+
+    .msg-body {
+      font-size: 0.88rem; line-height: 1.8;
+      color: rgba(255,255,255,0.78);
+    }
+    .msg.user .msg-body {
+      color: var(--muted); text-align: right;
+    }
+
+    .thinking-dots {
+      display: inline-flex; gap: 5px; align-items: center; padding: 4px 0;
+    }
+    .thinking-dots span {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--gold-d); animation: pulse 1.2s ease-in-out infinite;
+    }
+    .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes pulse { 0%,60%,100% { opacity: 0.3; transform: scale(1); } 30% { opacity: 1; transform: scale(1.3); } }
+
+    /* ── INPUT BAR ── */
+    #input-bar {
+      flex-shrink: 0;
+      border-top: 1px solid var(--border);
+      padding: 16px 48px 20px;
+      display: flex; gap: 12px; align-items: flex-end;
+    }
+    #study-input {
+      flex: 1; background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border); border-radius: 3px;
+      padding: 12px 16px; color: var(--text);
+      font-family: var(--sans); font-size: 0.875rem; font-weight: 300;
+      resize: none; min-height: 44px; max-height: 140px; line-height: 1.6;
+      transition: border-color 0.2s;
+    }
+    #study-input:focus { outline: none; border-color: var(--border-hi); }
+    #study-input::placeholder { color: var(--dim); }
+    #send-btn {
+      padding: 12px 22px; flex-shrink: 0;
+      background: transparent; border: 1px solid var(--gold-d);
+      border-radius: 2px; cursor: pointer;
+      font-family: var(--mono); font-size: 0.6rem;
+      letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold);
+      transition: background 0.2s, border-color 0.2s; align-self: flex-end;
+    }
+    #send-btn:hover { background: rgba(201,168,92,0.08); border-color: var(--gold); }
+    #send-btn:disabled { opacity: 0.3; pointer-events: none; }
+
+    /* ── MOBILE ── */
+    @media (max-width: 768px) {
+      body { overflow: auto; }
+      #split { flex-direction: column; overflow: visible; }
+      #module-panel { width: 100%; border-right: none; border-bottom: 1px solid var(--border); padding: 24px 20px; }
+      #companion-panel { height: 70vh; }
+      #thread { padding: 24px 20px; }
+      #input-bar { padding: 12px 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="top-bar">
+  <div class="top-left">
+    <a href="/edgekeeper.html" class="brand">Edge<span>K</span>eeper</a>
+    <div class="top-divider"></div>
+    <span class="top-track-label" id="top-track-label">Academy</span>
+  </div>
+  <div class="top-right">
+    <a href="/academy.html" class="curriculum-link">← Curriculum</a>
+  </div>
+</div>
+
+<!-- SPLIT LAYOUT -->
+<div id="split">
+
+  <!-- MODULE INFO -->
+  <div id="module-panel">
+    <div class="mod-track-tag" id="mod-track-tag">Track 01 · Market Foundations</div>
+    <h1 class="mod-title" id="mod-title">Loading...</h1>
+    <p class="mod-desc" id="mod-desc"></p>
+
+    <div class="mod-divider"></div>
+
+    <div class="mod-progress-label">Progress</div>
+    <div class="mod-status-row">
+      <div class="status-dot" id="status-dot"></div>
+      <span class="status-text" id="status-text">Not started</span>
+    </div>
+
+    <button class="btn-complete" id="btn-complete" onclick="markComplete()">Mark as complete</button>
+
+    <div class="mod-nav">
+      <a class="nav-btn disabled" id="nav-prev" href="#">← Prev</a>
+      <a class="nav-btn disabled" id="nav-next" href="#">Next →</a>
+    </div>
+
+    <div class="mod-spacer"></div>
+
+    <div class="companion-badge">
+      <div class="companion-badge-label">Study Companion</div>
+      <div class="companion-badge-desc">Ask anything about this module. The companion explains, gives examples, and tests your understanding when you're ready.</div>
+    </div>
+  </div>
+
+  <!-- COMPANION THREAD -->
+  <div id="companion-panel">
+    <div id="thread"></div>
+    <div id="input-bar">
+      <textarea id="study-input" placeholder="Ask a question about this module..." rows="1"></textarea>
+      <button id="send-btn" onclick="sendMessage()">Ask</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SUPABASE_URL  = '%%SUPABASE_URL%%';
+const SUPABASE_ANON = '%%SUPABASE_ANON_KEY%%';
+
+// ── MODULE REGISTRY ─────────────────────────────────────────────────────
+const MODULES = {
+  // Track 1
+  what_are_markets:      { title:'What Are Markets?',        track:'Track 01', trackName:'Market Foundations', desc:'How markets actually work — who is on the other side of your trade, where price comes from, and what you are really buying and selling.', prev:null,                next:'asset_classes' },
+  asset_classes:         { title:'Asset Classes',            track:'Track 01', trackName:'Market Foundations', desc:'Stocks, forex, futures, crypto. What each is, how they behave differently, and what that means for you as a trader.', prev:'what_are_markets',  next:'how_orders_work' },
+  how_orders_work:       { title:'How Orders Work',          track:'Track 01', trackName:'Market Foundations', desc:'Market orders, limit orders, stop orders. The mechanics of getting in and out — and what can go wrong.', prev:'asset_classes',      next:'reading_a_chart' },
+  reading_a_chart:       { title:'Reading a Chart',          track:'Track 01', trackName:'Market Foundations', desc:'Price, time, and what the lines on a chart actually represent. Before indicators, before patterns — just the raw feed.', prev:'how_orders_work',    next:'candlestick_basics' },
+  candlestick_basics:    { title:'Candlestick Basics',       track:'Track 01', trackName:'Market Foundations', desc:'What a candle shows you. Open, close, high, low — and what the body and wicks tell you about who won each period.', prev:'reading_a_chart',    next:'market_sessions' },
+  market_sessions:       { title:'Market Sessions',          track:'Track 01', trackName:'Market Foundations', desc:'When markets are most active, why it matters for volatility, and how to align your trading with the sessions that suit your style.', prev:'candlestick_basics', next:'market_participants' },
+  market_participants:   { title:'Market Participants',      track:'Track 01', trackName:'Market Foundations', desc:'Retail traders, institutions, market makers. Knowing who else is in the room changes how you read what price is doing.', prev:'market_sessions',    next:'paper_trading' },
+  paper_trading:         { title:'Paper Trading',            track:'Track 01', trackName:'Market Foundations', desc:'How to practice without real money, what you can and cannot learn from it, and when to stop paper trading and start.', prev:'market_participants', next:'choosing_a_broker' },
+  choosing_a_broker:     { title:'Choosing a Broker',        track:'Track 01', trackName:'Market Foundations', desc:'What to look for, what to avoid, and the questions you should ask before you ever deposit money anywhere.', prev:'paper_trading',      next:'what_risk_means' },
+  what_risk_means:       { title:'What Risk Means',          track:'Track 01', trackName:'Market Foundations', desc:'Risk is not just losing money. What it actually means in trading terms, and why understanding it is the foundation of everything.', prev:'choosing_a_broker',  next:null },
+
+  // Track 2
+  support_resistance:    { title:'Support and Resistance',   track:'Track 02', trackName:'Technical Analysis', desc:'The most important concept in technical analysis. Where price has stopped before, and why those levels matter going forward.', prev:null,                   next:'trend_identification' },
+  trend_identification:  { title:'Trend Identification',     track:'Track 02', trackName:'Technical Analysis', desc:'How to identify whether price is trending up, down, or ranging — and why getting this right matters before any other analysis.', prev:'support_resistance',   next:'moving_averages' },
+  moving_averages:       { title:'Moving Averages',          track:'Track 02', trackName:'Technical Analysis', desc:'What they smooth out, what they lag, how traders use them — and the difference between signal and noise.', prev:'trend_identification',  next:'volume_basics' },
+  volume_basics:         { title:'Volume Basics',            track:'Track 02', trackName:'Technical Analysis', desc:'Volume confirms or contradicts what price is doing. How to read it, and when it changes the picture.', prev:'moving_averages',      next:'rsi_macd' },
+  rsi_macd:              { title:'RSI and MACD',             track:'Track 02', trackName:'Technical Analysis', desc:'Two of the most widely used indicators. What they actually measure, how to use them correctly, and how to avoid the common misreads.', prev:'volume_basics',        next:'chart_patterns' },
+  chart_patterns:        { title:'Chart Patterns',           track:'Track 02', trackName:'Technical Analysis', desc:'Flags, wedges, head and shoulders, triangles. What these patterns represent about market behaviour — and their real reliability.', prev:'rsi_macd',             next:'multi_timeframe' },
+  multi_timeframe:       { title:'Multi-Timeframe Analysis', track:'Track 02', trackName:'Technical Analysis', desc:'How to align higher timeframe context with lower timeframe entries. One of the most practical skills in technical trading.', prev:'chart_patterns',       next:'entry_exit_mechanics' },
+  entry_exit_mechanics:  { title:'Entry and Exit Mechanics', track:'Track 02', trackName:'Technical Analysis', desc:'The difference between knowing where to trade and knowing how to get in and out cleanly. Mechanics matter.', prev:'multi_timeframe',      next:'setting_stops_targets' },
+  setting_stops_targets: { title:'Stops and Targets',        track:'Track 02', trackName:'Technical Analysis', desc:'Where to place your stop loss, how to set a target, and how to think about these decisions systematically rather than emotionally.', prev:'entry_exit_mechanics', next:null },
+
+  // Track 3
+  position_sizing:       { title:'Position Sizing',          track:'Track 03', trackName:'Risk Management', desc:'How much to put on each trade. The calculation that determines whether you survive a losing streak or blow your account.', prev:null,                next:'one_percent_rule' },
+  one_percent_rule:      { title:'The One Percent Rule',     track:'Track 03', trackName:'Risk Management', desc:'Risking no more than 1% per trade. Why this rule exists, how to apply it, and what it does to your equity curve over time.', prev:'position_sizing',   next:'risk_reward_ratio' },
+  risk_reward_ratio:     { title:'Risk/Reward Ratio',        track:'Track 03', trackName:'Risk Management', desc:'Why the ratio of potential gain to potential loss matters more than win rate — and how to use it to evaluate setups.', prev:'one_percent_rule',  next:'daily_loss_limits' },
+  daily_loss_limits:     { title:'Daily Loss Limits',        track:'Track 03', trackName:'Risk Management', desc:'Setting a hard stop on how much you can lose in a day. Why professional traders use them and how to make them stick.', prev:'risk_reward_ratio',  next:'drawdown_management' },
+  drawdown_management:   { title:'Drawdown Management',      track:'Track 03', trackName:'Risk Management', desc:'How to handle a losing streak without making it worse. The psychology and the mechanics of managing drawdown.', prev:'daily_loss_limits',  next:'account_preservation' },
+  account_preservation:  { title:'Account Preservation',     track:'Track 03', trackName:'Risk Management', desc:'The primary goal in the early stages. Capital that stays in the account can compound. Capital that leaves cannot.', prev:'drawdown_management', next:'compounding_principles' },
+  compounding_principles:{ title:'Compounding Principles',   track:'Track 03', trackName:'Risk Management', desc:'How consistent small gains compound into large results over time — and why protecting downside is more valuable than chasing upside.', prev:'account_preservation', next:'when_to_stop' },
+  when_to_stop:          { title:'Knowing When to Stop',     track:'Track 03', trackName:'Risk Management', desc:'The rules that tell you to step away from the screen. How to build them, how to follow them, and why most traders ignore them.', prev:'compounding_principles', next:null },
+
+  // Track 4
+  what_is_edge:          { title:'What Is Edge?',            track:'Track 04', trackName:'Strategy Development', desc:'Edge is a statistical advantage that shows up over a large number of trades. What that means in practice, and how to know if you actually have one.', prev:null,               next:'backtesting_basics' },
+  backtesting_basics:    { title:'Backtesting Basics',       track:'Track 04', trackName:'Strategy Development', desc:'How to test a strategy on historical data. What good backtesting looks like, what it can and cannot tell you.', prev:'what_is_edge',       next:'journaling_for_refinement' },
+  journaling_for_refinement:{ title:'Journaling for Refinement', track:'Track 04', trackName:'Strategy Development', desc:'How a trading journal becomes a strategy refinement tool — not just a record of what happened, but why.', prev:'backtesting_basics',  next:'building_your_rulebook' },
+  building_your_rulebook:{ title:'Building Your Rulebook',   track:'Track 04', trackName:'Strategy Development', desc:'Writing the rules of your strategy clearly enough that you can follow them consistently under pressure.', prev:'journaling_for_refinement', next:'mechanical_vs_discretionary' },
+  mechanical_vs_discretionary:{ title:'Mechanical vs. Discretionary', track:'Track 04', trackName:'Strategy Development', desc:'Rule-based vs. judgment-based trading. The tradeoffs, which suits which trader, and how to know where you fall.', prev:'building_your_rulebook', next:'your_trading_system' },
+  your_trading_system:   { title:'Your Trading System',      track:'Track 04', trackName:'Strategy Development', desc:'Pulling everything together into one coherent system. Entry, exit, risk, review cycle — integrated and written down.', prev:'mechanical_vs_discretionary', next:null },
+
+  // Track 5
+  what_is_trading:       { title:'What Is Trading?',         track:'Track 05', trackName:'Trading Psychology', desc:'A first principles look at what trading actually is — probability, discipline, and the relationship between expectation and outcome.', prev:null,                 next:'risk_position_sizing' },
+  risk_position_sizing:  { title:'Risk and Position Sizing', track:'Track 05', trackName:'Trading Psychology', desc:'How psychological pressure changes when size changes — and how to build sizing habits that remove emotion from the equation.', prev:'what_is_trading',      next:'market_structure' },
+  market_structure:      { title:'Market Structure',         track:'Track 05', trackName:'Trading Psychology', desc:'Reading the rhythm of the market and how structure informs decision-making under uncertainty.', prev:'risk_position_sizing',  next:'psychology_basics' },
+  psychology_basics:     { title:'Psychology Basics',        track:'Track 05', trackName:'Trading Psychology', desc:'Fear, greed, overconfidence, revenge trading. The psychological forces that break most traders and how to recognize them in yourself.', prev:'market_structure',     next:'trading_journal_setup' },
+  trading_journal_setup: { title:'The Trading Journal',      track:'Track 05', trackName:'Trading Psychology', desc:'How to build a journal that actually improves your trading — what to record, how to review, and what to look for.', prev:'psychology_basics',    next:'trading_plan' },
+  trading_plan:          { title:'Building Your Trading Plan', track:'Track 05', trackName:'Trading Psychology', desc:'A written plan that defines what you trade, when you trade, and how you manage risk. The foundation of consistency.', prev:'trading_journal_setup', next:'discipline_process' },
+  discipline_process:    { title:'Discipline and Process',   track:'Track 05', trackName:'Trading Psychology', desc:'The difference between discipline as willpower and discipline as system design. How to make good behavior easier to sustain.', prev:'trading_plan',         next:'trade_management' },
+  trade_management:      { title:'Trade Management',         track:'Track 05', trackName:'Trading Psychology', desc:'What to do once you are in a trade. How to manage it without emotional interference.', prev:'discipline_process',   next:'weekly_review' },
+  weekly_review:         { title:'The Weekly Review',        track:'Track 05', trackName:'Trading Psychology', desc:'The review practice that separates improving traders from stagnant ones. What to look at, how often, and what to do with what you find.', prev:'trade_management',    next:'advanced_psychology' },
+  advanced_psychology:   { title:'Advanced Psychology',      track:'Track 05', trackName:'Trading Psychology', desc:'Identity, beliefs, and the deeper patterns that drive trading behavior. The layer under the surface-level habits.', prev:'weekly_review',        next:'consistency' },
+  consistency:           { title:'Consistency and Process',  track:'Track 05', trackName:'Trading Psychology', desc:'What consistency actually requires — not motivation, but infrastructure. Building the conditions where consistent behavior becomes the default.', prev:'advanced_psychology',  next:'drawdown_recovery' },
+  drawdown_recovery:     { title:'Drawdown Recovery',        track:'Track 05', trackName:'Trading Psychology', desc:'How to come back from a losing period without compounding the damage. The psychological and practical steps.', prev:'consistency',          next:'review_system' },
+  review_system:         { title:'The Review System',        track:'Track 05', trackName:'Trading Psychology', desc:'A complete system for reviewing performance across daily, weekly, and monthly cycles. Turning data into decisions.', prev:'drawdown_recovery',   next:null },
+
+  // Track 6
+  behavioral_analytics:  { title:'Behavioral Analytics',     track:'Track 06', trackName:'Performance OS', desc:'Using your own trading data to identify behavioral patterns — not just P&L, but when, why, and how you make decisions.', prev:null,                    next:'pattern_recognition_self' },
+  pattern_recognition_self:{ title:'Your Own Patterns',      track:'Track 06', trackName:'Performance OS', desc:'Identifying the specific behavioral patterns in your own trading history. The ones that cost you money and the ones that make it.', prev:'behavioral_analytics',  next:'scaling_responsibly' },
+  scaling_responsibly:   { title:'Scaling Up',               track:'Track 06', trackName:'Performance OS', desc:'When and how to increase size. The mistakes traders make when they scale too fast, and the framework for doing it right.', prev:'pattern_recognition_self', next:'sustained_performance' },
+  sustained_performance: { title:'Sustaining Performance',   track:'Track 06', trackName:'Performance OS', desc:'High performance over time requires more than skill. Energy, environment, routine, and recovery all matter.', prev:'scaling_responsibly',   next:'mentor_candidate' },
+  mentor_candidate:      { title:'The Mentor-Candidate Transition', track:'Track 06', trackName:'Performance OS', desc:'What it looks like to move from student to practitioner to someone who can guide others. The responsibilities that come with that shift.', prev:'sustained_performance',  next:null },
+};
+
+// ── URL PARAMS ──────────────────────────────────────────────────────────
+const p          = new URLSearchParams(location.search);
+const moduleKey  = p.get('module') || 'what_are_markets';
+const isFirst    = p.get('first') === '1';
+const mod        = MODULES[moduleKey];
+
+if (!mod) {
+  window.location.replace('/academy.html');
+}
+
+// ── POPULATE MODULE PANEL ───────────────────────────────────────────────
+document.getElementById('top-track-label').textContent  = mod.trackName;
+document.getElementById('mod-track-tag').textContent    = mod.track + ' · ' + mod.trackName;
+document.getElementById('mod-title').textContent        = mod.title;
+document.getElementById('mod-desc').textContent         = mod.desc;
+document.title = mod.title + ' — EdgeKeeper Academy';
+
+// nav links
+const prevBtn = document.getElementById('nav-prev');
+const nextBtn = document.getElementById('nav-next');
+if (mod.prev) {
+  prevBtn.href = '/study.html?module=' + mod.prev;
+  prevBtn.classList.remove('disabled');
+} else {
+  prevBtn.classList.add('disabled');
+}
+if (mod.next) {
+  nextBtn.href = '/study.html?module=' + mod.next;
+  nextBtn.classList.remove('disabled');
+} else {
+  nextBtn.classList.add('disabled');
+}
+
+// ── PROGRESS ────────────────────────────────────────────────────────────
+const statusDot  = document.getElementById('status-dot');
+const statusText = document.getElementById('status-text');
+const completeBtn = document.getElementById('btn-complete');
+
+function loadProgress() {
+  const completed = localStorage.getItem('ek_academy_' + moduleKey + '_completed');
+  const started   = localStorage.getItem('ek_academy_' + moduleKey + '_started');
+  if (completed) {
+    statusDot.className  = 'status-dot completed';
+    statusText.textContent = 'Completed';
+    completeBtn.textContent = '✓ Completed';
+    completeBtn.classList.add('done');
+  } else if (started) {
+    statusDot.className  = 'status-dot started';
+    statusText.textContent = 'In progress';
+  }
+}
+loadProgress();
+
+// mark started on load
+if (!localStorage.getItem('ek_academy_' + moduleKey + '_started')) {
+  localStorage.setItem('ek_academy_' + moduleKey + '_started', Date.now());
+  statusDot.className  = 'status-dot started';
+  statusText.textContent = 'In progress';
+}
+
+function markComplete() {
+  if (completeBtn.classList.contains('done')) return;
+  localStorage.setItem('ek_academy_' + moduleKey + '_completed', Date.now());
+  statusDot.className  = 'status-dot completed';
+  statusText.textContent = 'Completed';
+  completeBtn.textContent = '✓ Completed';
+  completeBtn.classList.add('done');
+  if (mod.next) {
+    setTimeout(() => {
+      window.location.href = '/study.html?module=' + mod.next;
+    }, 900);
+  }
+}
+
+// ── COMPANION THREAD ────────────────────────────────────────────────────
+const thread    = document.getElementById('thread');
+const input     = document.getElementById('study-input');
+const sendBtn   = document.getElementById('send-btn');
+const history   = [];
+let   busy      = false;
+
+function addMsg(role, text) {
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ' + (role === 'companion' ? 'companion' : 'user');
+  const label = document.createElement('div');
+  label.className = 'msg-label';
+  label.textContent = role === 'companion' ? 'Study Companion' : 'You';
+  const body = document.createElement('div');
+  body.className = 'msg-body';
+  body.textContent = text;
+  wrap.appendChild(label);
+  wrap.appendChild(body);
+  thread.appendChild(wrap);
+  thread.scrollTop = thread.scrollHeight;
+  return body;
+}
+
+function showThinking() {
+  const wrap = document.createElement('div');
+  wrap.className = 'msg companion';
+  wrap.id = 'thinking';
+  const label = document.createElement('div');
+  label.className = 'msg-label';
+  label.textContent = 'Study Companion';
+  const body = document.createElement('div');
+  body.className = 'msg-body';
+  body.innerHTML = '<div class="thinking-dots"><span></span><span></span><span></span></div>';
+  wrap.appendChild(label);
+  wrap.appendChild(body);
+  thread.appendChild(wrap);
+  thread.scrollTop = thread.scrollHeight;
+}
+
+function removeThinking() {
+  const t = document.getElementById('thinking');
+  if (t) t.remove();
+}
+
+function buildSystemPrompt() {
+  return `You are the EdgeKeeper Study Companion — an educational guide for the EdgeKeeper Academy.
+
+CURRENT MODULE: ${mod.title}
+TRACK: ${mod.track} — ${mod.trackName}
+TOPIC CONTEXT: ${mod.desc}
+
+YOUR ROLE:
+You teach this module's topic clearly and completely. You are not a trading mentor or a psychology coach — that is a separate product. Your job is to teach concepts, mechanics, and frameworks specific to this module.
+
+OPENING (first message only):
+Give a 2-3 sentence opening that introduces what this module covers and what the student will understand by the end. Then invite their first question. Do not summarize a long syllabus — just set the scene and open the floor.
+
+VOICE:
+Clear. Patient. Direct. You explain things the way a knowledgeable friend would — no condescension, no oversimplification. When something is complex, you say so and break it down step by step. When there is a clean answer, you give it cleanly. You do not perform enthusiasm. You are not cheerful in an artificial way.
+
+You can give examples, analogies, mini-exercises, or test the student's understanding when it feels natural. If they ask something outside this module's topic, briefly address it and return the focus to the module.
+
+PROHIBITIONS:
+- You are not Mike or Ashley. Do not reference them.
+- Do not give financial advice or trading signals.
+- Do not make up trading data or invent statistics.
+- Do not use phrases like "Great question!", "Absolutely!", "Certainly!", "Of course!".
+- Do not start your response with "I".`;
+}
+
+async function callCompanion(userMsg) {
+  const sysPrompt = buildSystemPrompt();
+  const messages  = [...history];
+  if (userMsg) messages.push({ role: 'user', content: userMsg });
+
+  const res = await fetch('/api/chat', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      mentor:   'study_companion',
+      messages,
+      system:   sysPrompt,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Request failed');
+  }
+  return res.json();
+}
+
+async function openingMessage() {
+  busy = true; sendBtn.disabled = true;
+  showThinking();
+  try {
+    const data  = await callCompanion(null);
+    const reply = data.reply || data.content || '';
+    removeThinking();
+    addMsg('companion', reply);
+    history.push({ role: 'assistant', content: reply });
+  } catch (_) {
+    removeThinking();
+    addMsg('companion', 'Something went wrong loading the module. Refresh the page to try again.');
+  }
+  busy = false; sendBtn.disabled = false;
+  input.focus();
+}
+
+async function sendMessage() {
+  if (busy) return;
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  input.style.height = '';
+
+  addMsg('user', text);
+  history.push({ role: 'user', content: text });
+
+  busy = true; sendBtn.disabled = true;
+  showThinking();
+
+  try {
+    const data  = await callCompanion(text);
+    const reply = data.reply || data.content || '';
+    removeThinking();
+    addMsg('companion', reply);
+    history.push({ role: 'assistant', content: reply });
+  } catch (err) {
+    removeThinking();
+    addMsg('companion', 'Something went wrong. Try again.');
+    history.pop();
+  }
+  busy = false; sendBtn.disabled = false;
+  input.focus();
+}
+
+// ── INPUT EVENTS ─────────────────────────────────────────────────────────
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+input.addEventListener('input', () => {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+});
+
+// ── BOOT ─────────────────────────────────────────────────────────────────
+openingMessage();
+</script>
+</body>
+</html>

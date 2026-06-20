@@ -409,32 +409,6 @@
   <p class="sel-signin-row">Already have an account? <a href="auth.html" class="sel-signin-link">Sign in →</a></p>
 </div>
 
-<!-- LEVEL SELECTOR -->
-<div id="level-selector">
-  <button class="lev-back" onclick="backToMentor()">← Back</button>
-  <p class="lev-mentor-tag" id="lev-mentor-tag">Mike · Private Intake</p>
-  <h1 class="lev-headline">Where are you<br><em>right now?</em></h1>
-  <div class="lev-cards">
-    <button class="lev-card" onclick="selectLevel('foundation')">
-      <div class="lev-number">01</div>
-      <div class="lev-title">Foundation</div>
-      <p class="lev-desc">New to trading, or still finding your footing. You understand the idea but haven't built consistency yet.</p>
-      <div class="lev-cta">Start here →</div>
-    </button>
-    <button class="lev-card" onclick="selectLevel('development')">
-      <div class="lev-number">02</div>
-      <div class="lev-title">Development</div>
-      <p class="lev-desc">You know the mechanics. The problem is execution, discipline, or finding a reliable edge.</p>
-      <div class="lev-cta">This is me →</div>
-    </button>
-    <button class="lev-card" onclick="selectLevel('performance')">
-      <div class="lev-number">03</div>
-      <div class="lev-title">Performance</div>
-      <p class="lev-desc">You have a working edge. You're optimising consistency, psychology at higher stakes, or preparing to scale.</p>
-      <div class="lev-cta">Continue →</div>
-    </button>
-  </div>
-</div>
 
 <!-- INTAKE ROOM -->
 <div id="intake-room">
@@ -972,48 +946,9 @@ function selectMentor(name, e) {
   mentor = m;
   applyTheme(m);
 
-  // Update level selector mentor tag
-  document.getElementById('lev-mentor-tag').textContent = m.name + ' · Private Intake';
-
   document.getElementById('selector').classList.add('hidden');
   setTimeout(() => {
     document.getElementById('selector').style.display = 'none';
-    // Skip level screen only when a ?path= URL param explicitly pre-selected it
-    if (sessionStorage.getItem('ek_path_preselected')) {
-      startIntake();
-      return;
-    }
-    const lv = document.getElementById('level-selector');
-    lv.classList.add('visible');
-    requestAnimationFrame(() => requestAnimationFrame(() => lv.classList.add('active')));
-  }, 800);
-}
-
-function backToMentor() {
-  const lv = document.getElementById('level-selector');
-  lv.classList.remove('active');
-  setTimeout(() => {
-    lv.classList.remove('visible');
-    const sel = document.getElementById('selector');
-    sel.style.display = 'flex';
-    sel.classList.remove('hidden');
-  }, 800);
-}
-
-function selectLevel(level) {
-  const stageMap = { foundation: 'explorer', development: 'developing', performance: 'performance' };
-  const stage = stageMap[level] || 'explorer';
-
-  sessionStorage.setItem('ek_selected_level', level);
-  sessionStorage.setItem('ek_trader_stage_pre', stage);
-  // Write to localStorage so workspace.html can read it before the API profile loads
-  localStorage.setItem('ek_trader_stage_onboarding', stage);
-  localStorage.setItem('ek_selected_level_onboarding', level);
-
-  const lv = document.getElementById('level-selector');
-  lv.classList.add('hidden');
-  setTimeout(() => {
-    lv.classList.remove('visible', 'active', 'hidden');
     startIntake();
   }, 800);
 }

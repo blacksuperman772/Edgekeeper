@@ -385,8 +385,12 @@ app.get('/profile',          requireAuthPage, (req, res) => res.redirect('/profi
 app.get('/workspace.html',   requireAuthPage, serveInjectedHtml(path.join(__dirname, 'workspace.html')));
 app.get('/settings.html',    requireAuthPage, serveInjectedHtml(path.join(__dirname, 'settings.html')));
 app.get('/assessment.html',  requireAuthPage, serveInjectedHtml(path.join(__dirname, 'assessment.html')));
-app.get('/academy.html',     requireAuthPage, serveInjectedHtml(path.join(__dirname, 'academy.html')));
-app.get('/academy',          requireAuthPage, serveInjectedHtml(path.join(__dirname, 'academy.html')));
+app.get('/academy.html',              requireAuthPage, serveInjectedHtml(path.join(__dirname, 'academy.html')));
+app.get('/academy',                   requireAuthPage, serveInjectedHtml(path.join(__dirname, 'academy.html')));
+app.get('/academy-onboarding.html',   requireAuthPage, serveInjectedHtml(path.join(__dirname, 'academy-onboarding.html')));
+app.get('/academy-onboarding',        requireAuthPage, serveInjectedHtml(path.join(__dirname, 'academy-onboarding.html')));
+app.get('/study.html',                requireAuthPage, serveInjectedHtml(path.join(__dirname, 'study.html')));
+app.get('/study',                     requireAuthPage, serveInjectedHtml(path.join(__dirname, 'study.html')));
 // Phase 3-7 pages
 app.get('/reviews.html',      requireAuthPage, serveInjectedHtml(path.join(__dirname, 'reviews.html')));
 app.get('/reviews',           requireAuthPage, serveInjectedHtml(path.join(__dirname, 'reviews.html')));
@@ -441,7 +445,7 @@ app.post('/api/chat', requireAuthApi, chatLimiter, async (req, res) => {
   if (systemPrompt.length > 16000) {
     return res.status(400).json({ error: 'systemPrompt too long' });
   }
-  if (!['mike', 'ashley'].includes(mentor)) {
+  if (!['mike', 'ashley', 'study_companion'].includes(mentor)) {
     return res.status(400).json({ error: 'Invalid mentor' });
   }
 
@@ -466,8 +470,10 @@ app.post('/api/chat', requireAuthApi, chatLimiter, async (req, res) => {
   // ── Message usage enforcement ───────────────────────────────────────────────
   // Session openers ([Session start] / __first_session__) do not count against
   // the user's message quota — they are infrastructure, not conversation turns.
+  // Academy study companion calls use a separate product — no mentor quota applied.
   const lastMsg = messages[messages.length - 1];
   const isSystemOpener = is_opener === true ||
+    mentor === 'study_companion' ||
     (lastMsg?.role === 'user' && ['[Session start]', '__first_session__'].includes(lastMsg?.content));
 
   try {

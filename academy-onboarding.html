@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Academy — EdgeKeeper</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Space+Grotesk:wght@300;400;500&family=Space+Mono:wght@400&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --void:    #07050E;
+      --surface: #0D0B16;
+      --border:  rgba(255,255,255,0.07);
+      --gold:    #C9A85C;
+      --gold-d:  rgba(201,168,92,0.35);
+      --text:    rgba(255,255,255,0.82);
+      --muted:   rgba(255,255,255,0.42);
+      --dim:     rgba(255,255,255,0.18);
+      --serif:   'Cormorant Garamond', Georgia, serif;
+      --sans:    'Space Grotesk', sans-serif;
+      --mono:    'Space Mono', monospace;
+    }
+
+    html { font-size: 16px; }
+    body {
+      background: var(--void);
+      color: var(--text);
+      font-family: var(--sans);
+      font-weight: 300;
+      line-height: 1.7;
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+
+    /* ── AMBIENT ── */
+    .ambient {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 20% 30%, rgba(201,168,92,0.04) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 80% 70%, rgba(124,58,237,0.04) 0%, transparent 70%);
+    }
+
+    /* ── TOP BAR ── */
+    #top-bar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 40px;
+    }
+    .brand {
+      font-family: var(--serif); font-size: 1.05rem; font-weight: 400;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: rgba(255,255,255,0.8); text-decoration: none;
+    }
+    .brand span { color: var(--gold); }
+    .top-label {
+      font-family: var(--mono); font-size: 0.6rem;
+      letter-spacing: 0.2em; text-transform: uppercase; color: var(--dim);
+    }
+
+    /* ── MAIN ── */
+    main {
+      position: relative; z-index: 1;
+      min-height: 100dvh;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center;
+      padding: 100px 24px 60px;
+    }
+
+    /* ── PHASE: INTRO ── */
+    #phase-intro { width: 100%; max-width: 560px; text-align: center; }
+
+    .companion-mark {
+      width: 48px; height: 48px; margin: 0 auto 32px;
+      border-radius: 50%;
+      border: 1px solid var(--gold-d);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .companion-mark svg { width: 20px; height: 20px; opacity: 0.7; }
+
+    .intro-eyebrow {
+      font-family: var(--mono); font-size: 0.6rem;
+      letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 20px;
+    }
+    .intro-headline {
+      font-family: var(--serif); font-size: clamp(2rem, 5vw, 2.8rem);
+      font-weight: 300; line-height: 1.2;
+      color: rgba(255,255,255,0.92); margin-bottom: 20px;
+    }
+    .intro-headline em { font-style: italic; color: var(--gold); }
+    .intro-body {
+      font-size: 0.9rem; color: var(--muted);
+      line-height: 1.8; margin-bottom: 40px; max-width: 420px; margin-left: auto; margin-right: auto;
+    }
+    .intro-continue {
+      display: inline-block; padding: 14px 36px;
+      border: 1px solid var(--gold-d); border-radius: 2px;
+      font-family: var(--mono); font-size: 0.65rem;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--gold); text-decoration: none; cursor: pointer;
+      background: transparent;
+      transition: background 0.25s, border-color 0.25s;
+    }
+    .intro-continue:hover {
+      background: rgba(201,168,92,0.08); border-color: var(--gold);
+    }
+
+    /* ── PHASE: TRACK SELECT ── */
+    #phase-tracks { width: 100%; max-width: 880px; display: none; }
+
+    .tracks-headline {
+      font-family: var(--serif); font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 300; text-align: center; margin-bottom: 12px;
+      color: rgba(255,255,255,0.9);
+    }
+    .tracks-headline em { font-style: italic; color: var(--gold); }
+    .tracks-sub {
+      text-align: center; font-size: 0.85rem; color: var(--muted);
+      margin-bottom: 48px;
+    }
+
+    .tracks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .track-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 4px; padding: 28px 24px;
+      cursor: pointer; transition: border-color 0.2s, background 0.2s;
+      text-align: left; position: relative; overflow: hidden;
+    }
+    .track-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(201,168,92,0.04) 0%, transparent 60%);
+      opacity: 0; transition: opacity 0.25s;
+    }
+    .track-card:hover { border-color: rgba(201,168,92,0.3); background: rgba(255,255,255,0.03); }
+    .track-card:hover::before { opacity: 1; }
+    .track-card.selected {
+      border-color: var(--gold); background: rgba(201,168,92,0.07);
+    }
+    .track-card.selected::before { opacity: 1; }
+
+    .track-num {
+      font-family: var(--mono); font-size: 0.55rem;
+      letter-spacing: 0.2em; color: var(--gold); margin-bottom: 14px;
+    }
+    .track-name {
+      font-family: var(--serif); font-size: 1.25rem; font-weight: 400;
+      color: rgba(255,255,255,0.9); margin-bottom: 10px; line-height: 1.3;
+    }
+    .track-desc {
+      font-size: 0.78rem; color: var(--muted); line-height: 1.7;
+      margin-bottom: 16px;
+    }
+    .track-modules {
+      font-family: var(--mono); font-size: 0.58rem;
+      letter-spacing: 0.12em; color: var(--dim);
+    }
+
+    .tracks-cta-row {
+      margin-top: 36px; text-align: center;
+    }
+    .tracks-begin {
+      display: inline-block; padding: 15px 48px;
+      background: var(--gold); border-radius: 2px;
+      font-family: var(--mono); font-size: 0.65rem;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: #07050E; cursor: pointer; border: none;
+      transition: opacity 0.2s; opacity: 0.4; pointer-events: none;
+    }
+    .tracks-begin.active { opacity: 1; pointer-events: all; }
+    .tracks-begin.active:hover { opacity: 0.88; }
+
+    .no-rush {
+      margin-top: 16px; font-size: 0.75rem; color: var(--dim);
+    }
+
+    /* ── FADE TRANSITION ── */
+    .fade-out { animation: fadeOut 0.4s ease forwards; }
+    .fade-in  { animation: fadeIn  0.5s ease forwards; }
+    @keyframes fadeOut { to { opacity: 0; transform: translateY(-12px); } }
+    @keyframes fadeIn  { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+    @media (max-width: 600px) {
+      #top-bar { padding: 16px 20px; }
+      .tracks-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="ambient"></div>
+
+<div id="top-bar">
+  <a href="/edgekeeper.html" class="brand">Edge<span>K</span>eeper</a>
+  <span class="top-label">Academy · Enrollment</span>
+</div>
+
+<main>
+
+  <!-- PHASE 1: COMPANION INTRO -->
+  <div id="phase-intro">
+    <div class="companion-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--gold)">
+        <path d="M12 2a10 10 0 1 0 10 10"/>
+        <path d="M12 6v6l3 3"/>
+        <circle cx="19" cy="5" r="3" fill="var(--gold)" stroke="none" opacity="0.6"/>
+      </svg>
+    </div>
+    <p class="intro-eyebrow">EdgeKeeper Academy</p>
+    <h1 class="intro-headline">Learn to trade.<br><em>Properly.</em></h1>
+    <p class="intro-body">
+      Six structured tracks. From what a market is to how professional traders think.
+      You will have a study companion with you the entire way — not a mentor, not a coach,
+      but something closer to a knowledgeable friend who has done this before.
+    </p>
+    <button class="intro-continue" onclick="showTracks()">Choose your starting track</button>
+  </div>
+
+  <!-- PHASE 2: TRACK SELECTION -->
+  <div id="phase-tracks">
+    <h2 class="tracks-headline">Where do you<br><em>start?</em></h2>
+    <p class="tracks-sub">Pick the track that matches where you are right now. You can always go back.</p>
+
+    <div class="tracks-grid">
+
+      <div class="track-card" data-track="foundations" data-first="what_are_markets" onclick="selectTrack(this)">
+        <div class="track-num">TRACK 01</div>
+        <div class="track-name">Market Foundations</div>
+        <div class="track-desc">What markets are, how prices move, how orders work. The things most people skip and regret later.</div>
+        <div class="track-modules">10 modules · Start here if new</div>
+      </div>
+
+      <div class="track-card" data-track="technical" data-first="support_resistance" onclick="selectTrack(this)">
+        <div class="track-num">TRACK 02</div>
+        <div class="track-name">Technical Analysis</div>
+        <div class="track-desc">Charts, trends, indicators. How to read what price is actually doing — not what you want it to do.</div>
+        <div class="track-modules">9 modules · Requires Track 01</div>
+      </div>
+
+      <div class="track-card" data-track="risk" data-first="position_sizing" onclick="selectTrack(this)">
+        <div class="track-num">TRACK 03</div>
+        <div class="track-name">Risk Management</div>
+        <div class="track-desc">Position sizing, loss limits, drawdown. The part of trading that determines whether you survive long enough to get good.</div>
+        <div class="track-modules">8 modules · Open to all</div>
+      </div>
+
+      <div class="track-card" data-track="strategy" data-first="what_is_edge" onclick="selectTrack(this)">
+        <div class="track-num">TRACK 04</div>
+        <div class="track-name">Strategy Development</div>
+        <div class="track-desc">Building a real edge. Backtesting, journaling for refinement, building rules you can actually follow.</div>
+        <div class="track-modules">6 modules · Requires Track 02</div>
+      </div>
+
+      <div class="track-card" data-track="psychology" data-first="what_is_trading" onclick="selectTrack(this)">
+        <div class="track-num">TRACK 05</div>
+        <div class="track-name">Trading Psychology</div>
+        <div class="track-desc">Discipline, execution, the mental side of consistency. Why knowing what to do and doing it are two different problems.</div>
+        <div class="track-modules">13 modules</div>
+      </div>
+
+      <div class="track-card" data-track="performance" data-first="behavioral_analytics" onclick="selectTrack(this)">
+        <div class="track-num">TRACK 06</div>
+        <div class="track-name">Performance OS</div>
+        <div class="track-desc">Behavioral analytics, pattern recognition, scaling. For traders who have the edge and want to optimize the operator.</div>
+        <div class="track-modules">5 modules · Advanced</div>
+      </div>
+
+    </div>
+
+    <div class="tracks-cta-row">
+      <button class="tracks-begin" id="begin-btn" onclick="beginAcademy()">Enter the Academy</button>
+      <p class="no-rush">You can switch tracks at any time from the curriculum page.</p>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const SUPABASE_URL  = '%%SUPABASE_URL%%';
+const SUPABASE_ANON = '%%SUPABASE_ANON_KEY%%';
+
+let selectedTrack   = null;
+let selectedFirst   = null;
+
+// ── Already enrolled? Skip straight to academy ─────────────────────────
+const existing = localStorage.getItem('ek_academy_track');
+if (existing) {
+  window.location.replace('/academy.html');
+}
+
+// ── PHASE TRANSITIONS ──────────────────────────────────────────────────
+function showTracks() {
+  const intro  = document.getElementById('phase-intro');
+  const tracks = document.getElementById('phase-tracks');
+  intro.classList.add('fade-out');
+  setTimeout(() => {
+    intro.style.display  = 'none';
+    tracks.style.display = 'block';
+    tracks.classList.add('fade-in');
+  }, 380);
+}
+
+// ── TRACK SELECTION ────────────────────────────────────────────────────
+function selectTrack(card) {
+  document.querySelectorAll('.track-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  selectedTrack = card.dataset.track;
+  selectedFirst = card.dataset.first;
+  const btn = document.getElementById('begin-btn');
+  btn.classList.add('active');
+}
+
+// ── BEGIN ACADEMY ──────────────────────────────────────────────────────
+async function beginAcademy() {
+  if (!selectedTrack) return;
+  const btn = document.getElementById('begin-btn');
+  btn.textContent = 'Enrolling...';
+  btn.style.pointerEvents = 'none';
+
+  // Persist enrollment
+  localStorage.setItem('ek_academy_track', selectedTrack);
+  localStorage.setItem('ek_academy_first_module', selectedFirst);
+  localStorage.setItem('ek_academy_enrolled_at', Date.now());
+
+  // Best-effort server sync
+  try {
+    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      await sb.from('user_profiles')
+        .update({ academy_track: selectedTrack, academy_enrolled_at: new Date().toISOString() })
+        .eq('id', session.user.id);
+    }
+  } catch (_) {}
+
+  // Go to first module of selected track
+  window.location.href = '/study.html?module=' + selectedFirst + '&track=' + selectedTrack + '&first=1';
+}
+</script>
+</body>
+</html>
