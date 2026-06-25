@@ -783,19 +783,13 @@ async function bootstrapNotebook() {
     .map(m => (m.role === 'user' ? 'Trader' : mentor.name) + ': ' + m.content)
     .join('\n');
 
-  const systemPrompt = `You are ${mentor.name}, age ${c.age}. ${c.background}
-
-You just completed a private intake session with a new client. Create your initial private notebook entry from the transcript.
-
-Return JSON only — no markdown, no commentary:
-{"theory":"Your single core working hypothesis about what is really driving their behavior","open_questions":["up to 3 questions you still have"],"observations":["up to 4 key psychological observations, specific and non-generic"],"patterns":["up to 3 behavioral patterns you noticed"],"strengths":["up to 3 genuine strengths you observed"],"concerns":["up to 3 real concerns worth monitoring"],"emotional_map":{"avoidance":["topics they deflected or avoided"],"confidence":["what seemed to build them up"],"shame":["what seemed to trigger shame or discomfort"],"excitement":["what genuinely energized them"]},"trust_level":2,"story_moment":"One memorable specific moment from this session worth remembering","running_narrative":"1-2 sentence synthesis of who this person is as a trader, from this intake alone — the thread that runs underneath everything they said"}`;
-
   try {
     const res = await fetch('/api/intake-chat', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        task: 'notebook',
+        mentor: mentorKey,
         messages: [{ role: 'user', content: 'INTAKE TRANSCRIPT:\n' + transcript }],
-        systemPrompt,
       }),
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -1162,12 +1156,19 @@ Under ${isFreeAssessment ? '100' : '140'} words. First person. Human. Never robo
 // ── AI ────────────────────────────────────────────────────────────────
 async function callAI() {
   try {
+    // The system prompt is built server-side now (the browser cannot inject it).
+    // We send only bounded, structured context.
     const res = await fetch('/api/intake-chat', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
+        task: 'intake',
         messages: history.slice(-16),
-        systemPrompt: buildPrompt(),
+        mentor: mentor ? mentor.key : 'mike',
+        exchangeCount,
+        level: sessionStorage.getItem('ek_selected_level') || '',
+        theory: document.getElementById('theory-text')?.textContent?.trim() || '',
+        totalExchanges: TOTAL_EXCHANGES,
       }),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
