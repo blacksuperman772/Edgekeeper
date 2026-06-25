@@ -594,6 +594,19 @@
   // Persist arbitrary next-destination for protected page redirects
   if (_next && _next.startsWith('/')) sessionStorage.setItem('ek_post_auth_dest', _next);
 
+  // ── Academy mode — when the user arrives via "Learn with Theo" the whole auth
+  // surface points at the Academy, not the Marcus intake. (Fixes the inconsistency
+  // where every path funnelled into "Begin your intake → Marcus".)
+  const _isAcademy = (_next && _next.indexOf('/academy') === 0) || sessionStorage.getItem('ek_auth_intent') === 'academy';
+  if (_isAcademy) sessionStorage.setItem('ek_auth_intent', 'academy');
+  window.addEventListener('DOMContentLoaded', () => {
+    if (!_isAcademy) return;
+    const newHere = document.querySelector('a[href="/onboarding.html"]');
+    if (newHere) { newHere.setAttribute('href', '/academy-onboarding'); newHere.textContent = 'Start the Academy →'; }
+    const body = document.getElementById('confirm-body');
+    if (body) body.dataset.academy = '1';
+  });
+
   // ── State ────────────────────────────────────────────────────────────────────
   let isLoading = false;
 
@@ -660,7 +673,9 @@
   function showConfirm(email) {
     document.getElementById('form-state').style.display    = 'none';
     document.getElementById('privacy-note').style.display  = 'none';
-    document.getElementById('confirm-email').textContent   = email;
+    const dest = _isAcademy ? 'the Academy' : 'your private workspace';
+    document.getElementById('confirm-body').innerHTML =
+      `We've sent a secure link to <strong>${email}</strong>.<br>Click it to enter ${dest}.`;
     document.getElementById('confirm-state').classList.add('visible');
   }
 
@@ -798,9 +813,12 @@
 
     setLoading(true);
     try {
+      // Preserve the destination (e.g. /academy-onboarding) through the magic-link
+      // round-trip so the Academy path doesn't fall back to the Marcus intake.
+      const redirectUrl = window.location.origin + '/auth.html' + (_next ? ('?next=' + encodeURIComponent(_next)) : '');
       const { error } = await sb.auth.signInWithOtp({
         email,
-        options: { shouldCreateUser: false },
+        options: { shouldCreateUser: false, emailRedirectTo: redirectUrl },
       });
       if (error) throw error;
       showConfirm(email);

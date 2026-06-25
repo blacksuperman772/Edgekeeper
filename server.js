@@ -349,6 +349,7 @@ app.get('/sitemap.xml',   (req, res) => res.type('application/xml').sendFile(pat
 // Internal slugs stay mike/ashley everywhere else (DB, API, voice config).
 app.get('/marcus',  (req, res) => res.sendFile(path.join(__dirname, 'mike.html')));
 app.get('/iris',    (req, res) => res.sendFile(path.join(__dirname, 'ashley.html')));
+app.get(['/theo', '/theo.html'], (req, res) => res.sendFile(path.join(__dirname, 'theo.html')));
 // 301 the old slug URLs so existing links and bookmarks still resolve.
 app.get(['/mike', '/mike.html'],     (req, res) => res.redirect(301, '/marcus'));
 app.get(['/ashley', '/ashley.html'], (req, res) => res.redirect(301, '/iris'));

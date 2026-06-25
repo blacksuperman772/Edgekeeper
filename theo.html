@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Theo — Your Teacher — EdgeKeeper</title>
+  <meta name="description" content="Theo is the teacher at EdgeKeeper. He runs the Academy: structured, patient lessons that take you from what a market is to how professionals think — until you're ready to be coached by Marcus." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet" />
+  <style>
+    *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --black:#050505; --obsidian:#0a0a0a; --stone:#111111; --border:#1e1e1e; --dim:#2a2a2a;
+      --muted:#525252; --faint:#868f97; --text:#d4d0c8; --white:#f5f2ec;
+      --gold:#b8a06a; --gold-dim:#7a6a45;
+      --serif:'Cormorant Garamond',Georgia,serif; --sans:'Inter',sans-serif; --mono:'DM Mono',monospace;
+    }
+    html { scroll-behavior:smooth; }
+    body { background:var(--black); color:var(--text); font-family:var(--sans); font-weight:300; line-height:1.7; overflow-x:hidden; -webkit-font-smoothing:antialiased; }
+    a { color:inherit; }
+    .wrap { max-width:1100px; margin:0 auto; padding:0 32px; }
+
+    nav { position:fixed; top:0; left:0; right:0; z-index:100; display:flex; align-items:center; justify-content:space-between; padding:24px 40px; background:linear-gradient(to bottom, rgba(5,5,5,0.9), transparent); }
+    .nav-logo { font-family:var(--serif); font-size:1rem; letter-spacing:0.22em; text-transform:uppercase; color:var(--white); text-decoration:none; }
+    .nav-logo span { color:var(--gold); }
+    .nav-links { display:flex; gap:32px; list-style:none; }
+    .nav-links a { font-size:0.68rem; letter-spacing:0.16em; text-transform:uppercase; color:var(--faint); text-decoration:none; transition:color .3s; }
+    .nav-links a:hover { color:var(--text); }
+    .nav-cta { font-family:var(--mono); font-size:0.62rem; letter-spacing:0.16em; text-transform:uppercase; color:var(--gold); border:1px solid rgba(184,160,106,0.35); padding:9px 20px; text-decoration:none; transition:background .3s; }
+    .nav-cta:hover { background:rgba(184,160,106,0.08); }
+    @media (max-width:760px) { .nav-links { display:none; } nav { padding:18px 22px; } }
+
+    /* HERO */
+    #hero { position:relative; min-height:100vh; display:flex; align-items:center; overflow:hidden; }
+    .hero-portrait { position:absolute; top:0; right:0; width:46%; height:100vh; background:url('/assets/theo-portrait.png') center top / cover no-repeat; opacity:0.5; pointer-events:none; }
+    .hero-portrait::after { content:''; position:absolute; inset:0; background:linear-gradient(to right, var(--black) 8%, transparent 60%), linear-gradient(to top, var(--black), transparent 40%); }
+    @media (max-width:760px) { .hero-portrait { width:100%; opacity:0.22; } }
+    .hero-inner { position:relative; z-index:2; padding-top:80px; }
+    .hero-tag { font-family:var(--mono); font-size:0.6rem; letter-spacing:0.28em; text-transform:uppercase; color:var(--gold); margin-bottom:28px; }
+    .hero-quote { font-family:var(--serif); font-size:clamp(2.2rem,5vw,3.6rem); font-weight:300; line-height:1.2; color:var(--white); max-width:680px; }
+    .hero-quote em { font-style:italic; color:var(--gold); }
+    .hero-attr { font-family:var(--mono); font-size:0.66rem; letter-spacing:0.18em; color:var(--faint); margin-top:32px; }
+
+    section { padding:120px 0; border-top:1px solid var(--border); }
+    .label { font-family:var(--mono); font-size:0.6rem; letter-spacing:0.28em; text-transform:uppercase; color:var(--gold); margin-bottom:18px; }
+    h2 { font-family:var(--serif); font-size:clamp(1.9rem,3.5vw,2.8rem); font-weight:300; color:var(--white); line-height:1.2; margin-bottom:28px; }
+    .lead { font-size:1rem; color:var(--faint); max-width:620px; line-height:1.9; }
+
+    .flow { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1px; background:var(--border); border:1px solid var(--border); margin-top:56px; }
+    .flow-step { background:var(--black); padding:32px 26px; }
+    .flow-num { font-family:var(--serif); font-size:1.6rem; color:var(--gold-dim); }
+    .flow-title { font-family:var(--serif); font-size:1.25rem; color:var(--white); margin:10px 0 8px; }
+    .flow-desc { font-size:0.85rem; color:var(--muted); line-height:1.7; }
+
+    .tracks { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1px; background:var(--border); border:1px solid var(--border); margin-top:56px; }
+    .track { background:var(--black); padding:30px 28px; transition:background .3s; }
+    .track:hover { background:var(--stone); }
+    .track-n { font-family:var(--mono); font-size:0.55rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--gold-dim); }
+    .track-t { font-family:var(--serif); font-size:1.3rem; color:var(--white); margin:8px 0 8px; }
+    .track-d { font-size:0.82rem; color:var(--muted); line-height:1.7; }
+    .track.locked .track-t::after { content:' · plan'; font-family:var(--mono); font-size:0.5rem; letter-spacing:0.15em; color:var(--gold-dim); vertical-align:middle; }
+
+    /* CTA */
+    #cta { text-align:center; }
+    .cta-h { font-family:var(--serif); font-size:clamp(2rem,4vw,3rem); font-weight:300; color:var(--white); line-height:1.2; }
+    .cta-h em { font-style:italic; color:var(--gold); }
+    .btn-begin { display:inline-flex; align-items:center; gap:12px; margin-top:40px; padding:16px 36px; font-family:var(--sans); font-size:0.74rem; font-weight:400; letter-spacing:0.16em; text-transform:uppercase; color:var(--gold); background:rgba(184,160,106,0.08); border:1px solid rgba(184,160,106,0.4); text-decoration:none; transition:background .3s; }
+    .btn-begin:hover { background:rgba(184,160,106,0.16); }
+    .btn-dot { width:6px; height:6px; border-radius:50%; background:var(--gold); }
+    .cta-sub { margin-top:28px; font-family:var(--mono); font-size:0.64rem; letter-spacing:0.12em; color:var(--faint); }
+    .cta-sub a { color:var(--gold); text-decoration:none; border-bottom:1px solid rgba(184,160,106,0.3); padding-bottom:2px; }
+
+    footer { padding:48px 40px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px; }
+    .foot-logo { font-family:var(--serif); font-size:0.9rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); }
+    .foot-logo span { color:var(--gold-dim); }
+    .foot-links { display:flex; gap:28px; list-style:none; }
+    .foot-links a { font-family:var(--mono); font-size:0.58rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--dim); text-decoration:none; transition:color .3s; }
+    .foot-links a:hover { color:var(--muted); }
+
+    .reveal { opacity:0; transform:translateY(22px); transition:opacity .8s ease, transform .8s ease; }
+    .reveal.in { opacity:1; transform:translateY(0); }
+    @media (prefers-reduced-motion:reduce) { .reveal { opacity:1; transform:none; } }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="/edgekeeper.html" class="nav-logo">Edge<span>K</span>eeper</a>
+  <ul class="nav-links">
+    <li><a href="/marcus">Marcus</a></li>
+    <li><a href="/iris">Iris</a></li>
+    <li><a href="/method">The Method</a></li>
+    <li><a href="/pricing.html">Pricing</a></li>
+  </ul>
+  <a href="/academy-onboarding" class="nav-cta">Learn with Theo</a>
+</nav>
+
+<section id="hero">
+  <div class="hero-portrait"></div>
+  <div class="wrap hero-inner">
+    <div class="hero-tag">Your Teacher · The Academy</div>
+    <h1 class="hero-quote">"You don't need to be told what to do.<br>You need to <em>understand why</em> — then it's yours."</h1>
+    <div class="hero-attr">— Theo</div>
+  </div>
+</section>
+
+<section id="what">
+  <div class="wrap">
+    <div class="label reveal">What Theo teaches</div>
+    <h2 class="reveal">From your first chart to a real edge.</h2>
+    <p class="lead reveal">Theo runs the Academy — six structured tracks that take you from the absolute fundamentals to the way professional traders actually think. He doesn't hand you signals. He builds the understanding underneath them, one idea at a time, and checks it before you move on. When you've got the foundations, he hands you to Marcus.</p>
+    <div class="tracks">
+      <div class="track reveal"><div class="track-n">Track 1 · Free</div><div class="track-t">Market Foundations</div><div class="track-d">What a market is, who's on the other side, orders, charts, candles, risk. The ground everything else stands on.</div></div>
+      <div class="track locked reveal"><div class="track-n">Track 2</div><div class="track-t">Technical Analysis</div><div class="track-d">Support and resistance, trend, the indicators that matter and the ones that don't.</div></div>
+      <div class="track locked reveal"><div class="track-n">Track 3</div><div class="track-t">Risk Management</div><div class="track-d">Position sizing, the 1% rule, drawdown, and the math of staying in the game.</div></div>
+      <div class="track locked reveal"><div class="track-n">Track 4</div><div class="track-t">Strategy Development</div><div class="track-d">What an edge actually is, how to test one, and how to build a system you can follow.</div></div>
+      <div class="track locked reveal"><div class="track-n">Track 5</div><div class="track-t">Trading Psychology</div><div class="track-d">Fear, tilt, revenge, the stories you tell yourself, and the discipline underneath consistency.</div></div>
+      <div class="track locked reveal"><div class="track-n">Track 6</div><div class="track-t">Performance OS</div><div class="track-d">Reading your own data, scaling responsibly, and sustaining performance over time.</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <div class="label reveal">How Theo teaches</div>
+    <h2 class="reveal">A lesson, not a textbook.</h2>
+    <p class="lead reveal">Most platforms hand you a wall of text and a quiz. Theo runs a real lesson — and he can do it by voice. He explains, he shows you, he asks, and he actually responds to what you said.</p>
+    <div class="flow">
+      <div class="flow-step reveal"><div class="flow-num">01</div><div class="flow-title">Explain</div><div class="flow-desc">The idea, plainly, in a sentence or two. No jargon for its own sake.</div></div>
+      <div class="flow-step reveal"><div class="flow-num">02</div><div class="flow-title">Demonstrate</div><div class="flow-desc">A concrete example. He shows you the thing, he doesn't just assert it.</div></div>
+      <div class="flow-step reveal"><div class="flow-num">03</div><div class="flow-title">Check</div><div class="flow-desc">One focused question. He's listening for understanding, not a correct guess.</div></div>
+      <div class="flow-step reveal"><div class="flow-num">04</div><div class="flow-title">Respond</div><div class="flow-desc">If you've got it, you move on. If not, he explains it a different way. Then he marks it learned.</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="cta">
+  <div class="wrap">
+    <div class="label reveal" style="display:inline-block;">Begin</div>
+    <h2 class="cta-h reveal">Track 1 is free.<br>Start where <em>everyone</em> starts.</h2>
+    <a href="/academy-onboarding" class="btn-begin reveal"><span class="btn-dot"></span>Learn with Theo</a>
+    <div class="cta-sub reveal">Already trading and want a coach instead? <a href="/onboarding.html">Begin with Marcus →</a></div>
+  </div>
+</section>
+
+<footer>
+  <div class="foot-logo">Edge<span>K</span>eeper</div>
+  <ul class="foot-links">
+    <li><a href="/edgekeeper.html">Home</a></li>
+    <li><a href="/marcus">Marcus</a></li>
+    <li><a href="/iris">Iris</a></li>
+    <li><a href="/pricing.html">Pricing</a></li>
+    <li><a href="/privacy.html">Privacy</a></li>
+  </ul>
+</footer>
+
+<script>
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); obs.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+</script>
+</body>
+</html>
