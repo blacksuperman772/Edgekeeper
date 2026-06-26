@@ -680,13 +680,13 @@
   }
 
   // ── Post-auth redirect ────────────────────────────────────────────────────────
-  async function redirectAfterAuth(accessToken) {
+  async function redirectAfterAuth(accessToken, refreshToken) {
     // VULN-01: HttpOnly cookie set server-side — never write document.cookie
     await fetch('/api/auth/session', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ access_token: accessToken }),
+      body: JSON.stringify({ access_token: accessToken, refresh_token: refreshToken }),
     });
 
     // If the landing page explicitly asked for onboarding, honour it
@@ -780,7 +780,7 @@
       const session = data.session;
 
       if (session) {
-        await redirectAfterAuth(session.access_token);
+        await redirectAfterAuth(session.access_token, session.refresh_token);
       } else {
         showError('Unable to establish session. Please try again.');
         setLoading(false);
@@ -836,7 +836,7 @@
     const hash = window.location.hash;
     if (!hash.includes('access_token') && !hash.includes('type=magiclink')) return;
     const { data: { session } } = await sb.auth.getSession();
-    if (session) await redirectAfterAuth(session.access_token);
+    if (session) await redirectAfterAuth(session.access_token, session.refresh_token);
   })();
 
   // ── Enter key shortcuts ───────────────────────────────────────────────────────

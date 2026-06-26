@@ -320,7 +320,7 @@
 
   <!-- TOP BAR -->
   <div id="top-bar">
-    <a href="edgekeeper.html" class="top-brand">Edge<span>K</span>eeper</a>
+    <a href="/edgekeeper.html" class="top-brand">Edge<span>K</span>eeper</a>
     <div id="top-center">
       <div id="room-tag">Private Intake Room</div>
       <div id="top-progress"></div>
@@ -535,12 +535,13 @@ async function registerAndProceed() {
     if (signInErr) throw new Error(signInErr.message);
 
     // Set the HttpOnly session cookie via server (JS cannot set HttpOnly cookies)
-    const token = signInData?.session?.access_token;
+    const token   = signInData?.session?.access_token;
+    const refresh = signInData?.session?.refresh_token;
     if (token) {
       const sessionRes = await fetch('/api/auth/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ access_token: token }),
+        body: JSON.stringify({ access_token: token, refresh_token: refresh }),
         credentials: 'include',
       });
       if (!sessionRes.ok) throw new Error('Failed to establish session');

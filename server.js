@@ -126,19 +126,45 @@ function serveInjectedHtml(filePath) {
 
 // ── JWT verification middleware ───────────────────────────────────────────────
 // Reads the ek_session cookie, verifies with Supabase, attaches user to req.
+// If the access_token is expired but ek_refresh cookie exists, refreshes it
+// automatically and updates both cookies so the user stays logged in.
 async function verifySession(req, res, next) {
-  const token = req.cookies?.ek_session;
-  if (!token) return next(); // unauthenticated — route handlers decide what to do
+  const token   = req.cookies?.ek_session;
+  const refresh = req.cookies?.ek_refresh;
+  if (!token && !refresh) return next();
 
-  try {
-    const { data, error } = await supabaseAdmin.auth.getUser(token);
-    if (!error && data?.user) {
-      req.user       = data.user;
-      req.authToken  = token;
-    }
-  } catch (_) {
-    // Treat any verification failure as unauthenticated
+  const COOKIE_OPTS = {
+    httpOnly: true,
+    secure:   process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path:     '/',
+  };
+
+  if (token) {
+    try {
+      const { data, error } = await supabaseAdmin.auth.getUser(token);
+      if (!error && data?.user) {
+        req.user      = data.user;
+        req.authToken = token;
+        return next();
+      }
+    } catch (_) {}
   }
+
+  // Access token missing or expired — attempt refresh
+  if (refresh) {
+    try {
+      const { data, error } = await supabaseAdmin.auth.refreshSession({ refresh_token: refresh });
+      if (!error && data?.session?.access_token) {
+        const s = data.session;
+        res.cookie('ek_session', s.access_token, { ...COOKIE_OPTS, maxAge: 60 * 60 * 1000 });
+        res.cookie('ek_refresh', s.refresh_token, { ...COOKIE_OPTS, maxAge: 30 * 24 * 60 * 60 * 1000 });
+        req.user      = data.user;
+        req.authToken = s.access_token;
+      }
+    } catch (_) {}
+  }
+
   next();
 }
 
@@ -279,29 +305,36 @@ async function requireAdminPage(req, res, next) {
 // The client POSTs the Supabase access token here after sign-in; the server
 // verifies it, then writes the HttpOnly cookie so JS can never read it.
 app.post('/api/auth/session', tokenLimiter, async (req, res) => {
-  const { access_token } = req.body || {};
+  const { access_token, refresh_token } = req.body || {};
   if (!access_token || typeof access_token !== 'string' || access_token.length > 4096) {
     return res.status(400).json({ error: 'Invalid token' });
   }
   try {
     const { data, error } = await supabaseAdmin.auth.getUser(access_token);
     if (error || !data?.user) return res.status(401).json({ error: 'Invalid or expired token' });
-    res.cookie('ek_session', access_token, {
+
+    const COOKIE_OPTS = {
       httpOnly: true,
       secure:   process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge:   7 * 24 * 60 * 60 * 1000,
       path:     '/',
-    });
+    };
+    // access_token lives 1 hour (matches Supabase JWT TTL); ek_refresh lives 30 days
+    res.cookie('ek_session', access_token, { ...COOKIE_OPTS, maxAge: 60 * 60 * 1000 });
+    if (refresh_token && typeof refresh_token === 'string' && refresh_token.length <= 512) {
+      res.cookie('ek_refresh', refresh_token, { ...COOKIE_OPTS, maxAge: 30 * 24 * 60 * 60 * 1000 });
+    }
     res.json({ ok: true });
   } catch (_) {
     res.status(500).json({ error: 'Session error' });
   }
 });
 
-// DELETE /api/auth/session — sign out (clears the HttpOnly cookie)
+// DELETE /api/auth/session — sign out (clears both HttpOnly session cookies)
 app.delete('/api/auth/session', (req, res) => {
-  res.clearCookie('ek_session', { path: '/', sameSite: 'strict', httpOnly: true });
+  const opts = { path: '/', sameSite: 'strict', httpOnly: true };
+  res.clearCookie('ek_session', opts);
+  res.clearCookie('ek_refresh',  opts);
   res.json({ ok: true });
 });
 
@@ -602,8 +635,7 @@ app.post('/api/chat', requireAuthApi, chatLimiter, async (req, res) => {
         console.error('Usage RPC error:', usageErr.message);
       } else if (usage?.[0]?.limit_reached) {
         const plan = profile?.subscription_status || 'free';
-        const PLAN_DISPLAY = { free: 'Free Trial', starter: 'Resident', pro: 'Fellow', professional: 'Private Office', institutional: 'Institution' };
-        const NEXT_PLAN    = { free: 'Resident', starter: 'Fellow', pro: 'Private Office', professional: 'Institution' };
+        const NEXT_PLAN = { free: 'Resident', starter: 'Fellow', pro: 'Private Office', professional: 'Institution' };
         const nextPlan = NEXT_PLAN[plan] || null;
         return res.status(429).json({
           error: plan === 'free'
@@ -613,9 +645,14 @@ app.post('/api/chat', requireAuthApi, chatLimiter, async (req, res) => {
           upgrade_to: nextPlan,
           usage_count: usage[0].new_count,
         });
-      } else if (usage?.[0]?.near_limit) {
-        // Grace buffer — attach a warning header; the response still goes through
-        res.setHeader('X-Usage-Warning', 'near_limit');
+      } else if (usage?.[0]?.new_count != null) {
+        // Compute near_limit locally — RPC only returns new_count + limit_reached
+        const CHAT_LIMITS = { free: 15, starter: 30, pro: 100 };
+        const plan = profile?.subscription_status || 'free';
+        const planLimit = CHAT_LIMITS[plan] ?? null;
+        if (planLimit != null && usage[0].new_count >= Math.floor(planLimit * 0.8)) {
+          res.setHeader('X-Usage-Warning', 'near_limit');
+        }
       }
     }
   } catch (usageCheckErr) {
@@ -3189,8 +3226,10 @@ app.delete('/api/account', requireAuthApi, apiLimiter, async (req, res) => {
     }
     // Delete the auth user last
     await supabaseAdmin.auth.admin.deleteUser(userId);
-    // Clear session cookie
-    res.clearCookie('ek_session', { httpOnly: true, sameSite: 'strict', path: '/' });
+    // Clear session cookies
+    const _delOpts = { httpOnly: true, sameSite: 'strict', path: '/' };
+    res.clearCookie('ek_session', _delOpts);
+    res.clearCookie('ek_refresh',  _delOpts);
     res.json({ ok: true });
   } catch (err) {
     console.error('Account delete error:', err.message);

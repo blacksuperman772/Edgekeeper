@@ -485,8 +485,9 @@ async function submitSignup(e) {
     // 3. Establish server-side HttpOnly session cookie
     await fetch('/api/auth/session', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ access_token: signInData.access_token }),
+      body: JSON.stringify({ access_token: signInData.access_token, refresh_token: signInData.refresh_token }),
     });
 
     // 4. Persist enrollment in localStorage then navigate
