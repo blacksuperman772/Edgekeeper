@@ -7,16 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet"/>
-  <script>
-    // Runs synchronously before first paint — hides mentor selector immediately
-    // when arriving with ?mentor= so there is no flash of the selection screen.
-    if (new URLSearchParams(location.search).get('mentor')) {
-      document.documentElement.dataset.mentorEntry = '1';
-    }
-  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    [data-mentor-entry="1"] #selector { display: none !important; }
 
     :root {
       --black:     #050505;
@@ -52,29 +44,6 @@
     #bg-photo  { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; opacity: 0.055; filter: blur(2px); z-index: 0; pointer-events: none; }
     #bg-canvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
 
-    /* ── SELECTOR ── */
-    #selector { position: fixed; inset: 0; z-index: 300; background: var(--black); display: flex; align-items: center; justify-content: center; flex-direction: column; transition: opacity 0.8s ease; }
-    #selector.hidden { opacity: 0; pointer-events: none; }
-    .sel-label { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold-dim); margin-bottom: 48px; }
-    .sel-headline { font-family: var(--serif); font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 300; color: var(--white); text-align: center; margin-bottom: 64px; line-height: 1.2; }
-    .sel-headline em { font-style: italic; color: var(--gold); }
-    .sel-cards { display: flex; gap: 2px; background: var(--border); border: 1px solid var(--border); }
-    .sel-card { width: 280px; padding: 48px 40px; background: var(--black); cursor: none; transition: background .3s; position: relative; overflow: hidden; text-decoration: none; display: flex; flex-direction: column; }
-    .sel-card:hover { background: var(--stone); }
-    .sel-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; }
-    .sel-mike::before   { background: linear-gradient(to right, transparent, var(--gold-dim), transparent); }
-    .sel-ashley::before { background: linear-gradient(to right, transparent, var(--green), transparent); }
-    .sel-avatar { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--serif); font-size: 1.4rem; margin-bottom: 20px; }
-    .sel-mike   .sel-avatar { border: 1px solid var(--gold-dim); background: linear-gradient(135deg,#1a1810,#2d2410); color: var(--gold); }
-    .sel-ashley .sel-avatar { border: 1px solid rgba(74,92,74,.5); background: linear-gradient(135deg,#111814,#162016); color: var(--green-b); }
-    .sel-role { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 8px; }
-    .sel-mike   .sel-role { color: var(--gold-dim); }
-    .sel-ashley .sel-role { color: var(--green); }
-    .sel-name { font-family: var(--serif); font-size: 1.8rem; font-weight: 300; color: var(--white); margin-bottom: 16px; }
-    .sel-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.7; margin-bottom: 28px; }
-    .sel-cta { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.15em; text-transform: uppercase; margin-top: auto; }
-    .sel-mike   .sel-cta { color: var(--gold-dim); }
-    .sel-ashley .sel-cta { color: var(--green); }
 
     /* ── INTAKE ROOM ── */
     #intake-room {
@@ -247,11 +216,6 @@
     #transition-overlay.active .trans-btn { opacity: 1; }
     .trans-btn:hover { background: rgba(184,160,106,0.08); border-color: var(--gold); }
 
-    /* SELECTOR SIGN-IN LINK */
-    .sel-signin-row { margin-top: 36px; font-size: 0.75rem; color: var(--muted); text-align: center; }
-    .sel-signin-link { color: var(--gold-dim); text-decoration: none; transition: color .2s; }
-    .sel-signin-link:hover { color: var(--gold); }
-
     /* ACCOUNT CREATION OVERLAY */
     #account-overlay {
       position: fixed; inset: 0; z-index: 600; background: var(--black);
@@ -288,16 +252,6 @@
       /* Cursor elements invisible on touch */
       #cursor, #cursor-ring { display: none; }
 
-      /* Selector — stack mentor cards vertically */
-      .sel-cards {
-        flex-direction: column;
-        width: calc(100vw - 40px);
-        max-width: 360px;
-      }
-      .sel-card {
-        width: 100%;
-        padding: 36px 28px;
-      }
       .sel-headline {
         font-size: clamp(1.6rem, 6vw, 2.4rem);
         margin-bottom: 40px;
@@ -360,25 +314,6 @@
 <div id="cursor-ring"></div>
 <img id="bg-photo" src="/assets/onboarding-ambient.png" alt="" aria-hidden="true" />
 <canvas id="bg-canvas"></canvas>
-
-<!-- MENTOR SELECTOR -->
-<div id="selector">
-  <p class="sel-label">EdgeKeeper — Private Intake</p>
-  <h1 class="sel-headline">Meet your<br><em>coach.</em></h1>
-  <div class="sel-cards">
-    <a href="?mentor=mike" class="sel-card sel-mike" onclick="selectMentor('mike',event)">
-      <div class="sel-avatar" style="overflow:hidden;padding:0;">
-        <img src="/assets/mike-portrait.png" alt="Marcus" style="width:100%;height:100%;object-fit:cover;object-position:center top;border-radius:50%;" onerror="this.style.display='none';this.parentNode.style.fontSize='1.4rem';this.parentNode.textContent='M';" />
-      </div>
-      <div class="sel-role">Performance Coach</div>
-      <div class="sel-name">Marcus</div>
-      <p class="sel-desc">Direct and logical. He coaches your trading, builds structure, and holds you to it. Calm in the way a surgeon is calm.</p>
-      <div class="sel-cta">Begin with Marcus →</div>
-    </a>
-  </div>
-  <p class="sel-signin-row">Already have an account? <a href="auth.html" class="sel-signin-link">Sign in →</a></p>
-</div>
-
 
 <!-- INTAKE ROOM -->
 <div id="intake-room">
@@ -910,11 +845,7 @@ function selectMentor(name, e) {
   mentor = m;
   applyTheme(m);
 
-  document.getElementById('selector').classList.add('hidden');
-  setTimeout(() => {
-    document.getElementById('selector').style.display = 'none';
-    startIntake();
-  }, 800);
+  startIntake();
 }
 
 // ── START INTAKE ──────────────────────────────────────────────────────
@@ -1461,7 +1392,6 @@ window.addEventListener('DOMContentLoaded', () => {
           localStorage.setItem('ek_selected_level_onboarding', saved.level);
         }
 
-        document.getElementById('selector').style.display = 'none';
         document.getElementById('level-selector')?.classList.remove('visible', 'active');
 
         const room = document.getElementById('intake-room');
@@ -1494,7 +1424,6 @@ window.addEventListener('DOMContentLoaded', () => {
   // There is no "choose between two mentors" step anymore; any legacy ?mentor=ashley
   // link is coerced to Marcus.
   sessionStorage.removeItem('ek_mentor');
-  document.getElementById('selector').style.display = 'none';
   selectMentor('mike');
 });
 </script>

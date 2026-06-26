@@ -332,11 +332,6 @@ let userAuthed      = false;  // true if already signed in
 const GATED_TRACK_IDS = new Set(['technical','risk','strategy','psychology','performance']);
 const TRACK_NUM_MAP = { foundations:'1', technical:'2', risk:'3', strategy:'4', psychology:'5', performance:'6' };
 
-// ── Already enrolled? Skip straight to academy ─────────────────────────
-if (localStorage.getItem('ek_academy_track')) {
-  window.location.replace('/academy.html');
-}
-
 // Check auth status + enrollment in parallel
 (async () => {
   try {
