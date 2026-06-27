@@ -1927,6 +1927,58 @@
       cursor: not-allowed;
       pointer-events: none;
     }
+    /* ── MOBILE LAYOUT ─────────────────────────────────────────── */
+    .mobile-nav { display: none; }
+
+    @media (max-width: 768px) {
+      .workspace {
+        grid-template-columns: 1fr;
+        grid-template-rows: 56px 1fr 56px;
+      }
+      .sidebar { display: none; }
+      .mobile-nav {
+        display: flex;
+        grid-column: 1;
+        grid-row: 3;
+        background: var(--obsidian);
+        border-top: 1px solid var(--border);
+        z-index: 50;
+      }
+      .mobile-nav-btn {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        background: none;
+        border: none;
+        color: var(--dim);
+        font-family: var(--mono);
+        font-size: 0.42rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: color 0.2s;
+        padding: 6px 4px;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .mobile-nav-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; flex-shrink: 0; }
+      .mobile-nav-btn.active { color: var(--mentor-color); }
+      .mobile-nav-btn:active { opacity: 0.7; }
+
+      /* Panel overlays the full chat area on mobile */
+      .panel-col.open {
+        position: fixed;
+        inset: 56px 0 56px 0;
+        width: 100% !important;
+        z-index: 40;
+        background: var(--obsidian);
+      }
+
+      .chat-input-area { padding: 10px 14px 12px; }
+      .chat-messages   { padding: 16px 14px 8px; }
+    }
   </style>
 </head>
 <body>
@@ -2072,6 +2124,30 @@
     </div>
   </aside>
 
+  <!-- MOBILE BOTTOM NAV — visible only on small screens -->
+  <nav class="mobile-nav" aria-label="Navigation">
+    <button class="mobile-nav-btn active" id="mnav-chat" onclick="mobileNav('chat')">
+      <svg viewBox="0 0 16 16" stroke-width="1.5"><path d="M2 3h12v8H2z"/><path d="M6 11v2l2.5-2H14"/></svg>
+      Chat
+    </button>
+    <button class="mobile-nav-btn" id="mnav-journal" onclick="mobileNav('journal')">
+      <svg viewBox="0 0 16 16" stroke-width="1.5"><rect x="3" y="2" width="10" height="12" rx="1"/><path d="M6 6h4M6 9h3"/></svg>
+      Journal
+    </button>
+    <button class="mobile-nav-btn" id="mnav-rules" onclick="mobileNav('rules')">
+      <svg viewBox="0 0 16 16" stroke-width="1.5"><path d="M4 4l2 2 4-4M4 9l2 2 4-4"/></svg>
+      Rules
+    </button>
+    <button class="mobile-nav-btn" id="mnav-guardian" onclick="window.location='/chamber'">
+      <svg viewBox="0 0 16 16" stroke-width="1.5"><path d="M8 2l5 2v5c0 3-2.5 5-5 6-2.5-1-5-3-5-6V4z"/></svg>
+      Guardian
+    </button>
+    <button class="mobile-nav-btn" id="mnav-messages" onclick="mobileNav('messages')">
+      <svg viewBox="0 0 16 16" stroke-width="1.5"><path d="M2 3h12v8H2z"/><path d="M2 3l6 5 6-5"/></svg>
+      Messages
+    </button>
+  </nav>
+
   <!-- MAIN -->
   <div class="main">
 
@@ -2081,6 +2157,7 @@
       <div class="chat-messages" id="chat-messages"></div>
       <div id="guardian-banner"></div>
       <div class="chat-input-area">
+        <div id="limit-cta" style="display:none;text-align:center;padding:8px 0 4px;font-family:var(--mono);font-size:0.65rem;letter-spacing:0.06em;"></div>
         <div class="chat-input-box">
           <textarea id="chat-input" placeholder="Talk to your mentor..." rows="2" maxlength="2000"></textarea>
           <button class="chat-send" onclick="sendChat()">
@@ -2541,6 +2618,23 @@ let currentPanel = null;
 const navItems = document.querySelectorAll('.nav-item');
 let guardianPollTimer = null;
 
+function syncMobileNav(name) {
+  document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
+  const key = !name ? 'chat' : (name === 'messages' ? 'messages' : (name === 'journal' ? 'journal' : (name === 'rules' ? 'rules' : null)));
+  if (key) {
+    const el = document.getElementById('mnav-' + key);
+    if (el) el.classList.add('active');
+  }
+}
+
+function mobileNav(key) {
+  if (key === 'chat') {
+    showPanel(null);
+  } else {
+    showPanel(key);
+  }
+}
+
 function showPanel(name) {
   clearInterval(guardianPollTimer);
   guardianPollTimer = null;
@@ -2552,6 +2646,7 @@ function showPanel(name) {
     if (userRank < minRank) return;
   }
   currentPanel = name;
+  syncMobileNav(name);
   const col = document.getElementById('panel-col');
   const body = document.getElementById('panel-body');
   const title = document.getElementById('panel-title');
@@ -4594,13 +4689,20 @@ async function getAIResponse(userText, isContextual = false) {
       } else {
         limitMsg = isIris
           ? "That's all I have for you this month. Come back when the month turns — we'll pick this up."
-          : "We're done for this month. Come back at the start of next month.";
+          : "That's the month. We'll pick this up when it resets.";
       }
       await addMsg('mentor', limitMsg);
       const inputEl = document.getElementById('chat-input');
       const sendEl  = document.getElementById('send-btn');
       if (inputEl) { inputEl.disabled = true; inputEl.placeholder = 'Session ended.'; }
       if (sendEl)  sendEl.disabled = true;
+      if (isFree) {
+        const ctaEl = document.getElementById('limit-cta');
+        if (ctaEl) {
+          ctaEl.innerHTML = '<a href="/pricing.html" style="color:var(--mentor-color);text-decoration:none;border-bottom:1px solid rgba(184,160,106,0.3);">Continue as a Resident →</a>';
+          ctaEl.style.display = '';
+        }
+      }
       return;
     }
     console.error('AI:', err);

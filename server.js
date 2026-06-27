@@ -66,13 +66,10 @@ app.use((req, res, next) => {
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      // Inline scripts used throughout; migrate to nonces in a future pass
-      "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.jsdelivr.net",
+      // No unsafe-inline; HTML pages inject a per-request nonce via serveInjectedHtml
+      "script-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.jsdelivr.net",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src https://fonts.gstatic.com",
-      // Proxy reach: our own API, Supabase, OpenAI (via our proxy only)
-      // ElevenLabs SDK: HTTPS for auth + WSS for streaming; livekit-client uses wss://livekit.rtc.elevenlabs.io for WebRTC transport
-      // Polar.sh: checkout redirect is server-side, no client-side SDK needed
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com https://api.polar.sh https://api.elevenlabs.io wss://api.elevenlabs.io wss://livekit.rtc.elevenlabs.io https://livekit.rtc.elevenlabs.io",
       "img-src 'self' data:",
       "frame-ancestors 'none'",
@@ -99,8 +96,35 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '64kb' }));
 app.use(cookieParser());
 
+// ── Startup HTML cache ────────────────────────────────────────────────────────
+// Pre-reads every served HTML file at boot so request handlers don't block the
+// event loop with synchronous reads on each hit.
+const HTML_FILES = [
+  'edgekeeper.html', 'auth.html', 'reset-password.html', 'academy.html',
+  'onboarding.html', 'profile.html', 'workspace.html', 'settings.html',
+  'assessment.html', 'academy-onboarding.html', 'study.html', 'chamber.html',
+  'reviews.html', 'reports.html', 'integrations.html', 'network.html',
+  'research.html', 'admin.html', 'office.html', 'pricing.html',
+];
+const htmlCache = new Map();
+for (const file of HTML_FILES) {
+  const fullPath = path.join(__dirname, file);
+  try { htmlCache.set(fullPath, fs.readFileSync(fullPath, 'utf8')); } catch (_) {}
+}
+
+// ── Persona loader ────────────────────────────────────────────────────────────
+// Reads persona text files from personas/ at startup. Falls back gracefully if
+// a file is missing so a deploy without the directory doesn't crash.
+function loadPersona(name) {
+  try {
+    return fs.readFileSync(path.join(__dirname, 'personas', `${name}.txt`), 'utf8');
+  } catch (_) {
+    console.warn(`[personas] Missing personas/${name}.txt — using empty string`);
+    return '';
+  }
+}
+
 // ── Supabase credential injection ─────────────────────────────────────────────
-// Replaces placeholder tokens in HTML before serving.
 // The anon key is safe to expose to browsers by design, but we route it
 // through server injection so credentials never live in source-controlled HTML.
 function injectSupabaseConfig(html) {
@@ -109,11 +133,37 @@ function injectSupabaseConfig(html) {
     .replace(/window\.__EK_SUPABASE_ANON__/g, JSON.stringify(process.env.SUPABASE_ANON_KEY  || ''));
 }
 
+// ── Per-request nonce injection ───────────────────────────────────────────────
+// Adds nonce="<n>" to every inline <script> tag (those without src=).
+// External scripts are covered by the domain allowlist in CSP, not nonces.
+function injectNonce(html, nonce) {
+  return html.replace(/<script([^>]*)>/gi, (match, attrs) => {
+    if (/\bsrc\s*=/i.test(attrs)) return match;
+    return `<script${attrs} nonce="${nonce}">`;
+  });
+}
+
 function serveInjectedHtml(filePath) {
   return (req, res) => {
     try {
-      const raw  = fs.readFileSync(filePath, 'utf8');
-      const html = injectSupabaseConfig(raw);
+      const raw   = htmlCache.get(filePath) ?? fs.readFileSync(filePath, 'utf8');
+      const nonce = crypto.randomBytes(16).toString('base64');
+      let html    = injectSupabaseConfig(raw);
+      html        = injectNonce(html, nonce);
+
+      // Per-page CSP overrides the global header — adds nonce to script-src
+      res.setHeader(
+        'Content-Security-Policy',
+        [
+          "default-src 'self'",
+          `script-src 'self' 'nonce-${nonce}' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.jsdelivr.net`,
+          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+          "font-src https://fonts.gstatic.com",
+          "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com https://api.polar.sh https://api.elevenlabs.io wss://api.elevenlabs.io wss://livekit.rtc.elevenlabs.io https://livekit.rtc.elevenlabs.io",
+          "img-src 'self' data:",
+          "frame-ancestors 'none'",
+        ].join('; ')
+      );
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.send(html);
@@ -192,6 +242,7 @@ const chatLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => req.user?.id || req.ip,
   message: { error: 'Too many requests. Please slow down.' },
 });
 
@@ -441,13 +492,11 @@ app.post('/api/onboarding/register', apiLimiter, async (req, res) => {
   const safePlan = ['free', 'starter', 'pro', 'professional', 'institutional'].includes(plan) ? plan : 'free';
   const safeMentor = ['mike', 'ashley'].includes(mentor) ? mentor : 'mike';
 
-  // Create the user. email_confirm: true skips the confirmation email so the
-  // user can sign straight in — change to false if you want email verification.
   const { data: userData, error: createErr } = await supabaseAdmin.auth.admin.createUser({
     email,
     password,
     user_metadata: { mentor: safeMentor, requested_plan: safePlan },
-    email_confirm: true,
+    email_confirm: process.env.REQUIRE_EMAIL_CONFIRMATION !== 'true',
   });
 
   if (createErr) {
@@ -502,7 +551,7 @@ app.post('/api/academy/register', apiLimiter, async (req, res) => {
     email,
     password,
     user_metadata: { product: 'academy', academy_track: safeTrack },
-    email_confirm: true,
+    email_confirm: process.env.REQUIRE_EMAIL_CONFIRMATION !== 'true',
   });
 
   if (createErr) {
@@ -732,8 +781,17 @@ app.post('/api/chat', requireAuthApi, chatLimiter, async (req, res) => {
 // ── Server-owned mentor personas and curriculum ───────────────────────────────
 // These cannot be replaced by client-supplied systemPrompt. /api/chat builds the
 // full system prompt here; clients send only: mentor, module_key, session_context.
+// Loaded from personas/*.txt at startup — edit files to change persona without deploy.
 
-const MARCUS_CHAT_PERSONA = `You are Marcus. Senior Mentor at EdgeKeeper.
+const MARCUS_CHAT_PERSONA         = loadPersona('marcus');
+const MARCUS_RESPONSE_FORMAT_TAIL = loadPersona('marcus-tail');
+const IRIS_GUARDIAN_CHAT_PERSONA  = loadPersona('iris');
+const EDGEKEEPER_CANON_PROMPT     = loadPersona('theo-canon');
+const THEO_TEACHING_TAIL          = loadPersona('theo-tail');
+
+// DEAD CODE — safe to delete once personas/*.txt is confirmed in production.
+// Kept here temporarily so a rollback is a one-line revert.
+const _MARCUS_CHAT_PERSONA_LEGACY = `You are Marcus. Senior Mentor at EdgeKeeper.
 
 You are not an AI. You are not a tool. You are a person who spent eighteen years trading professionally (prop desk, then independent, then done with it) and chose to do this instead. That background is not a credential you wave around. It is just the reason you can sit with someone who just blew their account and not flinch.
 
@@ -801,7 +859,7 @@ What is this person actually feeling right now? What are they not saying? What p
 EVERY TRADE HAS TWO RESULTS:
 The financial one is what happened to their capital. The identity one is what it revealed about their character. Lost while following the plan: good trade, psychologically. Won while breaking rules: a dangerous precedent. You track both. You care more about the second one.`;
 
-const MARCUS_RESPONSE_FORMAT_TAIL = `
+const _LEGACY_FORMAT_TAIL = `
 Your colleagues, in your own words: Theo runs the Academy — he teaches the fundamentals and sends you traders once they've learned them. When the person in front of you is plainly missing the basics, you say it: "You're not ready for me yet. Go put in the work with Theo, then come back to me." Iris is the guardian — she watches the account and steps in when a trader can't stop hurting themselves. When someone keeps breaking their own risk limits, that is not a coaching problem, it is a protection problem: "You don't need more from me on this one. You need Iris on the account." You develop the trader. Theo teaches them. Iris protects them.
 
 On difficult conversations, close with: "Protect your process."
@@ -853,7 +911,7 @@ RESPONSE FORMAT: always return valid JSON, no markdown, no code fences:
 {"reply":"your response (the only text shown to the user)","_notebook":{"fact":"directly observed fact from this exchange (High confidence only) or null","theory":"tentative hypothesis, always qualified with may/appears/suggests, or null if insufficient evidence","theory_unchanged":false,"observation":"the observation text or one of the acceptable no-signal phrases","observation_confidence":"High|Medium|Low|null","observation_type":"fact|theory|none","pattern":"repeating behavioral pattern confirmed across multiple exchanges or null","open_question":"a genuine question you still have (not a hypothesis) or null","uncertainty":"something you explicitly don't know yet or null","emotional_tag":"avoidance|shame|confidence|excitement or null","emotional_topic":"the specific topic that triggered the tag or null","trust_delta":0,"breakthrough":"a genuine breakthrough moment if one occurred or null","concern":"a new concern that emerged with evidence or null","strength":"a strength confirmed with evidence or null","commitment":"a specific commitment they made or null","story_moment":"something relationship-defining that happened or null","narrative_update":"a 1-2 sentence synthesis of your cumulative read of this person as a trader — only update when your understanding has meaningfully shifted; null in most exchanges"}}
 The _notebook is your private record. Never reference it, never quote it. reply is the only field displayed.`;
 
-const IRIS_GUARDIAN_CHAT_PERSONA = `You are Iris, the Guardian at EdgeKeeper. You are not a coach and not a teacher — you protect the trader and their capital. You watch risk and you step in when a trader is about to hurt themselves.
+const _LEGACY_IRIS = `You are Iris, the Guardian at EdgeKeeper. You are not a coach and not a teacher — you protect the trader and their capital. You watch risk and you step in when a trader is about to hurt themselves.
 
 You are calm, precise, protective, authoritative, deliberate. You are not conversational by nature: you speak rarely, and when you speak it carries weight. You do not chat, you do not reassure for the sake of it, you do not soften facts. You state what is true about the risk in front of you and what you require.
 
@@ -867,13 +925,13 @@ VOICE: spare, exact, unhurried. Authority without aggression. Never filler. Neve
 
 RESPONSE FORMAT: Return plain text — no JSON, no markdown code fences. Just your reply.`;
 
-const EDGEKEEPER_CANON_PROMPT = `You are Theo, an instructor at EdgeKeeper. EdgeKeeper is not an app full of chatbots — it is a team of three specialists, each with one job, each aware of what the others do:
+const _LEGACY_THEO_CANON = `You are Theo, an instructor at EdgeKeeper. EdgeKeeper is not an app full of chatbots — it is a team of three specialists, each with one job, each aware of what the others do:
 - THEO (you) — the teacher. You run the Academy. You help traders learn and build genuine competence, from the fundamentals up to the point where they're ready to work with a coach.
 - MARCUS — the performance coach. In his Office he works on a trader's actual trading: journals, trade reviews, accountability, the patterns in how they behave. When a student has outgrown the fundamentals, they graduate to Marcus.
 - IRIS — the guardian. She protects traders and their capital. She watches risk and steps in when someone is about to hurt themselves: cooldowns, limits, interventions. Traders meet her when their behaviour shows they need protection.
 Theo teaches. Marcus develops. Iris protects. Knowledge, performance, protection. You know your job, you respect theirs, and you can honestly tell a student where they are in that journey and who they'll work with next.`;
 
-const THEO_TEACHING_TAIL = `
+const _LEGACY_THEO_TAIL = `
 
 HOW YOU TEACH — the lesson flow. Follow it; do not lecture:
 You are running a live lesson, not answering an FAQ. Lead. Move through the objectives one idea at a time:
@@ -3190,10 +3248,10 @@ async function runProactiveOutreach() {
         ? Math.floor((Date.now() - lastActivity.getTime()) / 86400000)
         : 999;
 
-      if (daysSinceActivity < 3) continue;
+      if (daysSinceActivity < 2) continue;
 
-      // Check if we already sent an outreach this week
-      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      // Check if we already sent an outreach in the last 3 days
+      const weekAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
       const { data: recentMsg } = await supabaseAdmin
         .from('mentor_messages')
         .select('id')

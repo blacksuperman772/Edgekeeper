@@ -8,6 +8,7 @@
         "includeFiles": [
           "assets/**",
           "*.html",
+          "personas/**",
           "legal/**",
           "content/**",
           "robots.txt",
