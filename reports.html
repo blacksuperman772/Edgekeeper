@@ -8,7 +8,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet" />
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,6 +29,9 @@
       --text-bright: rgba(255,255,255,0.88);
       --accent:      var(--gold);
       --accent-dim:  var(--gold-dim);
+      --serif:       'Cormorant Garamond', Georgia, serif;
+      --sans:        'Inter', sans-serif;
+      --mono:        'DM Mono', monospace;
     }
 
     html { font-size: 16px; scroll-behavior: smooth; }
@@ -36,7 +39,7 @@
     body {
       background: var(--obsidian);
       color: var(--text);
-      font-family: 'Manrope', sans-serif;
+      font-family: var(--sans);
       font-weight: 300;
       line-height: 1.8;
       min-height: 100vh;
@@ -76,10 +79,10 @@
       backdrop-filter: blur(14px);
     }
     .nav-logo {
-      font-family: 'Manrope', sans-serif;
-      font-size: 0.78rem;
-      font-weight: 600;
-      letter-spacing: 0.28em;
+      font-family: var(--serif);
+      font-size: 1rem;
+      font-weight: 400;
+      letter-spacing: 0.22em;
       text-transform: uppercase;
       color: var(--text-bright);
       text-decoration: none;

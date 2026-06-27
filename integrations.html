@@ -7,7 +7,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet" />
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -24,7 +24,9 @@
       --text-dim:    rgba(255,255,255,0.5);
       --text-faint:  rgba(255,255,255,0.32);
       --bright:      rgba(255,255,255,0.9);
-      --sans:        'Manrope', -apple-system, sans-serif;
+      --sans:        'Inter', sans-serif;
+      --serif:       'Cormorant Garamond', Georgia, serif;
+      --mono:        'DM Mono', monospace;
       --mentor-gold: #B8A06A;
       --mentor-gold-dim: rgba(184,160,106,0.4);
     }
@@ -71,8 +73,9 @@
       z-index: 100;
     }
     .nav-logo {
-      font-size: 0.88rem; font-weight: 600;
-      letter-spacing: 0.12em; text-transform: uppercase;
+      font-family: var(--serif);
+      font-size: 1rem; font-weight: 400;
+      letter-spacing: 0.22em; text-transform: uppercase;
       color: var(--bright); text-decoration: none;
     }
     .nav-logo span { color: var(--mentor-gold); }
