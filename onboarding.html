@@ -802,7 +802,7 @@ function applyTheme(m) {
   r.style.setProperty('--mc',     m.color);
   r.style.setProperty('--mc-dim', m.colorDim);
   r.style.setProperty('--mc-bg',  m.colorBg);
-  curEl.style.background = m.color;
+  // mentor accent is driven by the --mc CSS variable above (see #mentor-display::before)
   document.getElementById('mentor-name-top').textContent = m.name;
   document.getElementById('mentor-sig').textContent      = m.name;
 }

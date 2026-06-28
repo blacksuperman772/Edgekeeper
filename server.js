@@ -1604,7 +1604,7 @@ app.post('/api/academy/progress', requireAuthApi, apiLimiter, async (req, res) =
 app.get('/api/profile', requireAuthApi, apiLimiter, async (req, res) => {
   const { data, error } = await supabaseAdmin
     .from('user_profiles')
-    .select('mentor, private_notes, north_star, living_identity, guardian_level, subscription_status, last_paid_plan, trader_stage, current_identity, target_identity, readiness_score, assessment_complete, display_name')
+    .select('mentor, private_notes, north_star, living_identity, guardian_level, subscription_status, last_paid_plan, trader_stage, current_identity, target_identity, readiness_score, assessment_complete, display_name, academy_track')
     .eq('id', req.user.id)
     .maybeSingle();
 
@@ -1628,6 +1628,7 @@ app.get('/api/profile', requireAuthApi, apiLimiter, async (req, res) => {
       readiness_score:     data.readiness_score       ?? 0,
       assessment_complete: data.assessment_complete   || false,
       display_name:        data.display_name          || null,
+      academy_track:       data.academy_track         || null,
     },
   });
 });

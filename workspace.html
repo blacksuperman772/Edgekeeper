@@ -2403,7 +2403,7 @@ function applyTheme(m) {
   document.documentElement.style.setProperty('--mentor-color', m.color);
   document.documentElement.style.setProperty('--mentor-color-dim', m.colorDim);
   document.documentElement.style.setProperty('--mentor-color-bg', m.colorBg);
-  curEl.style.background = m.color;
+  // mentor accent is driven by the --mentor-color CSS variable above
   document.getElementById('sb-avatar').textContent = m.name[0];
   document.getElementById('sb-name').textContent = m.name;
   document.getElementById('topbar-mentor-label').textContent = m.name;
@@ -3876,8 +3876,10 @@ async function hydrateProfileFromServer() {
       }
     }
 
-    // Flag Academy-only users (enrolled via Theo, never completed mentor assessment)
-    if (!profile.assessment_complete) {
+    // Flag users who actually came from Theo's Academy: they enrolled in a track
+    // AND have not completed Marcus's intake. A direct "Begin with Marcus" signup
+    // has no academy_track, so it must NOT get the Academy-arrival intro.
+    if (profile.academy_track && !profile.assessment_complete) {
       __ek_from_academy__ = true;
     }
 
