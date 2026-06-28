@@ -3949,15 +3949,15 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Resolve user identity first — sets __ekUserId so all EK reads/writes are user-scoped
   await hydrateProfileFromServer();
 
-  // If this user came from Theo's Academy, fetch their progress so Marcus has context
+  // If this user came from Theo's Academy, fetch their progress so Marcus has context.
+  // Fire-and-forget: this must NOT block init (mentor setup, button wiring, widgets).
+  // The context is only read later when the user sends a message, by which time it has
+  // landed. A slow/cold endpoint here must never delay the page becoming interactive.
   if (__ek_from_academy__) {
-    try {
-      const apRes = await fetch('/api/academy/progress');
-      if (apRes.ok) {
-        const apData = await apRes.json();
-        __ek_academy_context__ = buildAcademyContext(apData);
-      }
-    } catch (_) {}
+    fetch('/api/academy/progress')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (d) __ek_academy_context__ = buildAcademyContext(d); })
+      .catch(() => {});
   }
 
   // After identity is resolved, move the pending academy topic into the scoped key
