@@ -19,7 +19,9 @@
       --border:    rgba(255,255,255,0.07);
       --border-hi: rgba(255,255,255,0.12);
       --gold:      #C9A85C;
-      --gold-d:    rgba(201,168,92,0.25);
+      --theo:      #7E89CC;
+      --theo-d:    rgba(126,137,204,0.4);
+      --gold-d:    rgba(126,137,204,0.25);
       --text:      rgba(255,255,255,0.82);
       --muted:     rgba(255,255,255,0.42);
       --dim:       rgba(255,255,255,0.18);
@@ -59,7 +61,7 @@
     .top-divider { width: 1px; height: 18px; background: var(--border); }
     .top-track-label {
       font-family: var(--mono); font-size: 0.58rem;
-      letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold);
+      letter-spacing: 0.16em; text-transform: uppercase; color: var(--theo);
     }
     .top-right { display: flex; align-items: center; gap: 16px; }
     .curriculum-link {
@@ -91,7 +93,7 @@
     .mod-track-tag {
       font-family: var(--mono); font-size: 0.55rem;
       letter-spacing: 0.2em; text-transform: uppercase;
-      color: var(--gold); margin-bottom: 20px;
+      color: var(--theo); margin-bottom: 20px;
     }
     .mod-title {
       font-family: var(--serif); font-size: 1.6rem;
@@ -119,23 +121,23 @@
       width: 8px; height: 8px; border-radius: 50%;
       background: var(--border); border: 1px solid var(--muted); flex-shrink: 0;
     }
-    .status-dot.started { background: var(--gold-d); border-color: var(--gold); }
-    .status-dot.completed { background: var(--gold); border-color: var(--gold); }
+    .status-dot.started { background: var(--theo-d); border-color: var(--theo); }
+    .status-dot.completed { background: var(--theo); border-color: var(--theo); }
     .status-text { font-size: 0.78rem; color: var(--muted); }
 
     /* complete button */
     .btn-complete {
       width: 100%; padding: 13px;
-      background: transparent; border: 1px solid var(--gold-d);
+      background: transparent; border: 1px solid var(--theo-d);
       border-radius: 2px; cursor: pointer;
       font-family: var(--mono); font-size: 0.6rem;
       letter-spacing: 0.18em; text-transform: uppercase;
-      color: var(--gold); transition: background 0.2s, border-color 0.2s;
+      color: var(--theo); transition: background 0.2s, border-color 0.2s;
       margin-bottom: 16px;
     }
-    .btn-complete:hover { background: rgba(201,168,92,0.08); border-color: var(--gold); }
+    .btn-complete:hover { background: rgba(126,137,204,0.08); border-color: var(--theo); }
     .btn-complete.done {
-      background: rgba(201,168,92,0.12); border-color: var(--gold);
+      background: rgba(126,137,204,0.12); border-color: var(--theo);
       cursor: default; opacity: 0.7;
     }
 
@@ -160,7 +162,7 @@
     .companion-badge {
       margin-top: 32px; padding: 14px 16px;
       border: 1px solid var(--border); border-radius: 3px;
-      background: rgba(201,168,92,0.03);
+      background: rgba(126,137,204,0.03);
       display: flex; gap: 14px; align-items: flex-start;
     }
     .companion-badge-avatar {
@@ -175,17 +177,17 @@
     #voice-status { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.03em; color: var(--dim); }
     #voice-btn {
       font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.14em; text-transform: uppercase;
-      color: var(--gold); background: rgba(201,168,92,0.05); border: 1px solid var(--gold-dim);
+      color: var(--theo); background: rgba(126,137,204,0.05); border: 1px solid var(--gold-dim);
       padding: 8px 16px; cursor: pointer; transition: background .2s; white-space: nowrap;
     }
-    #voice-btn:hover { background: rgba(201,168,92,0.12); }
+    #voice-btn:hover { background: rgba(126,137,204,0.12); }
     #voice-btn.active { color: #c8786a; border-color: #c8786a; background: rgba(200,120,106,0.08); }
     #voice-btn:disabled { opacity: 0.5; cursor: default; }
     .ai-disclaimer { padding: 8px 22px 14px; font-family: var(--mono); font-size: 0.52rem; letter-spacing: 0.04em; color: var(--muted); text-align: center; opacity: 0.7; }
     .companion-badge-label {
       font-family: var(--mono); font-size: 0.52rem;
       letter-spacing: 0.18em; text-transform: uppercase;
-      color: var(--gold); margin-bottom: 6px;
+      color: var(--theo); margin-bottom: 6px;
     }
     .companion-badge-desc {
       font-size: 0.73rem; color: var(--dim); line-height: 1.6;
@@ -237,15 +239,15 @@
       line-height: 1.9;
       color: rgba(245,242,236,0.88);
       padding-left: 18px;
-      border-left: 1px solid rgba(201,168,92,0.45);
+      border-left: 1px solid rgba(126,137,204,0.45);
       letter-spacing: 0.01em;
     }
     .msg.companion .msg-body strong { font-weight: 500; color: rgba(245,242,236,0.96); }
-    .msg.companion .msg-body em { font-style: italic; color: rgba(201,168,92,0.85); }
+    .msg.companion .msg-body em { font-style: italic; color: rgba(126,137,204,0.85); }
     .msg.companion .msg-body code {
       font-family: var(--mono); font-size: 0.8em;
       background: rgba(255,255,255,0.05); padding: 1px 5px;
-      border-radius: 2px; color: var(--gold);
+      border-radius: 2px; color: var(--theo);
     }
     .msg.user .msg-body {
       font-size: 0.845rem;
@@ -261,7 +263,7 @@
     }
     .thinking-dots span {
       width: 5px; height: 5px; border-radius: 50%;
-      background: var(--gold-d); animation: pulse 1.2s ease-in-out infinite;
+      background: var(--theo-d); animation: pulse 1.2s ease-in-out infinite;
     }
     .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
     .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
@@ -286,13 +288,13 @@
     #study-input::placeholder { color: var(--dim); }
     #send-btn {
       padding: 12px 22px; flex-shrink: 0;
-      background: transparent; border: 1px solid var(--gold-d);
+      background: transparent; border: 1px solid var(--theo-d);
       border-radius: 2px; cursor: pointer;
       font-family: var(--mono); font-size: 0.6rem;
-      letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold);
+      letter-spacing: 0.14em; text-transform: uppercase; color: var(--theo);
       transition: background 0.2s, border-color 0.2s; align-self: flex-end;
     }
-    #send-btn:hover { background: rgba(201,168,92,0.08); border-color: var(--gold); }
+    #send-btn:hover { background: rgba(126,137,204,0.08); border-color: var(--theo); }
     #send-btn:disabled { opacity: 0.3; pointer-events: none; }
 
     /* ── MOBILE ── */
@@ -642,7 +644,7 @@ function showGraduationCTA() {
 }
 function showCertificationBanner(trackName) {
   const div = document.createElement('div');
-  div.style.cssText = 'margin:18px 0;padding:20px 22px;border:1px solid var(--gold,#c9a85c);background:rgba(201,168,92,0.06);border-radius:2px;';
+  div.style.cssText = 'margin:18px 0;padding:20px 22px;border:1px solid var(--gold,#c9a85c);background:rgba(126,137,204,0.06);border-radius:2px;';
   div.innerHTML = '<div style="font-family:var(--mono,monospace);font-size:0.52rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold,#c9a85c);margin-bottom:8px;">Certification earned</div>'
     + '<div style="font-family:var(--serif,Georgia),serif;font-size:1.15rem;color:var(--text,#ece6db);line-height:1.4;">' + escText(trackName) + '</div>'
     + '<div style="font-size:0.82rem;color:var(--muted,#8a8578);margin-top:8px;line-height:1.6;">You\'ve completed this track. When you graduate to the main platform, Marcus will know exactly what you\'ve covered.</div>';
@@ -968,6 +970,7 @@ async function openingMessage() {
     removeThinking();
     addMsg('companion', text);
     history.push({ role: 'assistant', content: text });
+    saveChat();
   } catch (err) {
     if (err && err.handled) return; // redirecting to auth — leave the screen as-is
     removeThinking();
@@ -998,6 +1001,7 @@ async function sendMessage() {
     removeThinking();
     addMsg('companion', reply);
     history.push({ role: 'assistant', content: reply });
+    saveChat();
     if (mastered) setTimeout(onTheoMastery, 700);
   } catch (err) {
     if (err && err.handled) return; // redirecting to auth
@@ -1053,8 +1057,8 @@ function mountExercise() {
     + '.ex-field label{font-size:0.78rem;color:var(--muted,#8a8578);}'
     + '.ex-field input{width:110px;background:var(--surface,#15110a);border:1px solid var(--border,#241f17);color:var(--text,#ece6db);padding:7px 10px;border-radius:2px;font-family:var(--mono,monospace);font-size:0.82rem;text-align:right;}'
     + '.ex-field input:focus{outline:none;border-color:var(--gold-dim,#8a6a2a);}'
-    + '#ex-calc,#ex-send{width:100%;background:rgba(201,168,92,0.06);border:1px solid var(--gold-dim,#8a6a2a);color:var(--gold,#c9a85c);padding:10px;border-radius:2px;cursor:pointer;font-family:var(--mono,monospace);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;transition:background .2s;}'
-    + '#ex-calc:hover,#ex-send:hover{background:rgba(201,168,92,0.12);}';
+    + '#ex-calc,#ex-send{width:100%;background:rgba(126,137,204,0.06);border:1px solid var(--gold-dim,#8a6a2a);color:var(--gold,#c9a85c);padding:10px;border-radius:2px;cursor:pointer;font-family:var(--mono,monospace);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;transition:background .2s;}'
+    + '#ex-calc:hover,#ex-send:hover{background:rgba(126,137,204,0.12);}';
   mount.appendChild(st);
 
   let lastResult = null;
@@ -1158,9 +1162,27 @@ async function endTheoVoice() {
   resetVoice('Prefer to talk it through?');
 }
 
+// ── CONVERSATION PERSISTENCE ───────────────────────────────────────────────
+// Keyed per module so a refresh restores the chat instead of re-sending Theo's
+// opener (and losing everything). Uses the ek_academy_ prefix so it is purged
+// automatically when a different user logs in (see the cache-purge above).
+function saveChat() {
+  try { localStorage.setItem('ek_academy_chat_' + moduleKey, JSON.stringify(history.slice(-40))); } catch (_) {}
+}
+
 // ── BOOT ─────────────────────────────────────────────────────────────────
 mountExercise();
-openingMessage();
+(function restoreOrOpen() {
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem('ek_academy_chat_' + moduleKey) || '[]'); } catch (_) {}
+  if (Array.isArray(saved) && saved.length) {
+    saved.forEach(m => addMsg(m.role === 'assistant' ? 'companion' : 'user', m.content));
+    history.push(...saved);
+    input.focus();
+  } else {
+    openingMessage();
+  }
+})();
 </script>
 </body>
 </html>
