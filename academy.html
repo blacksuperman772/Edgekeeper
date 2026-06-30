@@ -419,7 +419,7 @@
 
 <!-- NAV -->
 <nav id="main-nav">
-  <a href="/edgekeeper.html" class="nav-logo">Edge<span>Keeper</span></a>
+  <a href="/edgekeeper.html" class="nav-logo">Edge<span>K</span>eeper</a>
   <div class="nav-right">
     <a href="/workspace.html" class="nav-cta" id="nav-workspace-btn" style="display:none">Workspace</a>
     <a href="/settings.html" class="nav-avatar" id="nav-avatar" title="Account settings">
@@ -1116,6 +1116,16 @@ if (activeTopic) {
     activeRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 }
+
+// ── Reveal-on-scroll ──────────────────────────────────────────────────────────
+// Restored after the shared-assets refactor (55b8863) dropped it — without this,
+// every .reveal element (the entire curriculum: 6 tracks, 51 modules) stays at
+// opacity:0 and the page shows only the "continue" card. Adds .in on intersection;
+// fires immediately for anything already in the viewport.
+const revealObserver = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+}, { threshold: 0.10 });
+document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
 </script>
 <script src="/assets/cursor.js"></script>
 </body>

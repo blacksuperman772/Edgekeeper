@@ -4122,6 +4122,14 @@ async function sendCmd(panel) {
   if (panel === 'breakroom') {
     await getAIResponse('The user wants to enter the break room. Keep it brief.', true);
     setTimeout(() => triggerBreakRoom(4), 2000);
+  } else if (isPanelGated(panel)) {
+    // Gated tool: don't silently no-op + phantom-acknowledge. Marcus names the
+    // limit, then a working upgrade link follows (same as the typed-command path).
+    try {
+      await getAIResponse(`The user tried to open the "${panel}" tool, but it lives in a membership tier above their current plan. In your own voice — plain, warm, not a sales pitch — tell them that one's behind the membership and they can open it whenever they decide to step up. One or two sentences, then stop.`, true);
+    } finally {
+      showUpgradeNudge();
+    }
   } else {
     showPanel(panel);
     await getAIResponse(`The user opened the ${panel} panel. Say one natural sentence acknowledging it.`, true);
@@ -4706,8 +4714,10 @@ async function callOpenAI(messages) {
     }
     throw new Error(err.error || `HTTP ${res.status}`);
   }
-  // Grace buffer — mentor speaks the limit, never a UI note
-  if (res.headers.get('X-Usage-Warning') === 'near_limit') {
+  // Grace buffer — mentor speaks the limit ONCE per session (repeating the same
+  // canned line every message breaks the illusion). Never a UI note.
+  if (res.headers.get('X-Usage-Warning') === 'near_limit' && !sessionStorage.getItem('ek_near_warned')) {
+    sessionStorage.setItem('ek_near_warned', '1');
     const isIris = mentor && mentor.name === 'Iris';
     const nearMsg  = isIris
       ? "We're getting close to the end of the trial. A few more exchanges."
@@ -4792,7 +4802,8 @@ async function streamChat(messages, onText) {
     if (res.status === 429 && err.upgrade_to) { const e = new Error(err.error || 'Message limit reached'); e.isLimitReached = true; e.upgrade_to = err.upgrade_to; throw e; }
     throw new Error(err.error || `HTTP ${res.status}`);
   }
-  if (res.headers.get('X-Usage-Warning') === 'near_limit') {
+  if (res.headers.get('X-Usage-Warning') === 'near_limit' && !sessionStorage.getItem('ek_near_warned')) {
+    sessionStorage.setItem('ek_near_warned', '1');
     const isIris  = mentor && mentor.name === 'Iris';
     const nearMsg = isIris ? "We're getting close to the end of the trial. A few more exchanges." : "Few more exchanges left in the trial. Make them count.";
     setTimeout(() => addMsg('mentor', nearMsg), 3500);
@@ -4835,11 +4846,25 @@ async function getAIResponse(userText, isContextual = false) {
       : getHistory();
 
     let bodyEl = null, started = false;
+    // Cinematic reveal: the network delivers tokens in irregular bursts. Instead of
+    // snapping the text to each burst (jumpy), we reveal toward the latest text at a
+    // steady per-frame cadence so the prose types out smoothly.
+    let target = '', shown = 0, raf = null;
+    const pump = () => {
+      if (!bodyEl) { raf = null; return; }
+      if (shown < target.length) {
+        const remaining = target.length - shown;
+        shown += Math.max(1, Math.ceil(remaining / 9));   // ease-out: catch up when far behind
+        bodyEl.textContent = target.slice(0, shown);
+        const msgs = document.getElementById('chat-messages');
+        if (msgs) msgs.scrollTop = msgs.scrollHeight;
+        raf = requestAnimationFrame(pump);
+      } else { raf = null; }
+    };
     const onText = (replySoFar) => {
       if (!started) { started = true; removeTyping(); bodyEl = createMentorMessageEl().querySelector('.cmsg-body'); }
-      if (bodyEl) bodyEl.textContent = replySoFar;
-      const msgs = document.getElementById('chat-messages');
-      if (msgs) msgs.scrollTop = msgs.scrollHeight;
+      target = replySoFar;
+      if (raf == null) raf = requestAnimationFrame(pump);
     };
 
     const result = await streamChat(hist, onText);
@@ -4849,8 +4874,13 @@ async function getAIResponse(userText, isContextual = false) {
       removeTyping();
       if (!reply) { showSystemNote('No response received. Try sending again.'); return; }
       bodyEl = createMentorMessageEl().querySelector('.cmsg-body');
+      bodyEl.textContent = reply;
+    } else {
+      // Let the typewriter finish revealing the final, cleaned reply smoothly.
+      target = reply;
+      if (shown >= reply.length) bodyEl.textContent = reply;
+      else if (raf == null) raf = requestAnimationFrame(pump);
     }
-    if (bodyEl) bodyEl.textContent = reply;
 
     // Apply notebook updates silently
     if (result._notebook && mentorNotebook) {
