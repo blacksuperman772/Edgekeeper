@@ -626,7 +626,7 @@ app.use(express.static(path.join(__dirname), {
 
 // ── Chat proxy (requires auth) ────────────────────────────────────────────────
 app.post('/api/chat', requireAuthApi, chatLimiter, async (req, res) => {
-  const { messages, mentor = 'mike', module_key, session_context, is_opener = false } = req.body;
+  const { messages, mentor = 'mike', module_key, session_context, is_opener = false, stream = false } = req.body;
 
   if (!Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'messages must be a non-empty array' });
@@ -728,6 +728,61 @@ app.post('/api/chat', requireAuthApi, chatLimiter, async (req, res) => {
   } catch (promptErr) {
     console.error('buildChatSystemPrompt error:', promptErr.message);
     return res.status(500).json({ error: 'Could not build session context' });
+  }
+
+  // ── Streaming path (opt-in via { stream:true }) ──────────────────────────────
+  // Re-emits OpenAI content deltas as SSE so the mentor's reply appears as it's
+  // written instead of after the full generation. The raw content is still the
+  // same JSON {"reply":..,"_notebook":..}; the client extracts `reply` live and
+  // parses `_notebook` at the end. Usage limits / grace warnings above already ran.
+  if (stream === true) {
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    if (typeof res.flushHeaders === 'function') res.flushHeaders();
+    try {
+      const upstream = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+          messages: [{ role: 'system', content: systemPrompt }, ...messages],
+          max_completion_tokens: 700,
+          stream: true,
+        }),
+      });
+      if (!upstream.ok || !upstream.body) {
+        res.write(`data: ${JSON.stringify({ error: 'AI service error' })}\n\n`);
+        return res.end();
+      }
+      const reader  = upstream.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop();
+        for (const line of lines) {
+          const t = line.trim();
+          if (!t.startsWith('data:')) continue;
+          const payload = t.slice(5).trim();
+          if (payload === '[DONE]') continue;
+          try {
+            const delta = JSON.parse(payload).choices?.[0]?.delta?.content;
+            if (delta) res.write(`data: ${JSON.stringify({ delta })}\n\n`);
+          } catch (_) {}
+        }
+      }
+      res.write('data: [DONE]\n\n');
+      return res.end();
+    } catch (streamErr) {
+      console.error('Chat stream error:', streamErr.message);
+      try { res.write(`data: ${JSON.stringify({ error: 'stream failed' })}\n\n`); res.end(); } catch (_) {}
+      return;
+    }
   }
 
   try {

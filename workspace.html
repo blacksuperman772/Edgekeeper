@@ -4729,42 +4729,140 @@ async function callOpenAI(messages) {
   return { reply: raw, _notebook: null };
 }
 
+// ── Streaming chat ────────────────────────────────────────────────────────────
+// The mentor's reply is sent as JSON {"reply":"...","_notebook":{...}}. While it
+// streams we pull the `reply` string out of the partial JSON (escape-aware) and
+// render it live; the _notebook is parsed once the full payload has arrived. Plain
+// text replies (no JSON wrapper) stream through directly.
+function extractReplyFromRaw(raw) {
+  const m = raw.match(/"reply"\s*:\s*"/);
+  if (!m) return null;
+  let out = '';
+  for (let i = m.index + m[0].length; i < raw.length; i++) {
+    const c = raw[i];
+    if (c === '\\') {
+      const n = raw[i + 1];
+      if (n === undefined) break;
+      if (n === 'n') out += '\n';
+      else if (n === 't') out += '\t';
+      else if (n === 'r') out += '\r';
+      else if (n === 'u') { const h = raw.slice(i + 2, i + 6); if (h.length < 4) break; out += String.fromCharCode(parseInt(h, 16)); i += 4; }
+      else out += n;
+      i++;
+    } else if (c === '"') {
+      break;
+    } else {
+      out += c;
+    }
+  }
+  return out;
+}
+
+function createMentorMessageEl() {
+  const msgs = document.getElementById('chat-messages');
+  const now  = new Date();
+  const time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+  const who  = mentor ? mentor.name : 'Mentor';
+  const el = document.createElement('div');
+  el.className = 'cmsg cmsg-mentor';
+  el.innerHTML = `<div class="cmsg-header">${escHtml(who)} <span class="cmsg-time">${escHtml(time)}</span></div><div class="cmsg-body"></div>`;
+  msgs.appendChild(el);
+  if (window.gsap) gsap.fromTo(el, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out', onComplete: () => el.classList.add('show') });
+  else el.classList.add('show');
+  msgs.scrollTop = msgs.scrollHeight;
+  return el;
+}
+
+function _finalizeRaw(raw) {
+  const cleaned = (raw || '').trim().replace(/<[^>]*>/g, '');
+  try { const parsed = JSON.parse(cleaned); if (parsed && typeof parsed.reply === 'string') return { reply: parsed.reply, _notebook: parsed._notebook || null }; } catch (_) {}
+  const ex = extractReplyFromRaw(cleaned);
+  return { reply: ex !== null ? ex : cleaned, _notebook: null };
+}
+
+async function streamChat(messages, onText) {
+  const res = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages, mentor: mentor ? mentor.key : 'mike', session_context: buildSessionContext(), stream: true }),
+  });
+  if (!res.ok) {
+    if (res.status === 401) { handleSessionExpiry(); throw new Error('Session expired'); }
+    const err = await res.json().catch(() => ({}));
+    if (res.status === 429 && err.upgrade_to) { const e = new Error(err.error || 'Message limit reached'); e.isLimitReached = true; e.upgrade_to = err.upgrade_to; throw e; }
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  if (res.headers.get('X-Usage-Warning') === 'near_limit') {
+    const isIris  = mentor && mentor.name === 'Iris';
+    const nearMsg = isIris ? "We're getting close to the end of the trial. A few more exchanges." : "Few more exchanges left in the trial. Make them count.";
+    setTimeout(() => addMsg('mentor', nearMsg), 3500);
+  }
+  if (!res.body || !res.body.getReader) { return _finalizeRaw(await res.text()); }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let raw = '', buf = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop();
+    for (const line of lines) {
+      const t = line.trim();
+      if (!t.startsWith('data:')) continue;
+      const p = t.slice(5).trim();
+      if (p === '[DONE]') continue;
+      let j; try { j = JSON.parse(p); } catch (_) { continue; }
+      if (j.error) throw new Error(j.error);
+      if (j.delta) {
+        raw += j.delta;
+        const r = extractReplyFromRaw(raw);
+        if (r !== null) onText(r);
+        else if (!raw.trimStart().startsWith('{')) onText(raw);
+      }
+    }
+  }
+  return _finalizeRaw(raw);
+}
+
 async function getAIResponse(userText, isContextual = false) {
-  const typingEl = await addMsg('typing', '');
-  const delay = 1000 + Math.random() * 800;
+  await addMsg('typing', '');
 
   try {
-    let reply = null;
-    if (aiEnabled) {
-      const hist = isContextual
-        ? [...getHistory(), { role: 'user', content: userText }]
-        : getHistory();
-      const result = await callOpenAI(hist);
-      reply = result.reply;
+    if (!aiEnabled) { removeTyping(); return; }
+    const hist = isContextual
+      ? [...getHistory(), { role: 'user', content: userText }]
+      : getHistory();
 
-      // Apply notebook updates silently
-      if (result._notebook && mentorNotebook) {
-        mentorNotebook = applyNotebookUpdates(mentorNotebook, result._notebook);
-        saveNotebook(mentorNotebook);
-        // Surface theory in Living Identity if not manually set
-        if (result._notebook.theory && !EK.str('living_identity') && mentorNotebook.trustLevel >= 3) {
-          const t = mentorNotebook.currentTheory;
-          if (t) setLivingIdentity(t.length > 90 ? t.slice(0, 87) + '...' : t);
-        }
+    let bodyEl = null, started = false;
+    const onText = (replySoFar) => {
+      if (!started) { started = true; removeTyping(); bodyEl = createMentorMessageEl().querySelector('.cmsg-body'); }
+      if (bodyEl) bodyEl.textContent = replySoFar;
+      const msgs = document.getElementById('chat-messages');
+      if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    };
+
+    const result = await streamChat(hist, onText);
+    let reply = (result.reply || '').replace(/<[^>]*>/g, '').trim();
+
+    if (!started) {
+      removeTyping();
+      if (!reply) { showSystemNote('No response received. Try sending again.'); return; }
+      bodyEl = createMentorMessageEl().querySelector('.cmsg-body');
+    }
+    if (bodyEl) bodyEl.textContent = reply;
+
+    // Apply notebook updates silently
+    if (result._notebook && mentorNotebook) {
+      mentorNotebook = applyNotebookUpdates(mentorNotebook, result._notebook);
+      saveNotebook(mentorNotebook);
+      // Surface theory in Living Identity if not manually set
+      if (result._notebook.theory && !EK.str('living_identity') && mentorNotebook.trustLevel >= 3) {
+        const t = mentorNotebook.currentTheory;
+        if (t) setLivingIdentity(t.length > 90 ? t.slice(0, 87) + '...' : t);
       }
     }
 
-    await sleep(delay);
-    removeTyping();
-
-    if (!reply) {
-      removeTyping();
-      showSystemNote('No response received. Try sending again.');
-      return;
-    }
-
-    reply = reply.replace(/<[^>]*>/g, '');
-    await addMsg('mentor', reply);
     addToHistory('assistant', reply);
     nudgePrivateNotes(userText, reply);
 
