@@ -11,3 +11,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Mono:wght@300;400&family=Inter:wght@300;400;500&family=Manrope:wght@300;400;600&family=Space+Grotesk:wght@300;400;500&family=Space+Mono:wght@400&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Auth-aware nav ──────────────────────────────────────────────────────────
+   The server sets <html class="ek-authed"> for signed-in visitors (serveInjectedHtml).
+   Guest-only CTAs (Sign In / Apply) are hidden for signed-in users; auth-only CTAs
+   (Enter your office) are hidden for guests. Rendered on first paint — no flash. */
+html.ek-authed [data-guest-only] { display: none !important; }
+.ek-auth-cta { display: none; }
+html.ek-authed .ek-auth-cta { display: inline-flex; }

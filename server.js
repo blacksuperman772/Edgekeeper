@@ -150,7 +150,13 @@ function serveInjectedHtml(filePath) {
   return (req, res) => {
     try {
       const raw   = htmlCache.get(filePath) ?? fs.readFileSync(filePath, 'utf8');
-      const html  = injectSupabaseConfig(raw);
+      let html    = injectSupabaseConfig(raw);
+
+      // Server-render the auth state onto <html> so public pages show the correct
+      // nav (guest vs signed-in) on first paint — no flash of "Sign In / Apply"
+      // for a logged-in visitor. Paired with the shared.css [data-guest-only] /
+      // [data-auth-only] rules.
+      if (req.user) html = html.replace(/<html(\s|>)/i, '<html class="ek-authed"$1');
 
       // The global CSP (set in the security middleware above) already allows the
       // inline scripts and event handlers this page relies on. No per-page CSP

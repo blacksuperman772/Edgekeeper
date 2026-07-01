@@ -1556,8 +1556,9 @@
     <li><a href="#pricing">Membership</a></li>
   </ul>
   <div style="display:flex;align-items:center;gap:20px;position:relative;">
-    <a href="/auth.html" class="nav-signin" style="font-size:0.7rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--faint);text-decoration:none;transition:color .3s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--faint)'">Sign In</a>
-    <a href="#invitation" class="nav-cta">Apply</a>
+    <a href="/auth.html" class="nav-signin" style="font-size:0.7rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--faint);text-decoration:none;transition:color .3s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--faint)'" data-guest-only>Sign In</a>
+    <a href="#invitation" class="nav-cta" data-guest-only>Apply</a>
+    <a href="/workspace.html" class="nav-cta ek-auth-cta">Enter your office</a>
     <button class="hamburger" id="hamburger-btn" aria-label="Toggle menu" onclick="toggleMobileNav()">
       <span></span><span></span><span></span>
     </button>
@@ -1571,27 +1572,10 @@
   <a href="/academy" onclick="closeMobileNav()">Academy</a>
   <a href="#how" onclick="closeMobileNav()">Process</a>
   <a href="#pricing" onclick="closeMobileNav()">Membership</a>
-  <a href="/auth.html" onclick="closeMobileNav()">Sign In</a>
-  <a href="#invitation" class="mobile-nav-apply" onclick="closeMobileNav()">Apply</a>
+  <a href="/auth.html" onclick="closeMobileNav()" data-guest-only>Sign In</a>
+  <a href="#invitation" class="mobile-nav-apply" onclick="closeMobileNav()" data-guest-only>Apply</a>
+  <a href="/workspace.html" class="mobile-nav-apply ek-auth-cta" onclick="closeMobileNav()">Enter your office</a>
 </div>
-
-<script>
-  // Logged-in state: a returning member landing here (e.g. after checkout) should
-  // not see "Sign In / Apply" — swap them for a direct route into their office.
-  (async () => {
-    try {
-      const res = await fetch('/api/auth/status', { credentials: 'include' });
-      const data = await res.json();
-      if (!data || !data.authenticated) return;
-      document.querySelectorAll('.nav-signin').forEach(el => { el.style.display = 'none'; });
-      document.querySelectorAll('#mobile-nav a[href="/auth.html"]').forEach(el => { el.style.display = 'none'; });
-      document.querySelectorAll('.nav-cta, .mobile-nav-apply').forEach(el => {
-        el.textContent = 'Enter your office';
-        el.setAttribute('href', '/workspace.html');
-      });
-    } catch (_) {}
-  })();
-</script>
 
 <!-- HERO -->
 <section id="hero">
