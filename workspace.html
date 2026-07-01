@@ -78,6 +78,26 @@
       height: 100vh;
     }
 
+    /* ── Office loading skeleton ─────────────────────────────────────────────
+       Covers the office while it hydrates (/api/profile + sidebar/thread render)
+       so users see a shaped shell instead of nothing-then-content. Removed once
+       renderSidebarWidgets() runs (body.ek-office-ready). */
+    #office-skeleton {
+      position: fixed; inset: 0; z-index: 500;
+      background: var(--black);
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      grid-template-rows: 56px 1fr;
+    }
+    body.ek-office-ready #office-skeleton { display: none; }
+    #office-skeleton .os-top  { grid-column: 1 / -1; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 22px; padding: 0 40px; }
+    #office-skeleton .os-side { border-right: 1px solid var(--border); padding: 26px 22px; }
+    #office-skeleton .os-body { padding: 52px 44px; max-width: 640px; }
+    @media (max-width: 860px) {
+      #office-skeleton { grid-template-columns: 1fr; }
+      #office-skeleton .os-side { display: none; }
+    }
+
     /* ── TOPBAR ─────────────────────────────────────────────────── */
     .topbar {
       grid-column: 1 / -1;
@@ -1990,6 +2010,32 @@
 <div id="cursor-ring"></div>
 
 <div class="workspace">
+
+  <!-- OFFICE LOADING SKELETON (removed once the office finishes hydrating) -->
+  <div id="office-skeleton" aria-hidden="true">
+    <div class="os-top">
+      <div class="ek-skel" style="width:120px;height:13px;border-radius:3px;"></div>
+      <div class="ek-skel" style="width:200px;height:9px;border-radius:3px;"></div>
+    </div>
+    <div class="os-side">
+      <div class="ek-skel" style="width:40px;height:40px;border-radius:50%;margin-bottom:18px;"></div>
+      <div class="ek-skel ek-skel-line md"></div>
+      <div class="ek-skel ek-skel-line sm"></div>
+      <div style="height:30px;"></div>
+      <div class="ek-skel ek-skel-line" style="width:86%;"></div>
+      <div class="ek-skel ek-skel-line" style="width:86%;"></div>
+      <div class="ek-skel ek-skel-line" style="width:86%;"></div>
+      <div class="ek-skel ek-skel-line" style="width:86%;"></div>
+      <div class="ek-skel ek-skel-line" style="width:86%;"></div>
+      <div class="ek-skel ek-skel-line" style="width:86%;"></div>
+    </div>
+    <div class="os-body">
+      <div class="ek-skel ek-skel-line" style="width:34%;height:9px;"></div>
+      <div class="ek-skel ek-skel-block" style="width:62%;height:76px;"></div>
+      <div class="ek-skel ek-skel-block" style="width:40%;height:44px;margin-left:auto;"></div>
+      <div class="ek-skel ek-skel-block" style="width:54%;height:60px;"></div>
+    </div>
+  </div>
 
   <!-- TOPBAR -->
   <header class="topbar">
@@ -3978,6 +4024,10 @@ function applyPlanGating() {
 window.addEventListener('DOMContentLoaded', async () => {
   const params = new URLSearchParams(window.location.search);
 
+  // Safety net: never let the loading skeleton stick if init hangs (slow/failed fetch).
+  const _officeReady = () => document.body.classList.add('ek-office-ready');
+  setTimeout(_officeReady, 6000);
+
   // Academy topic detection — must run before hydrateProfileFromServer so EK is ready
   const academyTopic = params.get('topic');
   if (academyTopic) {
@@ -4037,6 +4087,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   applyTheme(mentor);
   buildStreak();
   renderSidebarWidgets();
+  _officeReady();  // sidebar + layout populated — reveal the office, drop the skeleton
   updateSidebarMetrics();
 
   // Surface notebook theory in Living Identity if no manual override
