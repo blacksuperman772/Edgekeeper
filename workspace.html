@@ -229,6 +229,9 @@
       color: var(--dim);
       padding: 10px 8px 6px;
     }
+    /* Hide plan-gated items until the plan is known, so paid features never
+       flash in for an Explorer before applyPlanGating() runs. */
+    body:not(.plan-resolved) [data-min-plan] { display: none !important; }
     .nav-item {
       display: flex;
       align-items: center;
@@ -2109,10 +2112,6 @@
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2"/><path d="M8 2v1M8 13v1M2 8h1M13 8h1M3.5 3.5l.7.7M11.8 11.8l.7.7M3.5 12.5l.7-.7M11.8 4.2l.7-.7"/></svg>
         Settings
       </button>
-      <button class="nav-item" onclick="window.location='/edgekeeper.html'">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2L2 7v7h4v-4h4v4h4V7z"/></svg>
-        EdgeKeeper Home
-      </button>
     </nav>
     <div class="sidebar-footer">
       <div class="confidence-section">
@@ -3952,7 +3951,7 @@ async function checkNewMilestones() {
 }
 
 function applyPlanGating() {
-  const RANK = { free: 0, starter: 1, pro: 2, institutional: 3 };
+  const RANK = { free: 0, starter: 1, pro: 2, professional: 3, institutional: 3 };
   const plan = window.__ek_subscription__ || 'free';
   const rank = RANK[plan] ?? 0;
 
@@ -3960,6 +3959,11 @@ function applyPlanGating() {
     const minRank = RANK[el.dataset.minPlan] ?? 0;
     if (rank < minRank) el.style.display = 'none';
   });
+
+  // Reveal the plan-gated sidebar items only after gating is decided. Combined
+  // with the CSS `body:not(.plan-resolved) [data-min-plan]{display:none}`, this
+  // stops an Explorer from briefly seeing paid features flash in before they hide.
+  document.body.classList.add('plan-resolved');
 
   // Hide "Identity" label if both passport and analytics are hidden
   const identityLabel = document.getElementById('nav-label-identity');

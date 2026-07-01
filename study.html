@@ -181,7 +181,7 @@
       padding: 8px 16px; cursor: pointer; transition: background .2s; white-space: nowrap;
     }
     #voice-btn:hover { background: rgba(184,160,106,0.12); }
-    #voice-btn.active { color: #c8786a; border-color: #c8786a; background: rgba(200,120,106,0.08); }
+    #voice-btn.active { color: #b8a06a; border-color: #b8a06a; background: rgba(184,160,106,0.08); }
     #voice-btn:disabled { opacity: 0.5; cursor: default; }
     .ai-disclaimer { padding: 8px 22px 14px; font-family: var(--mono); font-size: 0.52rem; letter-spacing: 0.04em; color: var(--muted); text-align: center; opacity: 0.7; }
     .companion-badge-label {
@@ -638,7 +638,7 @@ function awardCertificationIfEarned() {
 function showGraduationCTA() {
   const div = document.createElement('div');
   div.style.cssText = 'margin:20px 0;text-align:center;';
-  div.innerHTML = '<a href="/workspace.html" style="display:inline-block;font-family:var(--mono,monospace);font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold,#b8a06a);border:1px solid var(--gold-dim,#8a6a2a);padding:13px 28px;text-decoration:none;">Work with Marcus &rarr;</a>';
+  div.innerHTML = '<a href="/workspace.html" style="display:inline-block;font-family:var(--mono,monospace);font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold,#b8a06a);border:1px solid var(--gold-dim,#7a6a45);padding:13px 28px;text-decoration:none;">Work with Marcus &rarr;</a>';
   thread.appendChild(div);
   thread.scrollTop = thread.scrollHeight;
 }
@@ -1056,8 +1056,8 @@ function mountExercise() {
   st.textContent = '.ex-field{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;}'
     + '.ex-field label{font-size:0.78rem;color:var(--muted,#8a8578);}'
     + '.ex-field input{width:110px;background:var(--surface,#15110a);border:1px solid var(--border,#241f17);color:var(--text,#ece6db);padding:7px 10px;border-radius:2px;font-family:var(--mono,monospace);font-size:0.82rem;text-align:right;}'
-    + '.ex-field input:focus{outline:none;border-color:var(--gold-dim,#8a6a2a);}'
-    + '#ex-calc,#ex-send{width:100%;background:rgba(184,160,106,0.06);border:1px solid var(--gold-dim,#8a6a2a);color:var(--gold,#b8a06a);padding:10px;border-radius:2px;cursor:pointer;font-family:var(--mono,monospace);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;transition:background .2s;}'
+    + '.ex-field input:focus{outline:none;border-color:var(--gold-dim,#7a6a45);}'
+    + '#ex-calc,#ex-send{width:100%;background:rgba(184,160,106,0.06);border:1px solid var(--gold-dim,#7a6a45);color:var(--gold,#b8a06a);padding:10px;border-radius:2px;cursor:pointer;font-family:var(--mono,monospace);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;transition:background .2s;}'
     + '#ex-calc:hover,#ex-send:hover{background:rgba(184,160,106,0.12);}';
   mount.appendChild(st);
 
