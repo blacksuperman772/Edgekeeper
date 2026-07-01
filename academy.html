@@ -1048,6 +1048,14 @@ function renderGuidedPath() {
     }
   }
 
+  // Deep-link: /my-academy?resume=1 drops straight into the current module (the
+  // "Academy" action in the workspace) instead of landing on the catalog. Only
+  // when the resume target is an actual module — not the pricing/unlock case.
+  if (new URLSearchParams(location.search).get('resume') && href.indexOf('/study.html') === 0) {
+    window.location.replace(href);
+    return;
+  }
+
   const esc = s => { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; };
   mount.innerHTML =
     '<div style="max-width:1000px;margin:0 auto;padding:8px 40px 0;">'

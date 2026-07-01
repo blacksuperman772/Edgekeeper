@@ -1575,6 +1575,24 @@
   <a href="#invitation" class="mobile-nav-apply" onclick="closeMobileNav()">Apply</a>
 </div>
 
+<script>
+  // Logged-in state: a returning member landing here (e.g. after checkout) should
+  // not see "Sign In / Apply" — swap them for a direct route into their office.
+  (async () => {
+    try {
+      const res = await fetch('/api/auth/status', { credentials: 'include' });
+      const data = await res.json();
+      if (!data || !data.authenticated) return;
+      document.querySelectorAll('.nav-signin').forEach(el => { el.style.display = 'none'; });
+      document.querySelectorAll('#mobile-nav a[href="/auth.html"]').forEach(el => { el.style.display = 'none'; });
+      document.querySelectorAll('.nav-cta, .mobile-nav-apply').forEach(el => {
+        el.textContent = 'Enter your office';
+        el.setAttribute('href', '/workspace.html');
+      });
+    } catch (_) {}
+  })();
+</script>
+
 <!-- HERO -->
 <section id="hero">
   <img src="/assets/hero-landing.png" alt="" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;opacity:0.18;z-index:0;pointer-events:none;" />
