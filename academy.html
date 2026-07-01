@@ -23,12 +23,12 @@
       --surface:       #0D0B15;
       --obsidian:      #0a0812;
       --gold:          #b8a06a;
-      --theo:          #7E89CC;
-      --theo-dim:      rgba(126,137,204,0.45);
-      --gold-dim:      rgba(126,137,204, 0.45);
-      --green-bright:  #4ADE80;
-      --green:         rgba(74, 222, 128, 0.7);
-      --violet:        #7C3AED;
+      --theo:          #b8a06a;
+      --theo-dim:      rgba(184,160,106,0.45);
+      --gold-dim:      rgba(184,160,106, 0.45);
+      --green-bright:  #b8a06a;
+      --green:         rgba(184,160,106, 0.7);
+      --violet:        #b8a06a;
       --border:        rgba(255,255,255,0.06);
       --text-primary:  rgba(255,255,255,0.82);
       --text-secondary:rgba(255,255,255,0.45);
@@ -37,12 +37,12 @@
       --serif:         'Cormorant Garamond', Georgia, serif;
       --sans:          'Inter', sans-serif;
 
-      --track-1: rgba(100,160,255,0.6);
-      --track-2: rgba(150,220,180,0.6);
-      --track-3: rgba(239,68,68,0.5);
-      --track-4: rgba(126,137,204,0.6);
-      --track-5: rgba(126,137,204,0.9);
-      --track-6: rgba(255,255,255,0.4);
+      --track-1: rgba(184,160,106,0.6);
+      --track-2: rgba(184,160,106,0.6);
+      --track-3: rgba(184,160,106,0.5);
+      --track-4: rgba(184,160,106,0.6);
+      --track-5: rgba(184,160,106,0.9);
+      --track-6: rgba(184,160,106,0.3);
     }
 
     html { scroll-behavior: smooth; font-size: 16px; }
@@ -70,7 +70,7 @@
       #cursor-ring {
         display: block;
         position: fixed; width: 32px; height: 32px;
-        border: 1px solid rgba(126,137,204,0.3); border-radius: 50%;
+        border: 1px solid rgba(184,160,106,0.3); border-radius: 50%;
         pointer-events: none; z-index: 9998;
         transform: translate(-50%,-50%);
         transition: left .1s ease, top .1s ease;
@@ -106,7 +106,7 @@
       font-family: var(--mono); font-size: 0.62rem;
       letter-spacing: 0.16em; text-transform: uppercase;
       color: var(--text-primary); background: transparent;
-      border: 1px solid rgba(126,137,204,0.35);
+      border: 1px solid rgba(184,160,106,0.35);
       padding: 9px 20px; text-decoration: none;
       transition: all .4s;
     }
@@ -119,8 +119,8 @@
     }
     .nav-avatar {
       width: 30px; height: 30px; border-radius: 50%;
-      background: rgba(126,137,204,0.07);
-      border: 1px solid rgba(126,137,204,0.28);
+      background: rgba(184,160,106,0.07);
+      border: 1px solid rgba(184,160,106,0.28);
       display: flex; align-items: center; justify-content: center;
       font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.06em;
       color: var(--theo); cursor: pointer;
@@ -128,7 +128,7 @@
       text-decoration: none;
     }
     .nav-avatar:hover {
-      border-color: var(--theo); background: rgba(126,137,204,0.13);
+      border-color: var(--theo); background: rgba(184,160,106,0.13);
     }
 
     /* ── REVEAL ── */
@@ -284,7 +284,7 @@
       color: var(--text-dim);
     }
     .module-status.is-started { color: var(--theo-dim); }
-    .module-status.is-completed { color: rgba(74,222,128,0.5); }
+    .module-status.is-completed { color: rgba(184,160,106,0.5); }
 
     .module-link {
       font-family: var(--mono); font-size: 0.6rem;
@@ -297,9 +297,9 @@
     .module-row:hover .module-link { opacity: 0.7; }
 
     /* Track-colored begin links */
-    .track-section[data-track="1"] .module-link { color: rgba(100,160,255,0.9); }
-    .track-section[data-track="2"] .module-link { color: rgba(150,220,180,0.9); }
-    .track-section[data-track="3"] .module-link { color: rgba(239,68,68,0.8); }
+    .track-section[data-track="1"] .module-link { color: rgba(184,160,106,0.9); }
+    .track-section[data-track="2"] .module-link { color: rgba(184,160,106,0.9); }
+    .track-section[data-track="3"] .module-link { color: rgba(184,160,106,0.8); }
     .track-section[data-track="4"] .module-link { color: var(--theo); }
     .track-section[data-track="5"] .module-link { color: var(--theo); }
     .track-section[data-track="6"] .module-link { color: rgba(255,255,255,0.7); }
@@ -358,14 +358,14 @@
       font-family: var(--mono); font-size: 0.65rem;
       letter-spacing: 0.18em; text-transform: uppercase;
       text-decoration: none;
-      border: 1px solid rgba(126,137,204,0.3);
+      border: 1px solid rgba(184,160,106,0.3);
       padding: 14px 32px;
       transition: all .3s;
     }
     .cta-link.mike  { color: var(--theo); }
-    .cta-link.mike:hover  { background: rgba(126,137,204,0.08); border-color: var(--theo); }
-    .cta-link.ashley { color: var(--green-bright); border-color: rgba(74,222,128,0.3); }
-    .cta-link.ashley:hover { background: rgba(74,222,128,0.06); border-color: var(--green-bright); }
+    .cta-link.mike:hover  { background: rgba(184,160,106,0.08); border-color: var(--theo); }
+    .cta-link.ashley { color: var(--green-bright); border-color: rgba(184,160,106,0.3); }
+    .cta-link.ashley:hover { background: rgba(184,160,106,0.06); border-color: var(--green-bright); }
 
     /* ── FOOTER ── */
     footer {
@@ -1051,15 +1051,15 @@ function renderGuidedPath() {
   const esc = s => { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; };
   mount.innerHTML =
     '<div style="max-width:1000px;margin:0 auto;padding:8px 40px 0;">'
-    + '<a href="' + href + '" style="display:block;text-decoration:none;border:1px solid var(--gold-dim,#7a6a45);background:rgba(126,137,204,0.05);padding:26px 30px;border-radius:2px;">'
+    + '<a href="' + href + '" style="display:block;text-decoration:none;border:1px solid var(--gold-dim,#7a6a45);background:rgba(184,160,106,0.05);padding:26px 30px;border-radius:2px;">'
     + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap;">'
-    + '<div><div style="font-family:var(--mono,monospace);font-size:0.54rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold,#c9a85c);margin-bottom:8px;">' + esc(eyebrow) + '</div>'
+    + '<div><div style="font-family:var(--mono,monospace);font-size:0.54rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold,#b8a06a);margin-bottom:8px;">' + esc(eyebrow) + '</div>'
     + '<div style="font-family:var(--serif,Georgia),serif;font-size:1.5rem;color:var(--text,#ece6db);line-height:1.25;">' + esc(title) + '</div>'
     + (sub ? '<div style="font-size:0.82rem;color:var(--muted,#8a8578);margin-top:6px;">' + esc(sub) + '</div>' : '')
     + '</div>'
-    + '<div style="font-family:var(--mono,monospace);font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold,#c9a85c);white-space:nowrap;padding-top:6px;">' + esc(cta) + '</div>'
+    + '<div style="font-family:var(--mono,monospace);font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold,#b8a06a);white-space:nowrap;padding-top:6px;">' + esc(cta) + '</div>'
     + '</div>'
-    + '<div style="height:2px;background:var(--border,#241f17);margin-top:22px;border-radius:2px;overflow:hidden;"><div style="height:2px;width:' + pct + '%;background:var(--gold,#c9a85c);"></div></div>'
+    + '<div style="height:2px;background:var(--border,#241f17);margin-top:22px;border-radius:2px;overflow:hidden;"><div style="height:2px;width:' + pct + '%;background:var(--gold,#b8a06a);"></div></div>'
     + '<div style="font-family:var(--mono,monospace);font-size:0.54rem;letter-spacing:0.12em;color:var(--muted,#8a8578);margin-top:8px;">' + completed + ' of ' + total + ' modules · ' + pct + '%</div>'
     + '</a></div>';
 }
@@ -1088,7 +1088,7 @@ applyGates();
   if (!locked) return;
   const banner = document.createElement('div');
   banner.setAttribute('role', 'status');
-  banner.style.cssText = 'position:fixed;left:50%;bottom:32px;transform:translateX(-50%);z-index:200;background:var(--surface,#15110a);border:1px solid var(--gold,#c9a85c);color:var(--text,#ece6db);font-family:var(--mono,monospace);font-size:0.7rem;letter-spacing:0.04em;padding:14px 22px;border-radius:2px;max-width:90vw;text-align:center;cursor:pointer;box-shadow:0 12px 40px rgba(0,0,0,0.5);';
+  banner.style.cssText = 'position:fixed;left:50%;bottom:32px;transform:translateX(-50%);z-index:200;background:var(--surface,#15110a);border:1px solid var(--gold,#b8a06a);color:var(--text,#ece6db);font-family:var(--mono,monospace);font-size:0.7rem;letter-spacing:0.04em;padding:14px 22px;border-radius:2px;max-width:90vw;text-align:center;cursor:pointer;box-shadow:0 12px 40px rgba(0,0,0,0.5);';
   banner.textContent = 'Theo: "You\'re reaching for the advanced material. I like that. It opens with a plan — and you\'ll get more from it once Foundations is solid." →';
   banner.onclick = () => { window.location.href = '/pricing.html'; };
   document.body.appendChild(banner);

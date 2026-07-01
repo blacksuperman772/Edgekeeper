@@ -13,21 +13,21 @@
   <style>
 
     :root {
-      --void:      #07050E;
+      --void:      #050505;
       --surface:   #0D0B16;
       --panel:     #0F0D18;
       --border:    rgba(255,255,255,0.07);
       --border-hi: rgba(255,255,255,0.12);
-      --gold:      #C9A85C;
-      --theo:      #7E89CC;
-      --theo-d:    rgba(126,137,204,0.4);
-      --gold-d:    rgba(126,137,204,0.25);
+      --gold:      #b8a06a;
+      --theo:      #b8a06a;
+      --theo-d:    rgba(184,160,106,0.4);
+      --gold-d:    rgba(184,160,106,0.25);
       --text:      rgba(255,255,255,0.82);
       --muted:     rgba(255,255,255,0.42);
       --dim:       rgba(255,255,255,0.18);
       --serif:     'Cormorant Garamond', Georgia, serif;
-      --sans:      'Space Grotesk', sans-serif;
-      --mono:      'Space Mono', monospace;
+      --sans:      'Inter', sans-serif;
+      --mono:      'DM Mono', monospace;
     }
 
     html, body { height: 100%; font-size: 16px; }
@@ -135,9 +135,9 @@
       color: var(--theo); transition: background 0.2s, border-color 0.2s;
       margin-bottom: 16px;
     }
-    .btn-complete:hover { background: rgba(126,137,204,0.08); border-color: var(--theo); }
+    .btn-complete:hover { background: rgba(184,160,106,0.08); border-color: var(--theo); }
     .btn-complete.done {
-      background: rgba(126,137,204,0.12); border-color: var(--theo);
+      background: rgba(184,160,106,0.12); border-color: var(--theo);
       cursor: default; opacity: 0.7;
     }
 
@@ -162,7 +162,7 @@
     .companion-badge {
       margin-top: 32px; padding: 14px 16px;
       border: 1px solid var(--border); border-radius: 3px;
-      background: rgba(126,137,204,0.03);
+      background: rgba(184,160,106,0.03);
       display: flex; gap: 14px; align-items: flex-start;
     }
     .companion-badge-avatar {
@@ -177,10 +177,10 @@
     #voice-status { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.03em; color: var(--dim); }
     #voice-btn {
       font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.14em; text-transform: uppercase;
-      color: var(--theo); background: rgba(126,137,204,0.05); border: 1px solid var(--gold-dim);
+      color: var(--theo); background: rgba(184,160,106,0.05); border: 1px solid var(--gold-dim);
       padding: 8px 16px; cursor: pointer; transition: background .2s; white-space: nowrap;
     }
-    #voice-btn:hover { background: rgba(126,137,204,0.12); }
+    #voice-btn:hover { background: rgba(184,160,106,0.12); }
     #voice-btn.active { color: #c8786a; border-color: #c8786a; background: rgba(200,120,106,0.08); }
     #voice-btn:disabled { opacity: 0.5; cursor: default; }
     .ai-disclaimer { padding: 8px 22px 14px; font-family: var(--mono); font-size: 0.52rem; letter-spacing: 0.04em; color: var(--muted); text-align: center; opacity: 0.7; }
@@ -239,11 +239,11 @@
       line-height: 1.9;
       color: rgba(245,242,236,0.88);
       padding-left: 18px;
-      border-left: 1px solid rgba(126,137,204,0.45);
+      border-left: 1px solid rgba(184,160,106,0.45);
       letter-spacing: 0.01em;
     }
     .msg.companion .msg-body strong { font-weight: 500; color: rgba(245,242,236,0.96); }
-    .msg.companion .msg-body em { font-style: italic; color: rgba(126,137,204,0.85); }
+    .msg.companion .msg-body em { font-style: italic; color: rgba(184,160,106,0.85); }
     .msg.companion .msg-body code {
       font-family: var(--mono); font-size: 0.8em;
       background: rgba(255,255,255,0.05); padding: 1px 5px;
@@ -294,7 +294,7 @@
       letter-spacing: 0.14em; text-transform: uppercase; color: var(--theo);
       transition: background 0.2s, border-color 0.2s; align-self: flex-end;
     }
-    #send-btn:hover { background: rgba(126,137,204,0.08); border-color: var(--theo); }
+    #send-btn:hover { background: rgba(184,160,106,0.08); border-color: var(--theo); }
     #send-btn:disabled { opacity: 0.3; pointer-events: none; }
 
     /* ── MOBILE ── */
@@ -638,14 +638,14 @@ function awardCertificationIfEarned() {
 function showGraduationCTA() {
   const div = document.createElement('div');
   div.style.cssText = 'margin:20px 0;text-align:center;';
-  div.innerHTML = '<a href="/workspace.html" style="display:inline-block;font-family:var(--mono,monospace);font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold,#c9a85c);border:1px solid var(--gold-dim,#8a6a2a);padding:13px 28px;text-decoration:none;">Work with Marcus &rarr;</a>';
+  div.innerHTML = '<a href="/workspace.html" style="display:inline-block;font-family:var(--mono,monospace);font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold,#b8a06a);border:1px solid var(--gold-dim,#8a6a2a);padding:13px 28px;text-decoration:none;">Work with Marcus &rarr;</a>';
   thread.appendChild(div);
   thread.scrollTop = thread.scrollHeight;
 }
 function showCertificationBanner(trackName) {
   const div = document.createElement('div');
-  div.style.cssText = 'margin:18px 0;padding:20px 22px;border:1px solid var(--gold,#c9a85c);background:rgba(126,137,204,0.06);border-radius:2px;';
-  div.innerHTML = '<div style="font-family:var(--mono,monospace);font-size:0.52rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold,#c9a85c);margin-bottom:8px;">Certification earned</div>'
+  div.style.cssText = 'margin:18px 0;padding:20px 22px;border:1px solid var(--gold,#b8a06a);background:rgba(184,160,106,0.06);border-radius:2px;';
+  div.innerHTML = '<div style="font-family:var(--mono,monospace);font-size:0.52rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold,#b8a06a);margin-bottom:8px;">Certification earned</div>'
     + '<div style="font-family:var(--serif,Georgia),serif;font-size:1.15rem;color:var(--text,#ece6db);line-height:1.4;">' + escText(trackName) + '</div>'
     + '<div style="font-size:0.82rem;color:var(--muted,#8a8578);margin-top:8px;line-height:1.6;">You\'ve completed this track. When you graduate to the main platform, Marcus will know exactly what you\'ve covered.</div>';
   thread.appendChild(div);
@@ -662,7 +662,7 @@ function onTheoMastery() {
   if (!completeBtn.classList.contains('done')) markComplete({ advance: false });
   else awardCertificationIfEarned();
   const note = document.createElement('div');
-  note.style.cssText = 'margin:14px 0;font-family:var(--mono,monospace);font-size:0.56rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold,#c9a85c);';
+  note.style.cssText = 'margin:14px 0;font-family:var(--mono,monospace);font-size:0.56rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold,#b8a06a);';
   note.textContent = '✓ Theo confirmed you\'ve got this — module complete';
   thread.appendChild(note);
   thread.scrollTop = thread.scrollHeight;
@@ -1042,7 +1042,7 @@ function mountExercise() {
   if (!mount) return;
   mount.innerHTML = `
     <div style="margin-top:26px;padding-top:22px;border-top:1px solid var(--border,#241f17);">
-      <div style="font-family:var(--mono,monospace);font-size:0.52rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold,#c9a85c);margin-bottom:14px;">Practice · Position sizing</div>
+      <div style="font-family:var(--mono,monospace);font-size:0.52rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold,#b8a06a);margin-bottom:14px;">Practice · Position sizing</div>
       <div class="ex-field"><label>Account balance ($)</label><input id="ex-bal" type="number" inputmode="decimal" value="10000"></div>
       <div class="ex-field"><label>Risk per trade (%)</label><input id="ex-risk" type="number" inputmode="decimal" value="1"></div>
       <div class="ex-field"><label>Entry price</label><input id="ex-entry" type="number" inputmode="decimal" value="100"></div>
@@ -1057,8 +1057,8 @@ function mountExercise() {
     + '.ex-field label{font-size:0.78rem;color:var(--muted,#8a8578);}'
     + '.ex-field input{width:110px;background:var(--surface,#15110a);border:1px solid var(--border,#241f17);color:var(--text,#ece6db);padding:7px 10px;border-radius:2px;font-family:var(--mono,monospace);font-size:0.82rem;text-align:right;}'
     + '.ex-field input:focus{outline:none;border-color:var(--gold-dim,#8a6a2a);}'
-    + '#ex-calc,#ex-send{width:100%;background:rgba(126,137,204,0.06);border:1px solid var(--gold-dim,#8a6a2a);color:var(--gold,#c9a85c);padding:10px;border-radius:2px;cursor:pointer;font-family:var(--mono,monospace);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;transition:background .2s;}'
-    + '#ex-calc:hover,#ex-send:hover{background:rgba(126,137,204,0.12);}';
+    + '#ex-calc,#ex-send{width:100%;background:rgba(184,160,106,0.06);border:1px solid var(--gold-dim,#8a6a2a);color:var(--gold,#b8a06a);padding:10px;border-radius:2px;cursor:pointer;font-family:var(--mono,monospace);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;transition:background .2s;}'
+    + '#ex-calc:hover,#ex-send:hover{background:rgba(184,160,106,0.12);}';
   mount.appendChild(st);
 
   let lastResult = null;

@@ -10,17 +10,17 @@
   <style>
 
     :root {
-      --void:    #07050E;
+      --void:    #050505;
       --surface: #0D0B16;
       --border:  rgba(255,255,255,0.07);
-      --gold:    #C9A85C;
-      --gold-d:  rgba(201,168,92,0.35);
+      --gold:    #b8a06a;
+      --gold-d:  rgba(184,160,106,0.35);
       --text:    rgba(255,255,255,0.82);
       --muted:   rgba(255,255,255,0.42);
       --dim:     rgba(255,255,255,0.18);
       --serif:   'Cormorant Garamond', Georgia, serif;
-      --sans:    'Space Grotesk', sans-serif;
-      --mono:    'Space Mono', monospace;
+      --sans:    'Inter', sans-serif;
+      --mono:    'DM Mono', monospace;
     }
 
     html { font-size: 16px; }
@@ -38,8 +38,8 @@
     .ambient {
       position: fixed; inset: 0; pointer-events: none; z-index: 0;
       background:
-        radial-gradient(ellipse 60% 50% at 20% 30%, rgba(201,168,92,0.04) 0%, transparent 70%),
-        radial-gradient(ellipse 50% 40% at 80% 70%, rgba(124,58,237,0.04) 0%, transparent 70%);
+        radial-gradient(ellipse 60% 50% at 20% 30%, rgba(184,160,106,0.04) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 80% 70%, rgba(184,160,106,0.04) 0%, transparent 70%);
     }
 
     /* ── TOP BAR ── */
@@ -104,7 +104,7 @@
       transition: background 0.25s, border-color 0.25s;
     }
     .intro-continue:hover {
-      background: rgba(201,168,92,0.08); border-color: var(--gold);
+      background: rgba(184,160,106,0.08); border-color: var(--gold);
     }
 
     /* ── PHASE: TRACK SELECT ── */
@@ -136,13 +136,13 @@
     }
     .track-card::before {
       content: ''; position: absolute; inset: 0;
-      background: linear-gradient(135deg, rgba(201,168,92,0.04) 0%, transparent 60%);
+      background: linear-gradient(135deg, rgba(184,160,106,0.04) 0%, transparent 60%);
       opacity: 0; transition: opacity 0.25s;
     }
-    .track-card:hover { border-color: rgba(201,168,92,0.3); background: rgba(255,255,255,0.03); }
+    .track-card:hover { border-color: rgba(184,160,106,0.3); background: rgba(255,255,255,0.03); }
     .track-card:hover::before { opacity: 1; }
     .track-card.selected {
-      border-color: var(--gold); background: rgba(201,168,92,0.07);
+      border-color: var(--gold); background: rgba(184,160,106,0.07);
     }
     .track-card.selected::before { opacity: 1; }
 
@@ -171,7 +171,7 @@
       background: var(--gold); border-radius: 2px;
       font-family: var(--mono); font-size: 0.65rem;
       letter-spacing: 0.2em; text-transform: uppercase;
-      color: #07050E; cursor: pointer; border: none;
+      color: #050505; cursor: pointer; border: none;
       transition: opacity 0.2s; opacity: 0.4; pointer-events: none;
     }
     .tracks-begin.active { opacity: 1; pointer-events: all; }
@@ -196,7 +196,7 @@
       border-radius: 2px; margin-bottom: 12px; display: block;
       transition: border-color 0.2s;
     }
-    .signup-field:focus { border-color: rgba(201,168,92,0.5); }
+    .signup-field:focus { border-color: rgba(184,160,106,0.5); }
     .signup-field::placeholder { color: var(--dim); }
     #signup-error {
       display: none; font-family: var(--mono); font-size: 0.62rem;
@@ -386,7 +386,7 @@ function markGatedTracks() {
     if (!card.querySelector('.track-lock-note')) {
       const note = document.createElement('div');
       note.className = 'track-lock-note';
-      note.style.cssText = 'margin-top:10px;font-family:var(--mono,monospace);font-size:0.52rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold,#c9a85c);opacity:0.85;';
+      note.style.cssText = 'margin-top:10px;font-family:var(--mono,monospace);font-size:0.52rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold,#b8a06a);opacity:0.85;';
       note.textContent = 'Unlocks with any plan';
       card.appendChild(note);
     }
