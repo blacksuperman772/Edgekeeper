@@ -285,7 +285,7 @@
     }
     .discipline-fill {
       height: 100%;
-      width: 78%;
+      width: 0%;
       background: linear-gradient(to right, var(--mentor-color-dim), var(--mentor-color));
       border-radius: 1px;
     }
@@ -2118,15 +2118,15 @@
       <div class="confidence-section">
         <div class="confidence-label">
           Confidence Budget
-          <span class="confidence-level" id="conf-level">Normal</span>
+          <span class="confidence-level" id="conf-level">Forming</span>
         </div>
         <div class="confidence-bar">
-          <div class="confidence-fill" id="conf-fill" style="width:82%;background:var(--mentor-color-dim);"></div>
+          <div class="confidence-fill" id="conf-fill" style="width:0%;background:var(--mentor-color-dim);"></div>
         </div>
-        <div class="confidence-state" id="conf-state">Trading within parameters</div>
+        <div class="confidence-state" id="conf-state">No sessions scored yet</div>
       </div>
-      <div class="discipline-label">Discipline Score <span id="disc-score">78%</span></div>
-      <div class="discipline-bar"><div class="discipline-fill"></div></div>
+      <div class="discipline-label">Discipline Score <span id="disc-score">—</span></div>
+      <div class="discipline-bar"><div class="discipline-fill" id="disc-fill" style="width:0%"></div></div>
       <div class="streak-row" id="streak-row"></div>
     </div>
   </aside>
@@ -4033,6 +4033,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   applyTheme(mentor);
   buildStreak();
   renderSidebarWidgets();
+  updateSidebarMetrics();
 
   // Surface notebook theory in Living Identity if no manual override
   if (mentorNotebook.currentTheory && !EK.str('living_identity') && mentorNotebook.trustLevel >= 3) {
@@ -5027,6 +5028,35 @@ function renderSidebarWidgets() {
   if (nsEl)  nsEl.textContent  = ns  || 'Your north star will emerge.';
   if (lidEl) lidEl.textContent = lid || 'Still forming.';
   renderVersion(v || 'neutral');
+}
+
+// Populate the sidebar Discipline / Confidence widgets from real analytics instead
+// of the hardcoded 78%/82% placeholders, so a brand-new user isn't shown a
+// fabricated score. No data yet → honest "Forming" state.
+async function updateSidebarMetrics() {
+  let data = null;
+  try { const r = await fetch('/api/analytics', { credentials: 'include' }); if (r.ok) data = await r.json(); } catch (_) {}
+  const discEl    = document.getElementById('disc-score');
+  const discFill  = document.getElementById('disc-fill');
+  const confLevel = document.getElementById('conf-level');
+  const confFill  = document.getElementById('conf-fill');
+  const confState = document.getElementById('conf-state');
+  const score = data && data.disciplineScore != null
+    ? Math.max(0, Math.min(100, Math.round(data.disciplineScore))) : null;
+  const hasSessions = !!(data && (data.sessionsThisMonth || score != null));
+  if (score != null) {
+    if (discEl)   discEl.textContent = score + '%';
+    if (discFill) discFill.style.width = score + '%';
+  } else {
+    if (discEl)   discEl.textContent = 'Forming';
+    if (discFill) discFill.style.width = '0%';
+  }
+  if (hasSessions) {
+    if (confLevel) confLevel.textContent = 'Normal';
+    if (confFill)  confFill.style.width  = (score != null ? score : 50) + '%';
+    if (confState) confState.textContent = 'Trading within parameters';
+  }
+  // else: keep the honest "Forming / No sessions scored yet" default
 }
 
 function setNorthStar(text) {
