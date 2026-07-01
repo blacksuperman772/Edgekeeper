@@ -7,6 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Study — EdgeKeeper Academy</title>
   <link rel="stylesheet" href="/assets/shared.css" />
+  <script src="/assets/pillars.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.19.2/dist/livekit-client.umd.js"></script>
   <script>window.livekitClient = window.LivekitClient;</script>
   <script src="https://cdn.jsdelivr.net/npm/@11labs/client@0.2.0/dist/lib.umd.js"></script>
@@ -300,11 +301,16 @@
     /* ── MOBILE ── */
     @media (max-width: 768px) {
       body { overflow: auto; }
+      #top-bar { padding: 0 14px; }
+      .top-track-label, .top-divider, .curriculum-link { display: none; }
+      .brand { font-size: 0.8rem; letter-spacing: 0.12em; }
+      .top-left, .top-right { gap: 10px; }
       #split { flex-direction: column; overflow: visible; }
       #module-panel { width: 100%; border-right: none; border-bottom: 1px solid var(--border); padding: 24px 20px; }
       #companion-panel { height: 70vh; }
       #thread { padding: 24px 20px; }
       #input-bar { padding: 12px 20px 16px; }
+      #study-input { font-size: 16px; }
     }
   </style>
 </head>
@@ -318,6 +324,11 @@
     <span class="top-track-label" id="top-track-label">Academy</span>
   </div>
   <div class="top-right">
+    <div class="ek-pillars" role="navigation" aria-label="Spaces">
+      <a href="/workspace.html" data-space="marcus" class="ek-pillar">Marcus</a>
+      <a href="/my-academy" data-space="theo" class="ek-pillar">Theo</a>
+      <a href="/chamber" data-space="iris" class="ek-pillar">Iris</a>
+    </div>
     <a href="/my-academy" class="curriculum-link">← Curriculum</a>
   </div>
 </div>

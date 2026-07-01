@@ -36,3 +36,34 @@ html.ek-authed .ek-auth-cta { display: inline-flex; }
 .ek-skel-block { height: 64px; margin: 14px 0; border-radius: 6px; }
 .ek-skel-wrap { padding: 30px 28px; }
 @media (prefers-reduced-motion: reduce) { .ek-skel { animation: none; } }
+
+/* ── Pillar switcher ─────────────────────────────────────────────────────────
+   Persistent Marcus / Theo / Iris switch shown in each pillar's header. The
+   active pill (the current space) is highlighted with the page's accent —
+   default gold, overridden to green on Iris via --ek-pillar-active. Segments
+   collapse to icon-only width on very small screens. */
+.ek-pillars {
+  display: inline-flex; align-items: center; gap: 2px;
+  padding: 3px; border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 999px; background: rgba(255,255,255,0.02);
+  flex-shrink: 0;
+}
+/* Fixed rgba (not var(--dim)/var(--border)) so the pills stay legible on every
+   page — those tokens differ wildly per space (e.g. the office sets --dim to a
+   near-black #2a2a2a). */
+.ek-pillar {
+  font-family: var(--mono, 'DM Mono', monospace);
+  font-size: 0.6rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: rgba(255,255,255,0.42); text-decoration: none;
+  padding: 5px 13px; border-radius: 999px; white-space: nowrap;
+  transition: color .2s ease, background .2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.ek-pillar:hover { color: rgba(255,255,255,0.85); }
+.ek-pillar.active {
+  color: #0a0a0a; font-weight: 500;
+  background: var(--ek-pillar-active, var(--gold, #b8a06a));
+}
+@media (max-width: 520px) {
+  .ek-pillar { padding: 5px 10px; letter-spacing: 0.08em; }
+}

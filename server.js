@@ -276,6 +276,16 @@ const tokenLimiter = rateLimit({
   message: { error: 'Too many token requests. Please wait.' },
 });
 
+// ── Last-space routing ────────────────────────────────────────────────────────
+// Returning users land in the pillar they last used. The client writes an
+// `ek_last_space` cookie on every pillar visit (marcus|theo|iris); we map it to a
+// route here, defaulting to the office if it's missing or unrecognised.
+const SPACE_ROUTES = { marcus: '/workspace.html', theo: '/my-academy', iris: '/chamber' };
+function lastSpacePath(req) {
+  const s = req.cookies?.ek_last_space;
+  return (s && SPACE_ROUTES[s]) || '/workspace.html';
+}
+
 // ── Onboarding guard — already-onboarded users go straight to workspace ───────
 async function requireIncompleteOnboarding(req, res, next) {
   if (!req.user) return next();
@@ -285,7 +295,7 @@ async function requireIncompleteOnboarding(req, res, next) {
       .select('onboarding_complete')
       .eq('id', req.user.id)
       .single();
-    if (data?.onboarding_complete) return res.redirect('/workspace.html');
+    if (data?.onboarding_complete) return res.redirect(lastSpacePath(req));
   } catch (_) { /* profile missing — let them through to onboarding */ }
   next();
 }
@@ -433,8 +443,8 @@ app.get('/auth.html', async (req, res, next) => {
     if (data?.academy_track && !data?.onboarding_complete) {
       return res.redirect('/my-academy');
     }
-  } catch (_) { /* fallthrough to workspace */ }
-  return res.redirect('/workspace.html');
+  } catch (_) { /* fallthrough to last space */ }
+  return res.redirect(lastSpacePath(req));
 }, serveInjectedHtml(path.join(__dirname, 'auth.html')));
 
 app.get('/reset-password.html', serveInjectedHtml(path.join(__dirname, 'reset-password.html')));
