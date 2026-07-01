@@ -2703,13 +2703,13 @@ function showPanel(name) {
       tabs.innerHTML = `
         <button class="panel-tab active">Active Rules</button>
         <button class="panel-tab">Archived</button>`;
-      body.innerHTML = '<div style="padding:32px;color:var(--muted);font-family:var(--mono);font-size:0.7rem;">Loading personal laws…</div>';
+      body.innerHTML = '<div class="ek-skel-wrap"><div class="ek-skel ek-skel-line md"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-line sm"></div></div>';
       loadRulesPanel(body, false);
       tabs.querySelectorAll('.panel-tab').forEach((tab, i) => {
         tab.addEventListener('click', () => {
           tabs.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
           tab.classList.add('active');
-          body.innerHTML = '<div style="padding:32px;color:var(--muted);font-family:var(--mono);font-size:0.7rem;">Loading…</div>';
+          body.innerHTML = '<div class="ek-skel-wrap"><div class="ek-skel ek-skel-line md"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-line sm"></div></div>';
           loadRulesPanel(body, i === 1);
         });
       });
@@ -2719,7 +2719,7 @@ function showPanel(name) {
       tabs.innerHTML = `
         <button class="panel-tab active">Overview</button>
         <button class="panel-tab">Log</button>`;
-      body.innerHTML = '<div style="padding:32px;color:var(--muted);font-family:var(--mono);font-size:0.7rem;">Loading passport…</div>';
+      body.innerHTML = '<div class="ek-skel-wrap"><div class="ek-skel ek-skel-line md"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-line sm"></div></div>';
       loadPassportPanel(body);
       return;
     case 'analytics':
@@ -2736,7 +2736,7 @@ function showPanel(name) {
         <button class="panel-tab active">Account</button>
         <button class="panel-tab">Lock Level</button>
         <button class="panel-tab">Connect</button>`;
-      body.innerHTML = '<div style="padding:32px;color:var(--muted);font-family:var(--mono);font-size:0.7rem;">Loading account data…</div>';
+      body.innerHTML = '<div class="ek-skel-wrap"><div class="ek-skel ek-skel-line md"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-line sm"></div></div>';
       loadGuardianPanel(body);
       break;
     case 'vault':
@@ -2744,7 +2744,7 @@ function showPanel(name) {
       tabs.innerHTML = `
         <button class="panel-tab active">Intercepted</button>
         <button class="panel-tab">Overview</button>`;
-      body.innerHTML = '<div style="padding:32px;color:var(--muted);font-family:var(--mono);font-size:0.7rem;">Loading vault…</div>';
+      body.innerHTML = '<div class="ek-skel-wrap"><div class="ek-skel ek-skel-line md"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-line sm"></div></div>';
       loadVaultPanel(body);
       break;
     case 'profile':
@@ -2758,13 +2758,13 @@ function showPanel(name) {
     case 'messages':
       title.textContent = 'Messages';
       tabs.innerHTML = `<button class="panel-tab active">Inbox</button>`;
-      body.innerHTML = '<div style="padding:32px;color:var(--muted);font-family:var(--mono);font-size:0.7rem;">Loading messages…</div>';
+      body.innerHTML = '<div class="ek-skel-wrap"><div class="ek-skel ek-skel-line md"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-line sm"></div></div>';
       loadMessagesPanel(body);
       return;
     case 'reports':
       title.textContent = 'Monthly Reports';
       tabs.innerHTML = `<button class="panel-tab active">Reports</button>`;
-      body.innerHTML = '<div style="padding:32px;color:var(--muted);font-family:var(--mono);font-size:0.7rem;">Loading reports…</div>';
+      body.innerHTML = '<div class="ek-skel-wrap"><div class="ek-skel ek-skel-line md"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-line sm"></div></div>';
       loadReportsPanel(body);
       return;
   }

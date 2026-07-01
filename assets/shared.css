@@ -19,3 +19,20 @@
 html.ek-authed [data-guest-only] { display: none !important; }
 .ek-auth-cta { display: none; }
 html.ek-authed .ek-auth-cta { display: inline-flex; }
+
+/* ── Skeleton loading ────────────────────────────────────────────────────────
+   Reusable shimmer placeholders. Use .ek-skel on a block; .ek-skel-line for a
+   text-row, with .sm/.md/.lg widths. Respects prefers-reduced-motion. */
+@keyframes ek-shimmer { 0% { background-position: -420px 0; } 100% { background-position: 420px 0; } }
+.ek-skel {
+  background: linear-gradient(90deg, rgba(255,255,255,0.035) 25%, rgba(255,255,255,0.08) 37%, rgba(255,255,255,0.035) 63%);
+  background-size: 840px 100%;
+  animation: ek-shimmer 1.4s ease-in-out infinite;
+  border-radius: 4px;
+}
+.ek-skel-line { height: 12px; margin: 14px 0; width: 100%; }
+.ek-skel-line.sm { width: 38%; }
+.ek-skel-line.md { width: 68%; }
+.ek-skel-block { height: 64px; margin: 14px 0; border-radius: 6px; }
+.ek-skel-wrap { padding: 30px 28px; }
+@media (prefers-reduced-motion: reduce) { .ek-skel { animation: none; } }
