@@ -961,14 +961,86 @@ async function callCompanion(userMsg) {
   return res.json();
 }
 
+// Progressive extraction of the "reply" field from a streaming JSON object.
+function _extractReply(raw) {
+  const m = raw.match(/"reply"\s*:\s*"((?:[^"\\]|\\.)*)/);
+  if (!m) return null;
+  const cap = m[1];
+  try { return JSON.parse('"' + cap + '"'); }
+  catch (_) { try { return JSON.parse('"' + cap.replace(/\\+$/, '') + '"'); } catch (_) { return cap; } }
+}
+
+// Streams Theo's reply into a fresh companion bubble with a smooth typewriter,
+// then finalizes as markdown (identical to addMsg, so a reload looks the same).
+// Returns the RAW reply (mastery tag intact). Throws on failure so the caller
+// can fall back to the non-streaming path. Sets window.__theoStreamStarted so the
+// fallback knows whether a bubble already exists.
+async function streamTheo(userMsg) {
+  window.__theoStreamStarted = false;
+  let messages = history.length > 28 ? history.slice(-28) : [...history];
+  if (userMsg) messages.push({ role: 'user', content: userMsg });
+  else if (messages.length === 0) {
+    const firstMeeting = !localStorage.getItem('ek_academy_met_theo');
+    if (firstMeeting) localStorage.setItem('ek_academy_met_theo', Date.now());
+    messages.push({ role: 'user', content: firstMeeting
+      ? `[First meeting with this student — introduce yourself by name, then begin the module: ${mod.title}]`
+      : `[Module opened: ${mod.title}]` });
+  }
+  const res = await fetch('/api/chat', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mentor: 'study_companion', messages, module_key: moduleKey, session_context: buildTheoMemory(), is_opener: !userMsg, stream: true }),
+  });
+  if (!res.ok) {
+    if (res.status === 401) { const back = '/study.html?module=' + encodeURIComponent(moduleKey); window.location.href = '/auth.html?next=' + encodeURIComponent(back); const e = new Error('Session expired'); e.handled = true; throw e; }
+    const err = await res.json().catch(() => ({})); const e = new Error(err.error || 'Request failed'); e.status = res.status; throw e;
+  }
+  if (!res.body || !res.body.getReader) { const d = await res.json(); return d.reply || d.content || ''; }
+
+  let bodyEl = null, target = '', shown = 0, raf = null, finalHTML = null;
+  const pump = () => {
+    if (!bodyEl) { raf = null; return; }
+    if (shown < target.length) {
+      const rem = target.length - shown; shown += Math.max(1, Math.ceil(rem / 9));
+      bodyEl.textContent = target.slice(0, shown); thread.scrollTop = thread.scrollHeight;
+      raf = requestAnimationFrame(pump);
+    } else { raf = null; if (finalHTML != null) { bodyEl.innerHTML = finalHTML; finalHTML = null; } }
+  };
+  const onText = (r) => { if (!window.__theoStreamStarted) { window.__theoStreamStarted = true; removeThinking(); bodyEl = addMsg('companion', ''); } target = r; if (raf == null) raf = requestAnimationFrame(pump); };
+
+  const reader = res.body.getReader(); const dec = new TextDecoder(); let raw = '', buf = '';
+  for (;;) {
+    const { done, value } = await reader.read(); if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split('\n'); buf = lines.pop();
+    for (const line of lines) {
+      const t = line.trim(); if (!t.startsWith('data:')) continue;
+      const p = t.slice(5).trim(); if (p === '[DONE]') continue;
+      let j; try { j = JSON.parse(p); } catch (_) { continue; }
+      if (j.error) throw new Error(j.error);
+      if (j.delta) { raw += j.delta; const r = _extractReply(raw); if (r !== null) onText(r); else if (!raw.trimStart().startsWith('{')) onText(raw); }
+    }
+  }
+  let fin = _extractReply(raw); if (fin === null) { try { fin = JSON.parse(raw).reply || raw; } catch (_) { fin = raw; } }
+  const clean = stripMasteryTag(fin).text;
+  if (!window.__theoStreamStarted) { window.__theoStreamStarted = true; removeThinking(); bodyEl = addMsg('companion', ''); }
+  target = clean; finalHTML = renderMarkdown(clean);
+  if (raf == null) { if (shown >= clean.length) bodyEl.innerHTML = finalHTML; else raf = requestAnimationFrame(pump); }
+  return fin;
+}
+
 async function openingMessage() {
   busy = true; sendBtn.disabled = true;
   showThinking();
   try {
-    const data  = await callCompanion(null);
-    const { text } = stripMasteryTag(data.reply || data.content || ''); // never master on the opener
-    removeThinking();
-    addMsg('companion', text);
+    let rawReply;
+    try { rawReply = await streamTheo(null); }
+    catch (streamErr) {
+      if (streamErr && streamErr.handled) return;
+      const data = await callCompanion(null);
+      rawReply = data.reply || data.content || '';
+      if (!window.__theoStreamStarted) { removeThinking(); addMsg('companion', stripMasteryTag(rawReply).text); }
+    }
+    const { text } = stripMasteryTag(rawReply); // never master on the opener
     history.push({ role: 'assistant', content: text });
     saveChat();
   } catch (err) {
@@ -996,10 +1068,15 @@ async function sendMessage() {
   showThinking();
 
   try {
-    const data  = await callCompanion(text);
-    const { text: reply, mastered } = stripMasteryTag(data.reply || data.content || '');
-    removeThinking();
-    addMsg('companion', reply);
+    let rawReply;
+    try { rawReply = await streamTheo(text); }
+    catch (streamErr) {
+      if (streamErr && streamErr.handled) return;
+      const data = await callCompanion(text);
+      rawReply = data.reply || data.content || '';
+      if (!window.__theoStreamStarted) { removeThinking(); addMsg('companion', stripMasteryTag(rawReply).text); }
+    }
+    const { text: reply, mastered } = stripMasteryTag(rawReply);
     history.push({ role: 'assistant', content: reply });
     saveChat();
     if (mastered) setTimeout(onTheoMastery, 700);

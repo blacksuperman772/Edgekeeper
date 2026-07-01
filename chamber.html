@@ -262,6 +262,42 @@
       el.textContent = text;
       thread.appendChild(el);
       el.scrollIntoView({ behavior:'smooth', block:'end' });
+      return el;
+    }
+
+    // Progressive extraction of the "reply" field from a streaming JSON object.
+    function _extractReply(raw) {
+      const m = raw.match(/"reply"\s*:\s*"((?:[^"\\]|\\.)*)/);
+      if (!m) return null;
+      const cap = m[1];
+      try { return JSON.parse('"' + cap + '"'); }
+      catch (_) { try { return JSON.parse('"' + cap.replace(/\\+$/, '') + '"'); } catch (_) { return cap; } }
+    }
+
+    // Streams Iris's reply into an .iris-msg bubble with a smooth typewriter.
+    // Throws (with .handled / .status) so submit() can fall back to a plain request.
+    async function streamIris() {
+      const res = await fetch('/api/chat', {
+        method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
+        body: JSON.stringify({ mentor:'ashley', messages: history.slice(-16), stream: true }),
+      });
+      if (res.status === 401) { window.location.href = '/auth.html?next=' + encodeURIComponent('/chamber'); const e = new Error('401'); e.handled = true; throw e; }
+      if (!res.ok) { const e = new Error('http'); e.status = res.status; throw e; }
+      if (!res.body || !res.body.getReader) { const d = await res.json(); document.getElementById('typing')?.remove(); const rep = (d.reply||d.content||'').trim(); add('assistant', rep || 'Stand down. We talk when you are steadier.'); return rep; }
+      let el = null, target = '', shown = 0, raf = null;
+      const pump = () => {
+        if (!el) { raf = null; return; }
+        if (shown < target.length) { const rem = target.length - shown; shown += Math.max(1, Math.ceil(rem/9)); el.textContent = target.slice(0, shown); el.scrollIntoView({ block:'end' }); raf = requestAnimationFrame(pump); }
+        else raf = null;
+      };
+      const onText = (r) => { if (!el) { document.getElementById('typing')?.remove(); el = add('assistant', ''); } target = r; if (raf == null) raf = requestAnimationFrame(pump); };
+      const reader = res.body.getReader(); const dec = new TextDecoder(); let raw = '', buf = '';
+      for (;;) { const { done, value } = await reader.read(); if (done) break; buf += dec.decode(value, { stream:true }); const lines = buf.split('\n'); buf = lines.pop(); for (const line of lines) { const t = line.trim(); if (!t.startsWith('data:')) continue; const p = t.slice(5).trim(); if (p === '[DONE]') continue; let j; try { j = JSON.parse(p); } catch (_) { continue; } if (j.error) throw new Error(j.error); if (j.delta) { raw += j.delta; const r = _extractReply(raw); if (r !== null) onText(r); else if (!raw.trimStart().startsWith('{')) onText(raw); } } }
+      let fin = _extractReply(raw); if (fin === null) { try { fin = JSON.parse(raw).reply || raw; } catch (_) { fin = raw; } }
+      fin = (fin || '').trim();
+      if (!el) { document.getElementById('typing')?.remove(); el = add('assistant', fin || 'Stand down. We talk when you are steadier.'); }
+      else { target = fin; if (raf == null) { if (shown >= fin.length) el.textContent = fin; else raf = requestAnimationFrame(pump); } }
+      return fin;
     }
 
     async function submit() {
@@ -276,20 +312,22 @@
       typing.className = 'typing'; typing.id = 'typing'; typing.textContent = 'Iris is considering';
       thread.appendChild(typing);
       try {
-        const r = await fetch('/api/chat', {
-          method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
-          body: JSON.stringify({ mentor:'ashley', messages: history.slice(-16) }),
-        });
-        document.getElementById('typing')?.remove();
-        if (r.status === 401) { window.location.href = '/auth.html?next=' + encodeURIComponent('/chamber'); return; }
-        if (!r.ok) { add('assistant', r.status === 429 ? 'Not now. Give it a moment.' : 'Hold on. Try again.'); busy=false; send.disabled=false; return; }
-        const d = await r.json();
-        const reply = (d.reply || d.content || '').trim();
-        add('assistant', reply || 'Stand down. We talk when you are steadier.');
+        const reply = await streamIris();
         history.push({ role:'assistant', content: reply });
-      } catch (_) {
+      } catch (streamErr) {
+        if (streamErr && streamErr.handled) return; // redirecting to auth
         document.getElementById('typing')?.remove();
-        add('assistant', 'Connection dropped. Try again.');
+        try {
+          const r = await fetch('/api/chat', {
+            method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
+            body: JSON.stringify({ mentor:'ashley', messages: history.slice(-16) }),
+          });
+          if (r.status === 401) { window.location.href = '/auth.html?next=' + encodeURIComponent('/chamber'); return; }
+          if (!r.ok) { add('assistant', r.status === 429 ? 'Not now. Give it a moment.' : 'Hold on. Try again.'); }
+          else { const d = await r.json(); const reply = (d.reply || d.content || '').trim(); add('assistant', reply || 'Stand down. We talk when you are steadier.'); history.push({ role:'assistant', content: reply }); }
+        } catch (_) {
+          add('assistant', 'Connection dropped. Try again.');
+        }
       }
       busy = false; send.disabled = false;
       input.focus();
