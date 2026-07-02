@@ -287,10 +287,17 @@ async function bumpSharedCounter(bucket, key, windowSeconds, amount = 1) {
     const { data, error } = await supabaseAdmin.rpc('bump_counter', {
       p_bucket: bucket, p_key: String(key), p_window_seconds: windowSeconds, p_amount: amount,
     });
-    if (error) { console.error('[shared-limit] rpc error:', error.message); return null; }
+    if (error) {
+      console.error('[shared-limit] rpc error:', error.message);
+      // Surface the failure where it can be seen (server_errors), but never for
+      // the errlog bucket itself — that would recurse.
+      if (bucket !== 'errlog') logServerError('shared-limit-rpc', new Error(error.message), { bucket, code: error.code });
+      return null;
+    }
     return typeof data === 'number' ? data : Number(data);
   } catch (e) {
     console.error('[shared-limit] rpc threw:', e.message);
+    if (bucket !== 'errlog') logServerError('shared-limit-rpc', e, { bucket });
     return null;
   }
 }
