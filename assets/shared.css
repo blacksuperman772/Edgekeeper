@@ -67,3 +67,13 @@ html.ek-authed .ek-auth-cta { display: inline-flex; }
 @media (max-width: 520px) {
   .ek-pillar { padding: 5px 10px; letter-spacing: 0.08em; }
 }
+
+/* ── Reveal safety ───────────────────────────────────────────────────────────
+   Many pages hide content with `.reveal { opacity: 0 }` and only show it once a
+   scroll IntersectionObserver adds `.in`. If motion is reduced, show everything
+   immediately — content must never depend on an animation to become visible.
+   (A companion script, reveal-safety.js, covers the case where the observer
+   simply doesn't fire in a mobile webview.) */
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1 !important; transform: none !important; }
+}
