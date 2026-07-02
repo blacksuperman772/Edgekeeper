@@ -75,37 +75,37 @@ function downloadImage(url, dest) {
 
 const ASSETS = [
   {
-    filename: 'hero-landing.png',
+    filename: 'hero-landing.webp',
     prompt: 'A cinematic wide photograph of an empty, dimly lit private trading room at 4am. Mahogany desk, multiple dark monitors with subtle amber glows showing price charts, no people. Floor-to-ceiling windows revealing a dark city skyline with faint lights. Deep blacks, warm amber accent lighting from desk lamp. Institutional, serious, private. Shot on medium format film. Extremely high detail. Atmosphere of focused discipline and solitude. No text.',
   },
   {
-    filename: 'mike-portrait.png',
+    filename: 'mike-portrait.webp',
     prompt: 'A professional portrait photograph of a 52-year-old man who is a former professional trader turned performance coach. Strong, composed face. Salt and pepper short hair, clean shaven. Wearing a dark navy dress shirt, no tie. Sitting at a desk in a dim private office, bookshelves behind. Direct eye contact with camera. Expression: calm, observant, slightly guarded. Not smiling but not cold. Institutional. Shot on 85mm portrait lens, shallow depth of field. Cinematic lighting, dramatic shadows. No text, no graphics.',
   },
   {
-    filename: 'ashley-portrait.png',
+    filename: 'ashley-portrait.webp',
     prompt: 'A professional portrait photograph of a 42-year-old woman who is a performance psychologist. Intelligent, composed face. Dark hair pulled back simply. Wearing a dark charcoal blazer over a simple black top. Seated in a clean, minimalist office. Expression: warm but professional, attentive, thoughtful. Direct eye contact. Shot on 85mm portrait lens, shallow depth of field. Soft cinematic lighting. Atmosphere of trust and expertise. No text, no graphics.',
   },
   {
-    filename: 'workspace-ambient.png',
+    filename: 'workspace-ambient.webp',
     prompt: 'A close-up atmospheric photograph of a single trading workstation at night. Dark mechanical keyboard, a notebook open with handwritten notes, a pen, a coffee cup with faint steam. Multiple monitors visible in background showing candlestick charts in dark mode. Warm amber desk lamp casting a pool of light. Extreme shallow depth of field. Shot on film. Mood: disciplined solitude, focused work, late night. No people visible. No text.',
   },
   {
-    filename: 'hero-mobile.png',
+    filename: 'hero-mobile.webp',
     prompt: 'A cinematic portrait-orientation photograph of a person\'s hands on a dark desk at night, one hand holding a pen over an open trading journal. Dark background. Amber light from an unseen lamp falls across the hands and journal. The journal shows handwritten notes, no readable text. Background: dark monitors with subtle glow. Mood: quiet discipline, reflection, accountability. Extreme close up, shallow focus. Shot on film. Vertical composition. No text.',
   },
   {
-    filename: 'auth-bg.png',
+    filename: 'auth-bg.webp',
     size: '1024x1024',
     prompt: 'An extremely close-up macro photograph of a single dark trading monitor, screen glowing amber and gold, showing abstract candlestick price chart lines in dark mode. The surrounding room is in near-total darkness. The glow bleeds softly into the black background. Extreme shallow depth of field, edges blurred. Mood: private, focused, late night. Shot on film. No text, no numbers, no readable data. Square composition.',
   },
   {
-    filename: 'onboarding-ambient.png',
+    filename: 'onboarding-ambient.webp',
     size: '1536x1024',
     prompt: 'An overhead cinematic photograph of a sparse, dark desk at night. An open leather-bound notebook with blank pages, a fountain pen resting on it, a faint pool of amber light from an unseen lamp. Surrounding objects barely visible in shadow: a coffee mug, a closed book, a small plant. Extreme shallow depth of field, soft bokeh. Mood: introspective, beginning of something, a session about to start. Shot on medium format film. No text, no charts, no screens. Dark, intimate, still.',
   },
   {
-    filename: 'mentor-space.png',
+    filename: 'mentor-space.webp',
     size: '1024x1024',
     prompt: 'A very close-up, abstract cinematic photograph of two empty leather chairs facing each other in a dark, minimalist private room. A faint amber glow from an unseen source falls between them. The mood is anticipatory, like a coaching session about to begin. No people. Extreme shallow focus, deep blacks, warm golden accent. Shot on film. Square composition. No text.',
   },
@@ -139,9 +139,9 @@ async function generateWithRetry(prompt, filename, size, attempts = 3) {
   }
   console.log('\n✓ All assets generated in /assets/');
   console.log('\nNext: reference these in edgekeeper.html:');
-  console.log('  Hero:      /assets/hero-landing.png');
-  console.log('  Marcus:      /assets/mike-portrait.png');
-  console.log('  Iris:    /assets/ashley-portrait.png');
-  console.log('  Workspace: /assets/workspace-ambient.png');
-  console.log('  Mobile:    /assets/hero-mobile.png');
+  console.log('  Hero:      /assets/hero-landing.webp');
+  console.log('  Marcus:      /assets/mike-portrait.webp');
+  console.log('  Iris:    /assets/ashley-portrait.webp');
+  console.log('  Workspace: /assets/workspace-ambient.webp');
+  console.log('  Mobile:    /assets/hero-mobile.webp');
 })();

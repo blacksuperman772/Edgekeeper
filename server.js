@@ -630,6 +630,13 @@ app.use(express.static(path.join(__dirname), {
     if (filePath.endsWith('.html')) {
       // Should not be reached — explicit routes handle HTML — just in case
       res.setHeader('Cache-Control', 'no-cache');
+    } else if (/\.(png|jpe?g|webp|svg|gif|ico|mp4|woff2?)$/i.test(filePath)) {
+      // Heavy media never changes without a filename change — cache hard.
+      // Without this every visit re-downloaded ~MBs of ambient art on mobile.
+      res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
+    } else if (/\.(css|js)$/i.test(filePath)) {
+      // Shared css/js changes with deploys — short cache + revalidate.
+      res.setHeader('Cache-Control', 'public, max-age=3600, must-revalidate');
     }
   },
   // Don't serve .html through static; let explicit routes above handle them

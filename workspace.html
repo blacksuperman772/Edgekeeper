@@ -5,6 +5,7 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
   <link rel="alternate icon" href="/favicon.ico?v=2" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
   <title>EdgeKeeper — Workspace</title>
 
   <link rel="stylesheet" href="/assets/shared.css" />
@@ -2356,7 +2357,7 @@
 
     <!-- CHAT -->
     <div class="chat-col" id="chat-col">
-      <img src="/assets/mentor-space.png" alt="" aria-hidden="true" class="chat-ambient" />
+      <img src="/assets/mentor-space.webp" alt="" aria-hidden="true" class="chat-ambient" />
       <div class="chat-messages" id="chat-messages"></div>
       <div id="guardian-banner"></div>
       <div class="chat-input-area">
@@ -2721,7 +2722,7 @@ async function renderMentorIntro(text) {
   removeTyping();
 
   const key      = mentor?.key || 'mike';
-  const portrait = key === 'ashley' ? '/assets/iris-portrait.png' : '/assets/mike-portrait.png';
+  const portrait = key === 'ashley' ? '/assets/iris-portrait.webp' : '/assets/mike-portrait.webp';
   const initial  = mentor?.name ? mentor.name.charAt(0) : 'M';
 
   const msgs = document.getElementById('chat-messages');
