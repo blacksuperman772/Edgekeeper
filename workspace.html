@@ -1494,6 +1494,19 @@
       line-height: 1.5;
     }
 
+    /* ── WHERE YOU ARE — merged north-star + identity + present state ──── */
+    .sb-state { padding: 15px 16px 16px; border-bottom: 1px solid var(--border); }
+    .sb-state-tag {
+      font-family: var(--mono); font-size: 0.5rem; letter-spacing: 0.24em;
+      text-transform: uppercase; color: var(--dim); margin-bottom: 11px;
+    }
+    .sb-state .north-star-text { margin-bottom: 9px; }
+    .sb-state .identity-text { font-size: 0.72rem; }
+    .sb-state .version-row {
+      display: flex; align-items: center; gap: 7px; margin-top: 12px;
+      padding-top: 11px; border-top: 1px solid var(--border);
+    }
+
     /* ── VERSION BADGE ───────────────────────────────────────────── */
     .version-section {
       padding: 9px 14px;
@@ -2184,27 +2197,20 @@
       </div>
     </div>
 
-    <!-- NORTH STAR -->
-    <div class="north-star-section">
-      <div class="north-star-tag">North Star</div>
+    <!-- WHERE YOU ARE — north star + living identity + present state, one calm block -->
+    <div class="sb-state">
+      <div class="sb-state-tag">Where you are</div>
       <div class="north-star-text" id="north-star-text">Your north star will emerge.</div>
-    </div>
-
-    <!-- LIVING IDENTITY -->
-    <div class="identity-section">
-      <div class="identity-tag">Living Identity</div>
       <div class="identity-text" id="identity-text">Still forming.</div>
-    </div>
-
-    <!-- VERSION INDICATOR -->
-    <div class="version-section">
-      <div class="version-dot" id="version-dot"></div>
-      <span class="version-label">Present</span>
-      <span class="version-value" id="version-value">—</span>
+      <div class="version-row">
+        <div class="version-dot" id="version-dot"></div>
+        <span class="version-label">Present</span>
+        <span class="version-value" id="version-value">—</span>
+      </div>
     </div>
 
     <nav class="sidebar-nav">
-      <div class="nav-group-label">Session</div>
+      <div class="nav-group-label">Workspace</div>
       <button class="nav-item active" onclick="showPanel(null)">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h12M2 8h8M2 13h10"/></svg>
         Conversation
@@ -2219,8 +2225,6 @@
         Rules
         <span class="nav-badge">5</span>
       </button>
-
-      <div class="nav-group-label" id="nav-label-identity" style="margin-top:8px">Identity</div>
       <button class="nav-item" data-min-plan="pro" onclick="showPanel('passport')">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1"/><circle cx="8" cy="7" r="2"/><path d="M4 13c0-2 8-2 8 0"/></svg>
         Decision Passport
@@ -2229,20 +2233,11 @@
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12l4-4 3 3 5-7"/></svg>
         Behavior Analytics
       </button>
-
-      <div class="nav-group-label" style="margin-top:8px">Guardian Layer</div>
-      <button class="nav-item" data-min-plan="starter" onclick="window.location='/chamber'">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2l5 2v5c0 3-2.5 5-5 6-2.5-1-5-3-5-6V4z"/></svg>
-        Iris's Chamber
-        <span class="nav-badge" id="guardian-level-badge">Lvl 1</span>
-      </button>
       <button class="nav-item" data-min-plan="pro" onclick="showPanel('vault')">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="12" height="10" rx="1"/><path d="M5 4V3a3 3 0 016 0v1"/><circle cx="8" cy="9" r="1.5"/></svg>
         The Vault
         <span class="nav-badge" id="vault-badge">0</span>
       </button>
-
-      <div class="nav-group-label" style="margin-top:8px">Mentor's Profile</div>
       <button class="nav-item" onclick="showPanel('profile')">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="2.5"/><path d="M3 14c0-3 10-3 10 0"/><path d="M13 9l1.5 1.5M14.5 9L13 10.5" stroke-linecap="round"/></svg>
         Mentor's Read
@@ -2252,18 +2247,12 @@
         Messages
         <span class="nav-badge" id="messages-unread-badge" style="display:none"></span>
       </button>
-
-      <div class="nav-group-label" style="margin-top:8px">Voice</div>
       <button class="nav-item voice-nav-item" id="voice-nav-btn" onclick="handleVoiceNavClick()">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2a2 2 0 0 1 2 2v4a2 2 0 0 1-4 0V4a2 2 0 0 1 2-2z"/><path d="M4 8a4 4 0 0 0 8 0"/><line x1="8" y1="12" x2="8" y2="14"/></svg>
         Voice Session
       </button>
 
-      <div class="nav-group-label" style="margin-top:8px">Institution</div>
-      <button class="nav-item" onclick="window.location='/my-academy?resume=1'">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4.5L8 2l6 2.5L8 7z"/><path d="M2 4.5v5L8 12l6-2.5v-5"/></svg>
-        Theo's Academy
-      </button>
+      <div class="nav-group-label" style="margin-top:12px">Account</div>
       <button class="nav-item" onclick="window.location='/profile.html'">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="2.5"/><path d="M3 14c0-3 10-3 10 0"/></svg>
         Trader Profile
@@ -5259,6 +5248,10 @@ function showMentorPromise() {
 
 async function dismissPromise() {
   const overlay = document.getElementById('promise-overlay');
+  // Guard: only act on an actually-visible promise. Prevents a stray call (or a
+  // returning user whose hidden button is triggered) from appending a second
+  // "Quick actions" block on top of the one the normal opener already rendered.
+  if (!overlay || !overlay.classList.contains('active')) return;
   overlay.classList.add('fade-out');
   await sleep(1400);
   overlay.classList.remove('active', 'fade-out');
