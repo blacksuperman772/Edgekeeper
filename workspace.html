@@ -91,12 +91,41 @@
       grid-template-rows: 56px 1fr;
     }
     body.ek-office-ready #office-skeleton { display: none; }
-    #office-skeleton .os-top  { grid-column: 1 / -1; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 22px; padding: 0 40px; }
-    #office-skeleton .os-side { border-right: 1px solid var(--border); padding: 26px 22px; }
-    #office-skeleton .os-body { padding: 52px 44px; max-width: 640px; }
-    @media (max-width: 860px) {
-      #office-skeleton { grid-template-columns: 1fr; }
+    #office-skeleton .ek-skel { opacity: 0.55; }
+    /* top bar: brand + pill switcher (left), status pill (right) */
+    #office-skeleton .os-top {
+      grid-column: 1 / -1; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; padding: 0 28px;
+    }
+    #office-skeleton .os-top-l { display: flex; align-items: center; gap: 16px; }
+    #office-skeleton .os-pills { display: flex; gap: 4px; }
+    #office-skeleton .os-pill { width: 44px; height: 22px; border-radius: 999px; }
+    /* sidebar: mentor identity → state → nav → footer pinned to the bottom */
+    #office-skeleton .os-side {
+      border-right: 1px solid var(--border); padding: 22px 20px;
+      display: flex; flex-direction: column; gap: 24px; overflow: hidden;
+    }
+    #office-skeleton .os-mentor { display: flex; align-items: center; gap: 12px; }
+    #office-skeleton .os-nav { display: flex; flex-direction: column; gap: 13px; }
+    #office-skeleton .os-foot { margin-top: auto; display: flex; flex-direction: column; gap: 12px; }
+    /* main: thread with intro card + chips, input pinned to the bottom */
+    #office-skeleton .os-body { display: flex; flex-direction: column; padding: 30px 44px; overflow: hidden; }
+    #office-skeleton .os-thread { flex: 1; max-width: 620px; width: 100%; margin: 0 auto; }
+    #office-skeleton .os-card { border: 1px solid var(--border); border-radius: 4px; padding: 24px; margin: 18px 0 26px; }
+    #office-skeleton .os-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    #office-skeleton .os-chip { width: 78px; height: 26px; border-radius: 3px; }
+    #office-skeleton .os-input { max-width: 620px; width: 100%; margin: 0 auto; border: 1px solid var(--border); border-radius: 4px; height: 74px; background: none; opacity: 0.35; }
+    #office-skeleton .os-mnav { display: none; }
+    @media (max-width: 768px) {
+      #office-skeleton { grid-template-columns: 1fr; grid-template-rows: 56px 1fr 56px; }
       #office-skeleton .os-side { display: none; }
+      #office-skeleton .os-top { padding: 0 14px; }
+      #office-skeleton .os-body { padding: 20px 16px; }
+      #office-skeleton .os-mnav {
+        display: flex; grid-row: 3; border-top: 1px solid var(--border);
+        align-items: center; justify-content: space-around; padding: 0 6px;
+      }
+      #office-skeleton .os-mnav .ek-skel { width: 30px; height: 30px; border-radius: 7px; }
     }
 
     /* ── TOPBAR ─────────────────────────────────────────────────── */
@@ -2042,29 +2071,77 @@
 
 <div class="workspace">
 
-  <!-- OFFICE LOADING SKELETON (removed once the office finishes hydrating) -->
+  <!-- OFFICE LOADING SKELETON — mirrors the real office layout (topbar +
+       switcher, sidebar identity/state/nav/footer, thread intro card + chips +
+       input). Removed once the office finishes hydrating (body.ek-office-ready). -->
   <div id="office-skeleton" aria-hidden="true">
+    <!-- top bar -->
     <div class="os-top">
-      <div class="ek-skel" style="width:120px;height:13px;border-radius:3px;"></div>
-      <div class="ek-skel" style="width:200px;height:9px;border-radius:3px;"></div>
+      <div class="os-top-l">
+        <div class="ek-skel" style="width:104px;height:13px;border-radius:3px;"></div>
+        <div class="os-pills">
+          <div class="ek-skel os-pill"></div>
+          <div class="ek-skel os-pill"></div>
+          <div class="ek-skel os-pill"></div>
+        </div>
+      </div>
+      <div class="ek-skel" style="width:116px;height:22px;border-radius:999px;"></div>
     </div>
+
+    <!-- sidebar -->
     <div class="os-side">
-      <div class="ek-skel" style="width:40px;height:40px;border-radius:50%;margin-bottom:18px;"></div>
-      <div class="ek-skel ek-skel-line md"></div>
-      <div class="ek-skel ek-skel-line sm"></div>
-      <div style="height:30px;"></div>
-      <div class="ek-skel ek-skel-line" style="width:86%;"></div>
-      <div class="ek-skel ek-skel-line" style="width:86%;"></div>
-      <div class="ek-skel ek-skel-line" style="width:86%;"></div>
-      <div class="ek-skel ek-skel-line" style="width:86%;"></div>
-      <div class="ek-skel ek-skel-line" style="width:86%;"></div>
-      <div class="ek-skel ek-skel-line" style="width:86%;"></div>
+      <div class="os-mentor">
+        <div class="ek-skel" style="width:36px;height:36px;border-radius:50%;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;">
+          <div class="ek-skel ek-skel-line md" style="margin:0 0 8px;"></div>
+          <div class="ek-skel ek-skel-line sm" style="margin:0;"></div>
+        </div>
+      </div>
+      <div>
+        <div class="ek-skel ek-skel-line sm" style="height:8px;margin:0 0 12px;"></div>
+        <div class="ek-skel ek-skel-line" style="margin:0 0 7px;"></div>
+        <div class="ek-skel ek-skel-line" style="width:72%;margin:0;"></div>
+      </div>
+      <div class="os-nav">
+        <div class="ek-skel ek-skel-line" style="width:88%;margin:0;"></div>
+        <div class="ek-skel ek-skel-line" style="width:88%;margin:0;"></div>
+        <div class="ek-skel ek-skel-line" style="width:88%;margin:0;"></div>
+        <div class="ek-skel ek-skel-line" style="width:88%;margin:0;"></div>
+        <div class="ek-skel ek-skel-line" style="width:88%;margin:0;"></div>
+      </div>
+      <div class="os-foot">
+        <div class="ek-skel ek-skel-line sm" style="height:8px;margin:0;"></div>
+        <div class="ek-skel" style="height:4px;border-radius:2px;margin:0;"></div>
+        <div class="ek-skel ek-skel-line sm" style="margin:0;"></div>
+      </div>
     </div>
+
+    <!-- main thread -->
     <div class="os-body">
-      <div class="ek-skel ek-skel-line" style="width:34%;height:9px;"></div>
-      <div class="ek-skel ek-skel-block" style="width:62%;height:76px;"></div>
-      <div class="ek-skel ek-skel-block" style="width:40%;height:44px;margin-left:auto;"></div>
-      <div class="ek-skel ek-skel-block" style="width:54%;height:60px;"></div>
+      <div class="os-thread">
+        <div class="ek-skel" style="width:88px;height:8px;border-radius:3px;margin:0 auto 30px;"></div>
+        <div class="os-card">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+            <div class="ek-skel" style="width:50px;height:50px;border-radius:50%;flex-shrink:0;"></div>
+            <div class="ek-skel ek-skel-line sm" style="margin:0;"></div>
+          </div>
+          <div class="ek-skel ek-skel-line" style="margin:0 0 10px;"></div>
+          <div class="ek-skel ek-skel-line" style="margin:0 0 10px;"></div>
+          <div class="ek-skel ek-skel-line" style="width:64%;margin:0;"></div>
+        </div>
+        <div class="os-chips">
+          <div class="ek-skel os-chip"></div>
+          <div class="ek-skel os-chip"></div>
+          <div class="ek-skel os-chip"></div>
+          <div class="ek-skel os-chip"></div>
+        </div>
+      </div>
+      <div class="os-input"></div>
+    </div>
+
+    <!-- mobile bottom nav -->
+    <div class="os-mnav">
+      <div class="ek-skel"></div><div class="ek-skel"></div><div class="ek-skel"></div><div class="ek-skel"></div><div class="ek-skel"></div>
     </div>
   </div>
 
