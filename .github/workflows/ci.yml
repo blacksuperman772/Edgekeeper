@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  syntax:
+    name: Syntax gate (pages + server)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --omit=dev || npm install --omit=dev
+      - run: node scripts/check-syntax.js
+
+  # Browser smoke test needs live Supabase credentials. It runs only when the
+  # repo has the secrets configured (Settings → Secrets → Actions); otherwise
+  # the job is skipped and the syntax gate alone decides the build.
+  smoke:
+    name: Browser smoke test
+    runs-on: ubuntu-latest
+    if: ${{ vars.RUN_SMOKE == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci || npm install
+      - run: npm install puppeteer-core --no-save
+      - name: Install Chrome for Testing
+        run: npx @puppeteer/browsers install chrome@stable
+      - name: Start server
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PORT: 3000
+        run: |
+          node server.js &
+          sleep 5
+      - name: Run smoke test
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/smoke.js

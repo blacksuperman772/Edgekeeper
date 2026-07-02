@@ -6,7 +6,9 @@
     "dev": "node server.js",
     "start": "node server.js",
     "db:push": "node scripts/migrate.js",
-    "db:status": "node -e \"require('dotenv').config(); const https=require('https'); const ref=(process.env.SUPABASE_URL||'').replace('https://','').split('.')[0]; const body=JSON.stringify({query:'SELECT filename,applied_at FROM public._migrations ORDER BY id'}); const opts={hostname:'api.supabase.com',path:'/v1/projects/'+ref+'/database/query',method:'POST',headers:{'Authorization':'Bearer '+process.env.SUPABASE_MANAGEMENT_TOKEN,'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}}; const req=https.request(opts,res=>{let d='';res.on('data',c=>d+=c);res.on('end',()=>{try{JSON.parse(d).forEach(r=>console.log(r.applied_at.slice(0,10)+' '+r.filename))}catch(e){console.log(d)}})}); req.write(body); req.end();\""
+    "db:status": "node -e \"require('dotenv').config(); const https=require('https'); const ref=(process.env.SUPABASE_URL||'').replace('https://','').split('.')[0]; const body=JSON.stringify({query:'SELECT filename,applied_at FROM public._migrations ORDER BY id'}); const opts={hostname:'api.supabase.com',path:'/v1/projects/'+ref+'/database/query',method:'POST',headers:{'Authorization':'Bearer '+process.env.SUPABASE_MANAGEMENT_TOKEN,'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}}; const req=https.request(opts,res=>{let d='';res.on('data',c=>d+=c);res.on('end',()=>{try{JSON.parse(d).forEach(r=>console.log(r.applied_at.slice(0,10)+' '+r.filename))}catch(e){console.log(d)}})}); req.write(body); req.end();\"",
+    "test:syntax": "node scripts/check-syntax.js",
+    "smoke": "node scripts/smoke.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.1",

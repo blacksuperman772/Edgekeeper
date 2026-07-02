@@ -259,6 +259,88 @@ const apiLimiter = rateLimit({
   message: { error: 'Too many requests.' },
 });
 
+// ── Shared (cross-instance) rate limiting + AI budget + error capture ────────
+// express-rate-limit counts in instance memory; on Vercel each instance keeps
+// its own counters, so configured limits are effectively multiplied by the
+// instance count. For the expensive endpoints (OpenAI proxies, token mints)
+// these helpers add a second layer backed by Postgres (rate_counters table,
+// migration 026) that is authoritative across all instances. Fail-open: if the
+// counter RPC errors, availability wins and the in-memory limiter still applies.
+
+async function bumpSharedCounter(bucket, key, windowSeconds, amount = 1) {
+  try {
+    const { data, error } = await supabaseAdmin.rpc('bump_counter', {
+      p_bucket: bucket, p_key: String(key), p_window_seconds: windowSeconds, p_amount: amount,
+    });
+    if (error) { console.error('[shared-limit] rpc error:', error.message); return null; }
+    return typeof data === 'number' ? data : Number(data);
+  } catch (e) {
+    console.error('[shared-limit] rpc threw:', e.message);
+    return null;
+  }
+}
+
+function sharedLimit(bucket, windowSeconds, max, keyFn) {
+  return async (req, res, next) => {
+    const key = keyFn ? keyFn(req) : (req.user?.id || req.ip);
+    const count = await bumpSharedCounter(bucket, key, windowSeconds, 1);
+    if (count !== null && count > max) {
+      return res.status(429).json({ error: 'Too many requests. Please slow down.' });
+    }
+    next();
+  };
+}
+
+// Global daily AI token budget. Estimated tokens are counted into a shared
+// day-window counter; when the budget is exhausted the AI endpoints return 503
+// instead of silently burning money (a botnet on the anonymous intake endpoint
+// was the concrete risk). Default 5M tokens/day ≈ single-digit dollars on
+// gpt-4o-mini — raise via env as real usage grows.
+const AI_DAILY_TOKEN_BUDGET = parseInt(process.env.EK_AI_DAILY_TOKEN_BUDGET || '5000000', 10);
+
+async function aiBudgetExceeded() {
+  const used = await bumpSharedCounter('ai_day', 'global', 86400, 0);
+  return used !== null && used >= AI_DAILY_TOKEN_BUDGET;
+}
+
+function countAiUsage(tokens) {
+  if (!tokens || tokens <= 0) return;
+  bumpSharedCounter('ai_day', 'global', 86400, Math.round(tokens)).catch(() => {});
+}
+
+// Rough token estimate for streaming responses (no usage object): chars / 4.
+function estimateTokens(...texts) {
+  let chars = 0;
+  for (const t of texts) chars += (t || '').length;
+  return Math.ceil(chars / 4);
+}
+
+// ── Error capture ─────────────────────────────────────────────────────────────
+// Structured, queryable error log (server_errors table) so production failures
+// are visible in /api/admin/stats without an external APM account. Self-limits
+// to 200 rows/hour so an error storm can't flood the table.
+async function logServerError(source, err, meta) {
+  try {
+    const n = await bumpSharedCounter('errlog', 'hour', 3600, 1);
+    if (n !== null && n > 200) return;
+    await supabaseAdmin.from('server_errors').insert({
+      source: String(source).slice(0, 120),
+      message: String(err?.message || err).slice(0, 1000),
+      stack: (err?.stack || '').slice(0, 4000),
+      meta: meta || null,
+    });
+  } catch (_) { /* never let logging break the request path */ }
+}
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandledRejection]', reason);
+  logServerError('unhandledRejection', reason instanceof Error ? reason : new Error(String(reason)));
+});
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException]', err);
+  logServerError('uncaughtException', err);
+});
+
 const adminLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 20,
@@ -362,7 +444,7 @@ async function requireAdminPage(req, res, next) {
 // VULN-01 fix: cookies are set server-side so they can be HttpOnly.
 // The client POSTs the Supabase access token here after sign-in; the server
 // verifies it, then writes the HttpOnly cookie so JS can never read it.
-app.post('/api/auth/session', tokenLimiter, async (req, res) => {
+app.post('/api/auth/session', tokenLimiter, sharedLimit('auth_session', 60, 10), async (req, res) => {
   const { access_token, refresh_token } = req.body || {};
   if (!access_token || typeof access_token !== 'string' || access_token.length > 4096) {
     return res.status(400).json({ error: 'Invalid token' });
@@ -648,7 +730,7 @@ app.use(express.static(path.join(__dirname), {
 // ────────────────────────────────────────────────────────────────────────────
 
 // ── Chat proxy (requires auth) ────────────────────────────────────────────────
-app.post('/api/chat', requireAuthApi, chatLimiter, async (req, res) => {
+app.post('/api/chat', requireAuthApi, chatLimiter, sharedLimit('chat', 60, 30), async (req, res) => {
   const { messages, mentor = 'mike', module_key, session_context, is_opener = false, stream = false } = req.body;
 
   if (!Array.isArray(messages) || messages.length === 0) {
@@ -753,6 +835,12 @@ app.post('/api/chat', requireAuthApi, chatLimiter, async (req, res) => {
     return res.status(500).json({ error: 'Could not build session context' });
   }
 
+  // Global daily AI budget — protects the OpenAI bill, not the user experience.
+  if (await aiBudgetExceeded()) {
+    logServerError('ai-budget', new Error('daily AI token budget exhausted'), { endpoint: '/api/chat' });
+    return res.status(503).json({ error: 'The mentors are at capacity right now. Please try again shortly.' });
+  }
+
   // ── Streaming path (opt-in via { stream:true }) ──────────────────────────────
   // Re-emits OpenAI content deltas as SSE so the mentor's reply appears as it's
   // written instead of after the full generation. The raw content is still the
@@ -782,6 +870,7 @@ app.post('/api/chat', requireAuthApi, chatLimiter, async (req, res) => {
       const reader  = upstream.body.getReader();
       const decoder = new TextDecoder();
       let buf = '';
+      let streamedChars = 0;
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -795,10 +884,12 @@ app.post('/api/chat', requireAuthApi, chatLimiter, async (req, res) => {
           if (payload === '[DONE]') continue;
           try {
             const delta = JSON.parse(payload).choices?.[0]?.delta?.content;
-            if (delta) res.write(`data: ${JSON.stringify({ delta })}\n\n`);
+            if (delta) { streamedChars += delta.length; res.write(`data: ${JSON.stringify({ delta })}\n\n`); }
           } catch (_) {}
         }
       }
+      // Streaming responses carry no usage object — estimate prompt+completion.
+      countAiUsage(estimateTokens(systemPrompt, JSON.stringify(messages)) + Math.ceil(streamedChars / 4));
       res.write('data: [DONE]\n\n');
       return res.end();
     } catch (streamErr) {
@@ -832,6 +923,7 @@ app.post('/api/chat', requireAuthApi, chatLimiter, async (req, res) => {
     }
 
     const data    = await upstream.json();
+    countAiUsage(data.usage?.total_tokens);
     const content = (data.choices?.[0]?.message?.content || '').trim();
     res.json({ content });
 
@@ -1424,7 +1516,10 @@ Return JSON only — no markdown, no commentary:
 
 // ── Intake chat (no auth — user not registered yet during onboarding). The system
 // prompt is ALWAYS built server-side; the client only supplies bounded fields. ───
-app.post('/api/intake-chat', intakeLimiter, async (req, res) => {
+app.post('/api/intake-chat', intakeLimiter,
+  sharedLimit('intake', 60, 15),          // cross-instance per-IP per-minute
+  sharedLimit('intake_day', 86400, 150),  // per-IP daily ceiling — bots can't grind all day
+  async (req, res) => {
   const { task, messages, mentor, exchangeCount, level, theory, totalExchanges } = req.body || {};
 
   if (!Array.isArray(messages) || messages.length === 0) {
@@ -1458,6 +1553,12 @@ app.post('/api/intake-chat', intakeLimiter, async (req, res) => {
     ? buildNotebookPrompt(mentor)
     : buildIntakePrompt({ mentor, exchangeCount, level, theory, totalExchanges });
 
+  // This endpoint is anonymous — the global budget is its last line of defense.
+  if (await aiBudgetExceeded()) {
+    logServerError('ai-budget', new Error('daily AI token budget exhausted'), { endpoint: '/api/intake-chat' });
+    return res.status(503).json({ error: 'The mentors are at capacity right now. Please try again shortly.' });
+  }
+
   try {
     const upstream = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -1482,6 +1583,7 @@ app.post('/api/intake-chat', intakeLimiter, async (req, res) => {
     }
 
     const data    = await upstream.json();
+    countAiUsage(data.usage?.total_tokens);
     const content = (data.choices?.[0]?.message?.content || '').trim();
     res.json({ content });
 
@@ -2346,7 +2448,7 @@ app.post('/api/guardian/update', apiLimiter, async (req, res) => {
 });
 
 // GET /api/guardian/token — return (or generate) the user's webhook token (Resident+)
-app.get('/api/guardian/token', requireAuthApi, tokenLimiter, async (req, res) => {
+app.get('/api/guardian/token', requireAuthApi, tokenLimiter, sharedLimit('guardian_token', 60, 10), async (req, res) => {
   const { data: profile } = await supabaseAdmin
     .from('user_profiles')
     .select('guardian_webhook_token, subscription_status, bypass_subscription')
@@ -3423,28 +3525,38 @@ async function runProactiveOutreach() {
 }
 
 // DELETE /api/account — permanently delete the user's account and all data
-app.delete('/api/account', requireAuthApi, apiLimiter, async (req, res) => {
+app.delete('/api/account', requireAuthApi, sharedLimit('gdpr_delete', 3600, 3), async (req, res) => {
   const userId = req.user.id;
   try {
-    // Delete user data in dependency order (FKs from child to parent)
-    const tables = [
-      'rule_violations', 'journal_entries', 'trading_rules',
-      'vault_entries', 'mentor_messages', 'message_usage', 'voice_usage',
-      'guardian_data', 'guardian_accounts', 'decision_passport',
-      'discipline_scores', 'subscriptions', 'notebooks', 'user_profiles',
-    ];
-    for (const table of tables) {
-      await supabaseAdmin.from(table).delete().eq('user_id', userId).catch(() => {});
+    // Every user-scoped table (kept in sync with USER_DATA_TABLES / the export
+    // endpoint). The previous list was stale: it named tables that don't exist
+    // (decision_passport, guardian_accounts), missed five that do, and deleted
+    // user_profiles by user_id when that table keys on id — silently orphaning
+    // the profile row on every deletion.
+    for (const t of USER_DATA_TABLES) {
+      const { error } = await supabaseAdmin.from(t).delete().eq('user_id', userId);
+      if (error && !/does not exist/i.test(error.message)) {
+        // Abort rather than half-delete: retrying is safe, silent partial loss is not.
+        logServerError('gdpr-delete', new Error(`table ${t}: ${error.message}`), { user: userId });
+        return res.status(500).json({ error: 'Deletion failed part-way. Please retry or contact support.' });
+      }
     }
-    // Delete the auth user last
-    await supabaseAdmin.auth.admin.deleteUser(userId);
-    // Clear session cookies
-    const _delOpts = { httpOnly: true, sameSite: 'strict', path: '/' };
+    const { error: profErr } = await supabaseAdmin.from('user_profiles').delete().eq('id', userId);
+    if (profErr) {
+      logServerError('gdpr-delete', profErr, { user: userId, step: 'user_profiles' });
+      return res.status(500).json({ error: 'Deletion failed part-way. Please retry or contact support.' });
+    }
+    const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    if (authErr) {
+      logServerError('gdpr-delete-auth', authErr, { user: userId });
+      return res.status(500).json({ error: 'Your data was removed but the login could not be deleted. Contact support to finish.' });
+    }
+    const _delOpts = { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', path: '/' };
     res.clearCookie('ek_session', _delOpts);
     res.clearCookie('ek_refresh',  _delOpts);
     res.json({ ok: true });
   } catch (err) {
-    console.error('Account delete error:', err.message);
+    logServerError('gdpr-delete', err, { user: userId });
     res.status(500).json({ error: 'Failed to delete account. Please contact support.' });
   }
 });
@@ -3935,6 +4047,14 @@ app.get('/api/admin/stats', requireAdmin, adminLimiter, async (req, res) => {
     const totalMessages = (usageRes.data || []).reduce((s, r) => s + (r.message_count || 0), 0);
     const totalVoice    = (voiceRes.data || []).reduce((s, r) => s + (r.session_count || 0), 0);
 
+    // Ops health: today's AI token spend vs budget + the latest server errors.
+    const aiUsedToday = await bumpSharedCounter('ai_day', 'global', 86400, 0);
+    const { data: recentErrors } = await supabaseAdmin
+      .from('server_errors')
+      .select('at, source, message')
+      .order('at', { ascending: false })
+      .limit(10);
+
     res.json({
       users: {
         total:       profiles.length,
@@ -3948,6 +4068,11 @@ app.get('/api/admin/stats', requireAdmin, adminLimiter, async (req, res) => {
       all_time: {
         journal_entries: journalRes.count || 0,
         office_messages: msgRes.count    || 0,
+      },
+      ops: {
+        ai_tokens_today:  aiUsedToday ?? 'unavailable',
+        ai_daily_budget:  AI_DAILY_TOKEN_BUDGET,
+        recent_errors:    recentErrors || [],
       },
     });
   } catch (err) {
@@ -4475,6 +4600,49 @@ app.post('/api/network/message', requireAdmin, adminLimiter, async (req, res) =>
   res.status(201).json({ message: data });
 });
 
+// ── GDPR: data export + account deletion ─────────────────────────────────────
+// Self-service data rights. Export returns everything we hold about the user as
+// a single downloadable JSON document; delete removes every row and the auth
+// account itself. Both operate strictly on req.user.id — no parameters, no way
+// to touch another account.
+// rule_violation_summary is intentionally absent: it's a VIEW over
+// rule_violations (deleting from it errors), and its contents disappear with
+// the underlying rows.
+const USER_DATA_TABLES = [
+  'behavioral_reports', 'discipline_scores', 'guardian_data', 'intake_sessions',
+  'journal_entries', 'mentor_messages', 'message_usage', 'milestones',
+  'notebooks', 'passport_entries', 'rule_violations',
+  'session_reviews', 'subscriptions', 'trading_rules', 'vault_entries', 'voice_usage',
+];
+
+app.get('/api/account/export', requireAuthApi, sharedLimit('gdpr_export', 3600, 5), async (req, res) => {
+  try {
+    const out = {
+      exported_at: new Date().toISOString(),
+      account: { id: req.user.id, email: req.user.email },
+      data: {},
+    };
+    const { data: profile } = await supabaseAdmin
+      .from('user_profiles').select('*').eq('id', req.user.id).maybeSingle();
+    out.data.user_profile = profile || null;
+
+    await Promise.all(USER_DATA_TABLES.map(async (t) => {
+      const { data, error } = await supabaseAdmin.from(t).select('*').eq('user_id', req.user.id);
+      // A missing table or column must not break the export of everything else.
+      out.data[t] = error ? { unavailable: error.message } : (data || []);
+    }));
+
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="edgekeeper-data-export.json"');
+    res.send(JSON.stringify(out, null, 2));
+  } catch (err) {
+    logServerError('gdpr-export', err, { user: req.user.id });
+    res.status(500).json({ error: 'Export failed. Please try again.' });
+  }
+});
+
+// Account deletion lives at DELETE /api/account (above) — one canonical path.
+
 // ── Catch-all 404 ─────────────────────────────────────────────────────────────
 app.use((req, res) => {
   const page404 = path.join(__dirname, '404.html');
@@ -4485,6 +4653,7 @@ app.use((req, res) => {
 // ── Global error handler ──────────────────────────────────────────────────────
 app.use((err, req, res, _next) => {
   console.error('Unhandled error:', err.message);
+  logServerError('express', err, { path: req.path, method: req.method });
   res.status(500).json({ error: 'Internal server error' });
 });
 
@@ -4501,6 +4670,11 @@ function verifyCronSecret(req, res, next) {
 
 app.get('/api/cron/outreach', verifyCronSecret, async (req, res) => {
   try {
+    // Housekeeping piggybacked on the daily cron: clear expired rate windows.
+    supabaseAdmin.rpc('prune_rate_counters', { p_older_than_hours: 48 }).then(
+      ({ data }) => { if (data) console.log(`[rate-counters] pruned ${data} expired rows`); },
+      () => {}
+    );
     await runProactiveOutreach();
     res.json({ ok: true });
   } catch (err) {

@@ -68,6 +68,16 @@ html.ek-authed .ek-auth-cta { display: inline-flex; }
   .ek-pillar { padding: 5px 10px; letter-spacing: 0.08em; }
 }
 
+/* ── Custom-cursor accessibility ─────────────────────────────────────────────
+   Pages hide the native cursor (cursor:none) and draw their own gold dot+ring.
+   On touch devices there is no cursor to replace — the dot just floats at the
+   last tap point — and users who prefer reduced motion shouldn't get a laggy
+   trailing ring. Restore native behavior for both. */
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  * { cursor: auto !important; }
+  #cursor, #cursor-ring { display: none !important; }
+}
+
 /* ── Reveal safety ───────────────────────────────────────────────────────────
    Many pages hide content with `.reveal { opacity: 0 }` and only show it once a
    scroll IntersectionObserver adds `.in`. If motion is reduced, show everything
