@@ -159,6 +159,10 @@
     }
 
     .mod-spacer { flex: 1; }
+    /* mod-body fills the panel below the header so .mod-spacer can push the
+       mentor cards to the bottom on desktop. On mobile (below) the panel uses
+       display:contents so header / lesson / controls can be reordered. */
+    #mod-body { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
     .companion-badge {
       margin-top: 32px; padding: 14px 16px;
@@ -298,19 +302,54 @@
     #send-btn:hover { background: rgba(184,160,106,0.08); border-color: var(--theo); }
     #send-btn:disabled { opacity: 0.3; pointer-events: none; }
 
+    /* ── COLLAPSIBLE MODULE SIDEBAR ──────────────────────────────────────────
+       Desktop: the 300px module panel is the left sidebar, open by default and
+       collapsible (html.sb-collapsed slides it out so the lesson gets full width).
+       Mobile: it becomes an off-canvas drawer over a backdrop; the lesson thread
+       is the full-width main area. #panel-toggle in the top bar drives both. */
+    #module-panel { transition: margin-left .3s ease, transform .3s ease; }
+    html.sb-collapsed #module-panel { margin-left: -300px; }
+    #panel-toggle {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 30px; height: 30px; flex-shrink: 0; padding: 0;
+      background: none; border: 1px solid var(--border); border-radius: 3px;
+      color: var(--muted); cursor: pointer;
+    }
+    #panel-toggle:hover { color: var(--theo); border-color: var(--gold-dim); }
+    #panel-toggle svg { width: 15px; height: 15px; }
+    #sb-backdrop { display: none; }
+
     /* ── MOBILE ── */
     @media (max-width: 768px) {
       body { overflow: auto; }
-      #top-bar { padding: 0 14px; }
+      #top-bar { padding: 0 12px; }
       .top-track-label, .top-divider, .curriculum-link { display: none; }
       .brand { font-size: 0.8rem; letter-spacing: 0.12em; }
       .top-left, .top-right { gap: 10px; }
+
       #split { flex-direction: column; overflow: visible; }
-      #module-panel { width: 100%; border-right: none; border-bottom: 1px solid var(--border); padding: 24px 20px; }
-      #companion-panel { height: 70vh; }
-      #thread { padding: 24px 20px; }
+
+      /* Off-canvas drawer — lesson is the full-width main area underneath. */
+      #module-panel {
+        position: fixed; top: 52px; left: 0; bottom: 0;
+        width: 84%; max-width: 320px; z-index: 60;
+        margin-left: 0; transform: translateX(-100%);
+        border-right: 1px solid var(--border); box-shadow: 2px 0 24px rgba(0,0,0,0.5);
+      }
+      html.sb-open #module-panel { transform: translateX(0); }
+      html.sb-collapsed #module-panel { margin-left: 0; }
+
+      #companion-panel { height: auto; overflow: visible; flex: 1; }
+      #thread { padding: 24px 20px; overflow: visible; height: auto; }
       #input-bar { padding: 12px 20px 16px; }
       #study-input { font-size: 16px; }
+
+      #sb-backdrop {
+        display: block; position: fixed; inset: 52px 0 0 0;
+        background: rgba(0,0,0,0.55); z-index: 55;
+        opacity: 0; pointer-events: none; transition: opacity .3s ease;
+      }
+      html.sb-open #sb-backdrop { opacity: 1; pointer-events: auto; }
     }
   </style>
 </head>
@@ -319,6 +358,9 @@
 <!-- TOP BAR -->
 <div id="top-bar">
   <div class="top-left">
+    <button id="panel-toggle" onclick="toggleModulePanel()" aria-label="Toggle module panel">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h12M2 8h12M2 13h12"/></svg>
+    </button>
     <a href="/edgekeeper.html" class="brand">Edge<span>K</span>eeper</a>
     <div class="top-divider"></div>
     <span class="top-track-label" id="top-track-label">Academy</span>
@@ -338,10 +380,13 @@
 
   <!-- MODULE INFO -->
   <div id="module-panel">
-    <div class="mod-track-tag" id="mod-track-tag">Track 01 · Market Foundations</div>
-    <h1 class="mod-title" id="mod-title">Loading...</h1>
-    <p class="mod-desc" id="mod-desc"></p>
+    <div id="mod-head">
+      <div class="mod-track-tag" id="mod-track-tag">Track 01 · Market Foundations</div>
+      <h1 class="mod-title" id="mod-title">Loading...</h1>
+      <p class="mod-desc" id="mod-desc"></p>
+    </div>
 
+    <div id="mod-body">
     <div class="mod-divider"></div>
 
     <div class="mod-progress-label">Progress</div>
@@ -380,6 +425,7 @@
     </a>
 
     <a href="/settings.html" class="panel-account-link">Account settings</a>
+    </div>
   </div>
 
   <!-- COMPANION THREAD -->
@@ -397,6 +443,19 @@
   </div>
 
 </div>
+
+<!-- Drawer backdrop (mobile) — tap to close the module sidebar -->
+<div id="sb-backdrop" onclick="document.documentElement.classList.remove('sb-open')"></div>
+
+<script>
+// Collapsible module sidebar. On mobile it's an off-canvas drawer (sb-open); on
+// desktop it collapses in place (sb-collapsed). The toggle picks by viewport.
+function toggleModulePanel() {
+  var root = document.documentElement;
+  if (window.matchMedia('(max-width: 768px)').matches) root.classList.toggle('sb-open');
+  else root.classList.toggle('sb-collapsed');
+}
+</script>
 
 <script>
 const SUPABASE_URL  = '%%SUPABASE_URL%%';
