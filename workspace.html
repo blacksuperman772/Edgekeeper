@@ -643,6 +643,19 @@
     }
     .panel-col.open { width: 420px; }
 
+    /* Context rail: on wide screens (≥1200px) the panel opens beside the thread
+       above — a true third column, thread stays comfortable. On mid-width screens
+       there isn't room for three columns (sidebar 240 + rail 420 would crush the
+       thread), so the panel overlays the chat as a right-hand drawer instead. */
+    @media (max-width: 1199px) and (min-width: 769px) {
+      .panel-col.open {
+        position: absolute; top: 0; right: 0; bottom: 0;
+        width: min(440px, 76%); z-index: 40;
+        box-shadow: -28px 0 64px rgba(0,0,0,0.55);
+      }
+      .panel-col.open .panel { width: 100%; }
+    }
+
     .panel {
       width: 420px;
       height: 100%;
@@ -1994,6 +2007,7 @@
     }
     /* ── MOBILE LAYOUT ─────────────────────────────────────────── */
     .mobile-nav { display: none; }
+    .more-sheet, .more-backdrop { display: none; }
 
     @media (max-width: 768px) {
       .workspace {
@@ -2044,6 +2058,28 @@
       .mobile-nav-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; flex-shrink: 0; }
       .mobile-nav-btn.active { color: var(--mentor-color); }
       .mobile-nav-btn:active { opacity: 0.7; }
+
+      /* "More" sheet — slides up above the bottom nav with the rest of the office */
+      .more-backdrop {
+        display: block; position: fixed; inset: 0; z-index: 45;
+        background: rgba(0,0,0,0.5); opacity: 0; pointer-events: none; transition: opacity .25s ease;
+      }
+      .more-backdrop.open { opacity: 1; pointer-events: auto; }
+      .more-sheet {
+        display: flex; flex-direction: column; gap: 2px;
+        position: fixed; left: 0; right: 0; bottom: 56px; z-index: 46;
+        background: var(--obsidian); border-top: 1px solid var(--border);
+        padding: 8px 12px 14px;
+        transform: translateY(115%); transition: transform .3s cubic-bezier(.2,.7,.2,1);
+      }
+      .more-sheet.open { transform: translateY(0); }
+      .more-sheet-grip { width: 34px; height: 4px; border-radius: 2px; background: var(--border); margin: 4px auto 8px; }
+      .more-item {
+        background: none; border: none; text-align: left; width: 100%;
+        padding: 13px 12px; color: var(--text); font-family: var(--sans); font-weight: 300;
+        font-size: 0.92rem; border-radius: 4px; -webkit-tap-highlight-color: transparent;
+      }
+      .more-item:active { background: var(--stone); }
 
       /* Panel overlays the full chat area on mobile */
       .panel-col.open {
@@ -2293,15 +2329,27 @@
       <svg viewBox="0 0 16 16" stroke-width="1.5"><path d="M4 4l2 2 4-4M4 9l2 2 4-4"/></svg>
       Rules
     </button>
-    <button class="mobile-nav-btn" id="mnav-guardian" onclick="window.location='/chamber'">
-      <svg viewBox="0 0 16 16" stroke-width="1.5"><path d="M8 2l5 2v5c0 3-2.5 5-5 6-2.5-1-5-3-5-6V4z"/></svg>
-      Guardian
-    </button>
     <button class="mobile-nav-btn" id="mnav-messages" onclick="mobileNav('messages')">
       <svg viewBox="0 0 16 16" stroke-width="1.5"><path d="M2 3h12v8H2z"/><path d="M2 3l6 5 6-5"/></svg>
       Messages
     </button>
+    <button class="mobile-nav-btn" id="mnav-more" onclick="toggleMoreSheet()">
+      <svg viewBox="0 0 16 16" stroke-width="1.5"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+      More
+    </button>
   </nav>
+
+  <!-- MORE SHEET — remaining office destinations (mobile only). Iris/Theo now live
+       in the header switcher, so the bottom bar stays office-internal. -->
+  <div class="more-backdrop" id="more-backdrop" onclick="closeMoreSheet()"></div>
+  <div class="more-sheet" id="more-sheet" role="dialog" aria-label="More destinations">
+    <div class="more-sheet-grip"></div>
+    <button class="more-item" data-min-plan="pro" onclick="moreOpen('passport')">Decision Passport</button>
+    <button class="more-item" data-min-plan="pro" onclick="moreOpen('analytics')">Behavior Analytics</button>
+    <button class="more-item" data-min-plan="pro" onclick="moreOpen('vault')">The Vault</button>
+    <button class="more-item" onclick="moreOpen('profile')">Mentor's Read</button>
+    <button class="more-item" onclick="closeMoreSheet(); handleVoiceNavClick();">Voice Session</button>
+  </div>
 
   <!-- MAIN -->
   <div class="main">
@@ -2785,13 +2833,38 @@ function mobileNav(key) {
   }
 }
 
+// "More" sheet — surfaces the office destinations that don't fit the bottom bar.
+function openMoreSheet() {
+  document.getElementById('more-sheet')?.classList.add('open');
+  document.getElementById('more-backdrop')?.classList.add('open');
+  document.getElementById('mnav-more')?.classList.add('active');
+}
+function closeMoreSheet() {
+  document.getElementById('more-sheet')?.classList.remove('open');
+  document.getElementById('more-backdrop')?.classList.remove('open');
+  document.getElementById('mnav-more')?.classList.remove('active');
+}
+function toggleMoreSheet() {
+  const s = document.getElementById('more-sheet');
+  if (s && s.classList.contains('open')) closeMoreSheet(); else openMoreSheet();
+}
+function moreOpen(name) { closeMoreSheet(); showPanel(name); }
+
 // Plan gating for tool panels. Shared by showPanel and the chat-command path so a
 // gated command never silently no-ops while the mentor "acknowledges" opening it.
 const PANEL_RANK = { journal: 1, rules: 1, guardian: 1, analytics: 2, passport: 2, vault: 2, reports: 2 };
 const PLAN_RANK  = { free: 0, starter: 1, pro: 2, professional: 3, institutional: 3 };
 function isPanelGated(name) {
-  const minRank  = PANEL_RANK[name] ?? 0;
-  const userRank = PLAN_RANK[window.__ek_subscription__ || 'free'] ?? 0;
+  const minRank = PANEL_RANK[name] ?? 0;
+  if (minRank === 0) return false;
+  // Fail OPEN when the plan hasn't hydrated yet (or /api/profile was slow enough
+  // that the skeleton's safety-timeout revealed the office first). Treating an
+  // unknown plan as 'free' produced dead nav buttons for paying users — tapping
+  // Journal/Rules silently did nothing. The server enforces real entitlement on
+  // the panel data, so this client gate is only cosmetic.
+  const sub = window.__ek_subscription__;
+  if (!sub) return false;
+  const userRank = PLAN_RANK[sub] ?? 0;
   return userRank < minRank;
 }
 
@@ -2814,7 +2887,15 @@ function showUpgradeNudge() {
 function showPanel(name) {
   clearInterval(guardianPollTimer);
   guardianPollTimer = null;
-  if (name && isPanelGated(name)) return;
+  // Gated for a known lower-tier plan: never silently no-op (that reads as a
+  // broken button) — keep the conversation visible and surface the upgrade path.
+  if (name && isPanelGated(name)) {
+    const col = document.getElementById('panel-col');
+    if (col) col.classList.remove('open');
+    syncMobileNav(null);
+    showUpgradeNudge();
+    return;
+  }
   currentPanel = name;
   syncMobileNav(name);
   const col = document.getElementById('panel-col');
