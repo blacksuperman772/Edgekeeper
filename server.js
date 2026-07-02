@@ -234,12 +234,15 @@ function requireAuthApi(req, res, next) {
 app.use(verifySession);
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
+// All limiters key on the real client IP (clientIp — hoisted, defined below):
+// behind Vercel, req.ip can be a per-request edge IP, which splits counters
+// so limits never trip.
 const chatLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.user?.id || req.ip,
+  keyGenerator: (req) => req.user?.id || clientIp(req),
   message: { error: 'Too many requests. Please slow down.' },
 });
 
@@ -248,6 +251,7 @@ const intakeLimiter = rateLimit({
   max: 15,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => clientIp(req),
   message: { error: 'Too many intake requests. Please slow down.' },
 });
 
@@ -267,6 +271,17 @@ const apiLimiter = rateLimit({
 // migration 026) that is authoritative across all instances. Fail-open: if the
 // counter RPC errors, availability wins and the in-memory limiter still applies.
 
+// Real client IP behind Vercel. With `trust proxy = 1` and Vercel's multi-hop
+// chain, req.ip can resolve to a per-request edge IP — which silently splits
+// rate-limit counters across keys so limits never trip. Vercel sets x-real-ip
+// to the true client address (platform-controlled, not client-spoofable);
+// leftmost x-forwarded-for is the fallback, then req.ip for local dev.
+function clientIp(req) {
+  return req.headers['x-real-ip']
+    || String(req.headers['x-forwarded-for'] || '').split(',')[0].trim()
+    || req.ip;
+}
+
 async function bumpSharedCounter(bucket, key, windowSeconds, amount = 1) {
   try {
     const { data, error } = await supabaseAdmin.rpc('bump_counter', {
@@ -282,7 +297,7 @@ async function bumpSharedCounter(bucket, key, windowSeconds, amount = 1) {
 
 function sharedLimit(bucket, windowSeconds, max, keyFn) {
   return async (req, res, next) => {
-    const key = keyFn ? keyFn(req) : (req.user?.id || req.ip);
+    const key = keyFn ? keyFn(req) : (req.user?.id || clientIp(req));
     const count = await bumpSharedCounter(bucket, key, windowSeconds, 1);
     if (count !== null && count > max) {
       return res.status(429).json({ error: 'Too many requests. Please slow down.' });
