@@ -453,13 +453,21 @@
       position: relative;
     }
     .cmsg-mentor .cmsg-body {
-      padding: 0 0 0 20px;
-      border-left: 1px solid rgba(184,160,106,0.55);
+      padding: 0 0 0 18px;
+      border-left: 1px solid rgba(184,160,106,0.45);
       font-family: var(--serif);
-      font-size: 1.08rem;
+      font-size: 1.02rem;
       font-weight: 300;
-      color: rgba(245,242,236,0.9);
+      line-height: 1.9;
+      color: rgba(245,242,236,0.88);
       letter-spacing: 0.01em;
+    }
+    .cmsg-mentor .cmsg-body strong { font-weight: 500; color: rgba(245,242,236,0.96); }
+    .cmsg-mentor .cmsg-body em { font-style: italic; color: rgba(184,160,106,0.85); }
+    .cmsg-mentor .cmsg-body code {
+      font-family: var(--mono); font-size: 0.8em;
+      background: rgba(255,255,255,0.05); padding: 1px 5px;
+      border-radius: 2px; color: var(--mentor-color, #b8a06a);
     }
     .cmsg-user .cmsg-body {
       padding: 10px 16px;
@@ -2008,19 +2016,32 @@
       pointer-events: none;
     }
     /* ── MOBILE LAYOUT ─────────────────────────────────────────── */
-    .mobile-nav { display: none; }
-    .more-sheet, .more-backdrop { display: none; }
+    /* ── COLLAPSIBLE OFFICE NAV ───────────────────────────────────────────────
+       The sidebar is the office's one nav. Desktop: the 240px left rail,
+       collapsible (html.sb-collapsed) to give the thread full width. Mobile: an
+       off-canvas drawer over a backdrop (html.sb-open) — no bottom bar. The
+       #office-nav-toggle hamburger in the topbar drives both, matching the
+       academy's module drawer. */
+    .workspace { transition: grid-template-columns .3s ease; }
+    html.sb-collapsed .workspace { grid-template-columns: 0 1fr; }
+    #office-nav-toggle {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 30px; height: 30px; flex-shrink: 0; padding: 0;
+      background: none; border: 1px solid var(--border); border-radius: 3px;
+      color: var(--muted); cursor: pointer;
+    }
+    #office-nav-toggle:hover { color: var(--mentor-color); border-color: var(--mentor-color-dim); }
+    #office-nav-toggle svg { width: 15px; height: 15px; }
+    #office-backdrop { display: none; }
 
     @media (max-width: 768px) {
       .workspace {
         grid-template-columns: 1fr;
-        grid-template-rows: 56px 1fr 56px;
+        grid-template-rows: 56px 1fr;
       }
-      .sidebar { display: none; }
 
       /* Topbar: drop desktop-only affordances (keyboard hints, session label,
-         status pill) and keep the brand + pillar switcher, which is the primary
-         between-space nav on mobile. */
+         status pill); keep the toggle + brand + pillar switcher. */
       .topbar { padding: 0 12px; }
       .topbar-left { gap: 10px; min-width: 0; flex: 1; }
       .topbar-logo { font-size: 0.78rem; letter-spacing: 0.1em; flex-shrink: 0; }
@@ -2030,63 +2051,29 @@
       .topbar-mentor-pill { display: none; }
       .topbar-right { gap: 8px; }
       .ek-pillars { margin-left: auto; }
-      .mobile-nav {
-        display: flex;
-        grid-column: 1;
-        grid-row: 3;
-        background: var(--obsidian);
-        border-top: 1px solid var(--border);
-        z-index: 50;
-      }
-      .mobile-nav-btn {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 3px;
-        background: none;
-        border: none;
-        color: var(--dim);
-        font-family: var(--mono);
-        font-size: 0.42rem;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        cursor: pointer;
-        transition: color 0.2s;
-        padding: 6px 4px;
-        -webkit-tap-highlight-color: transparent;
-      }
-      .mobile-nav-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; flex-shrink: 0; }
-      .mobile-nav-btn.active { color: var(--mentor-color); }
-      .mobile-nav-btn:active { opacity: 0.7; }
 
-      /* "More" sheet — slides up above the bottom nav with the rest of the office */
-      .more-backdrop {
-        display: block; position: fixed; inset: 0; z-index: 45;
-        background: rgba(0,0,0,0.5); opacity: 0; pointer-events: none; transition: opacity .25s ease;
+      /* Sidebar → off-canvas drawer; the thread is the full-width main area. */
+      .sidebar {
+        display: flex;
+        position: fixed; top: 56px; left: 0; bottom: 0;
+        width: 84%; max-width: 300px; z-index: 60;
+        transform: translateX(-100%); transition: transform .3s ease;
+        border-right: 1px solid var(--border); box-shadow: 2px 0 24px rgba(0,0,0,0.5);
       }
-      .more-backdrop.open { opacity: 1; pointer-events: auto; }
-      .more-sheet {
-        display: flex; flex-direction: column; gap: 2px;
-        position: fixed; left: 0; right: 0; bottom: 56px; z-index: 46;
-        background: var(--obsidian); border-top: 1px solid var(--border);
-        padding: 8px 12px 14px;
-        transform: translateY(115%); transition: transform .3s cubic-bezier(.2,.7,.2,1);
-      }
-      .more-sheet.open { transform: translateY(0); }
-      .more-sheet-grip { width: 34px; height: 4px; border-radius: 2px; background: var(--border); margin: 4px auto 8px; }
-      .more-item {
-        background: none; border: none; text-align: left; width: 100%;
-        padding: 13px 12px; color: var(--text); font-family: var(--sans); font-weight: 300;
-        font-size: 0.92rem; border-radius: 4px; -webkit-tap-highlight-color: transparent;
-      }
-      .more-item:active { background: var(--stone); }
+      html.sb-open .sidebar { transform: translateX(0); }
+      html.sb-collapsed .sidebar { transform: translateX(-100%); }
 
-      /* Panel overlays the full chat area on mobile */
+      #office-backdrop {
+        display: block; position: fixed; inset: 56px 0 0 0;
+        background: rgba(0,0,0,0.55); z-index: 55;
+        opacity: 0; pointer-events: none; transition: opacity .3s ease;
+      }
+      html.sb-open #office-backdrop { opacity: 1; pointer-events: auto; }
+
+      /* Panel overlays the full chat area on mobile (no bottom bar to clear) */
       .panel-col.open {
         position: fixed;
-        inset: 56px 0 56px 0;
+        inset: 56px 0 0 0;
         width: 100% !important;
         z-index: 40;
         background: var(--obsidian);
@@ -2199,6 +2186,9 @@
   <!-- TOPBAR -->
   <header class="topbar">
     <div class="topbar-left">
+      <button id="office-nav-toggle" onclick="toggleOfficeNav()" aria-label="Toggle menu">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h12M2 8h12M2 13h12"/></svg>
+      </button>
       <a href="edgekeeper.html" class="topbar-logo">Edge<span>K</span>eeper</a>
       <div class="topbar-divider"></div>
       <nav class="ek-pillars" aria-label="Spaces">
@@ -2317,41 +2307,8 @@
     </div>
   </aside>
 
-  <!-- MOBILE BOTTOM NAV — visible only on small screens -->
-  <nav class="mobile-nav" aria-label="Navigation">
-    <button class="mobile-nav-btn active" id="mnav-chat" onclick="mobileNav('chat')">
-      <svg viewBox="0 0 16 16" stroke-width="1.5"><path d="M2 3h12v8H2z"/><path d="M6 11v2l2.5-2H14"/></svg>
-      Chat
-    </button>
-    <button class="mobile-nav-btn" id="mnav-journal" onclick="mobileNav('journal')">
-      <svg viewBox="0 0 16 16" stroke-width="1.5"><rect x="3" y="2" width="10" height="12" rx="1"/><path d="M6 6h4M6 9h3"/></svg>
-      Journal
-    </button>
-    <button class="mobile-nav-btn" id="mnav-rules" onclick="mobileNav('rules')">
-      <svg viewBox="0 0 16 16" stroke-width="1.5"><path d="M4 4l2 2 4-4M4 9l2 2 4-4"/></svg>
-      Rules
-    </button>
-    <button class="mobile-nav-btn" id="mnav-messages" onclick="mobileNav('messages')">
-      <svg viewBox="0 0 16 16" stroke-width="1.5"><path d="M2 3h12v8H2z"/><path d="M2 3l6 5 6-5"/></svg>
-      Messages
-    </button>
-    <button class="mobile-nav-btn" id="mnav-more" onclick="toggleMoreSheet()">
-      <svg viewBox="0 0 16 16" stroke-width="1.5"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
-      More
-    </button>
-  </nav>
-
-  <!-- MORE SHEET — remaining office destinations (mobile only). Iris/Theo now live
-       in the header switcher, so the bottom bar stays office-internal. -->
-  <div class="more-backdrop" id="more-backdrop" onclick="closeMoreSheet()"></div>
-  <div class="more-sheet" id="more-sheet" role="dialog" aria-label="More destinations">
-    <div class="more-sheet-grip"></div>
-    <button class="more-item" data-min-plan="pro" onclick="moreOpen('passport')">Decision Passport</button>
-    <button class="more-item" data-min-plan="pro" onclick="moreOpen('analytics')">Behavior Analytics</button>
-    <button class="more-item" data-min-plan="pro" onclick="moreOpen('vault')">The Vault</button>
-    <button class="more-item" onclick="moreOpen('profile')">Mentor's Read</button>
-    <button class="more-item" onclick="closeMoreSheet(); handleVoiceNavClick();">Voice Session</button>
-  </div>
+  <!-- Drawer backdrop (mobile) — tap to close the office sidebar -->
+  <div id="office-backdrop" onclick="closeOfficeNav()"></div>
 
   <!-- MAIN -->
   <div class="main">
@@ -2819,39 +2776,21 @@ let currentPanel = null;
 const navItems = document.querySelectorAll('.nav-item');
 let guardianPollTimer = null;
 
-function syncMobileNav(name) {
-  document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
-  const key = !name ? 'chat' : (name === 'messages' ? 'messages' : (name === 'journal' ? 'journal' : (name === 'rules' ? 'rules' : null)));
-  if (key) {
-    const el = document.getElementById('mnav-' + key);
-    if (el) el.classList.add('active');
-  }
+// ── Collapsible office nav ──────────────────────────────────────────────────
+// The sidebar is the office's one nav. Mobile: an off-canvas drawer (sb-open).
+// Desktop: collapses in place (sb-collapsed). The topbar hamburger drives both,
+// matching the academy's module drawer. Replaced the old bottom bar + "More"
+// sheet entirely.
+function toggleOfficeNav() {
+  const root = document.documentElement;
+  if (window.matchMedia('(max-width: 768px)').matches) root.classList.toggle('sb-open');
+  else root.classList.toggle('sb-collapsed');
 }
+function closeOfficeNav() { document.documentElement.classList.remove('sb-open'); }
 
-function mobileNav(key) {
-  if (key === 'chat') {
-    showPanel(null);
-  } else {
-    showPanel(key);
-  }
-}
-
-// "More" sheet — surfaces the office destinations that don't fit the bottom bar.
-function openMoreSheet() {
-  document.getElementById('more-sheet')?.classList.add('open');
-  document.getElementById('more-backdrop')?.classList.add('open');
-  document.getElementById('mnav-more')?.classList.add('active');
-}
-function closeMoreSheet() {
-  document.getElementById('more-sheet')?.classList.remove('open');
-  document.getElementById('more-backdrop')?.classList.remove('open');
-  document.getElementById('mnav-more')?.classList.remove('active');
-}
-function toggleMoreSheet() {
-  const s = document.getElementById('more-sheet');
-  if (s && s.classList.contains('open')) closeMoreSheet(); else openMoreSheet();
-}
-function moreOpen(name) { closeMoreSheet(); showPanel(name); }
+// Legacy no-op — showPanel() still calls syncMobileNav (it used to highlight the
+// bottom bar, now replaced by the drawer). Kept so every call site stays valid.
+function syncMobileNav() {}
 
 // Plan gating for tool panels. Shared by showPanel and the chat-command path so a
 // gated command never silently no-ops while the mentor "acknowledges" opening it.
@@ -2890,6 +2829,8 @@ function showUpgradeNudge() {
 function showPanel(name) {
   clearInterval(guardianPollTimer);
   guardianPollTimer = null;
+  // Tapping a drawer nav item on mobile should reveal the panel underneath.
+  closeOfficeNav();
   // Gated for a known lower-tier plan: never silently no-op (that reads as a
   // broken button) — keep the conversation visible and surface the upgrade path.
   if (name && isPanelGated(name)) {
@@ -4746,17 +4687,22 @@ function renderPreviousSession() {
   for (const msg of tail) {
     const el = document.createElement('div');
     const text = (msg.content || '').slice(0, 400) + (msg.content.length > 400 ? '…' : '');
+    let who;
     if (msg.role === 'user') {
       el.className = 'cmsg cmsg-user show';
-      el.style.opacity = '0.3';
-      el.textContent = text;
+      who = 'You';
     } else if (msg.role === 'assistant') {
       el.className = 'cmsg cmsg-mentor show';
-      el.style.opacity = '0.3';
-      el.textContent = text;
+      who = (mentor && mentor.name) ? mentor.name : 'Marcus';
     } else {
       continue;
     }
+    // Render with the SAME structure as live messages (header + .cmsg-body) so
+    // already-read turns keep full mentor/user styling instead of fading to
+    // undifferentiated grey text. No opacity override — the "thread continues"
+    // / "now" separators carry the past-vs-present distinction.
+    el.innerHTML = `<div class="cmsg-header">${escHtml(who)}</div><div class="cmsg-body"></div>`;
+    el.querySelector('.cmsg-body').textContent = text;
     msgs.appendChild(el);
   }
 
@@ -5424,6 +5370,7 @@ let voiceEndedByTimeout  = false; // true when ElevenLabs disconnects unexpected
 
 // ── Disclaimer gate ───────────────────────────────────────────────────
 function handleVoiceNavClick() {
+  closeOfficeNav();
   showVoiceDisclaimer();
 }
 
