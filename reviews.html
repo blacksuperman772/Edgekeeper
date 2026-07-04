@@ -13,9 +13,9 @@
   <style>
 
     :root {
-      --obsidian:   #07050E;
-      --surface:    #0D0B15;
-      --layer:      #12101A;
+      --obsidian:   #050505;
+      --surface:    #0d0d0d;
+      --layer:      #121212;
       --border:     rgba(255,255,255,0.06);
       --border-med: rgba(255,255,255,0.1);
       --gold:       #B8A06A;
@@ -67,12 +67,12 @@
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 48px;
       z-index: 500;
-      background: rgba(7,5,14,0.0);
+      background: rgba(5,5,5,0.0);
       border-bottom: 1px solid transparent;
       transition: background .5s, border-color .5s;
     }
     nav.scrolled {
-      background: rgba(7,5,14,0.96);
+      background: rgba(5,5,5,0.96);
       border-bottom-color: var(--border);
       backdrop-filter: blur(14px);
     }
@@ -125,6 +125,7 @@
       margin: 0 auto;
     }
     .hero-title {
+      font-family: var(--serif);
       font-size: clamp(2.4rem, 4vw, 3.6rem);
       font-weight: 300;
       color: var(--text-bright);

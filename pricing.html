@@ -14,6 +14,7 @@
 
   <!-- Fonts -->
   <link rel="stylesheet" href="/assets/shared.css" />
+  <script src="/assets/analytics.js" defer></script>
 
   <style>
 
@@ -780,6 +781,11 @@
       .hero-headline { font-size: 2.2rem; }
       .billing-toggle { flex-wrap: wrap; justify-content: center; }
       .cards-grid { grid-template-columns: 1fr; }
+      /* keep logo + Sign In / Apply inside the viewport */
+      nav { padding: 16px 14px; gap: 10px; }
+      .nav-logo { font-size: 0.85rem; }
+      .nav-cta { padding: 8px 14px; font-size: 0.6rem; letter-spacing: 0.1em; }
+      nav > div { gap: 12px !important; }
     }
   </style>
 </head>
@@ -801,7 +807,7 @@
   <div style="display:flex;align-items:center;gap:20px;">
     <a href="auth.html" style="font-size:0.7rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--faint);text-decoration:none;transition:color .3s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--faint)'" data-guest-only>Sign In</a>
     <a href="auth.html" class="nav-cta" data-guest-only>Apply</a>
-    <a href="/workspace.html" class="nav-cta ek-auth-cta">Enter your office</a>
+    <a href="/workspace.html" class="nav-cta ek-auth-cta"><span class="cta-full">Enter your office</span><span class="cta-short">Office</span></a>
   </div>
 </nav>
 
@@ -1405,6 +1411,7 @@ function showCheckoutError(msg) {
 
 async function initiateCheckout(plan) {
   const billing = isAnnual ? 'annual' : 'monthly';
+  window.ek?.('checkout_click', { plan, billing });
   sessionStorage.setItem('ek_plan',    plan);
   sessionStorage.setItem('ek_billing', billing);
 

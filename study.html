@@ -8,6 +8,7 @@
   <meta name="robots" content="noindex, nofollow" />
   <title>Study — EdgeKeeper Academy</title>
   <link rel="stylesheet" href="/assets/shared.css" />
+  <script src="/assets/analytics.js" defer></script>
   <script src="/assets/pillars.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.19.2/dist/livekit-client.umd.js"></script>
   <script>window.livekitClient = window.LivekitClient;</script>
@@ -17,7 +18,7 @@
     :root {
       --void:      #050505;
       --surface:   #0D0B16;
-      --panel:     #0F0D18;
+      --panel:     #0f0f0f;
       --border:    rgba(255,255,255,0.07);
       --border-hi: rgba(255,255,255,0.12);
       --gold:      #b8a06a;
@@ -654,6 +655,7 @@ function markComplete(opts) {
   if (!completeBtn.classList.contains('done')) {
     const _completedAt = Date.now();
     localStorage.setItem('ek_academy_' + moduleKey + '_completed', _completedAt);
+    window.ek?.('module_complete', { module: moduleKey });
     statusDot.className  = 'status-dot completed';
     statusText.textContent = 'Completed';
     completeBtn.textContent = '✓ Completed';

@@ -20,6 +20,7 @@
 
   <!-- Fonts -->
   <link rel="stylesheet" href="/assets/shared.css" />
+  <script src="/assets/analytics.js" defer></script>
 
   <!-- GSAP -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" integrity="sha512-16esztaSRplJROstbIIdwX3N97V1+pZvV33ABoG1H2OyTttBxEGkTsoIVsiP1iaTtM8b3+hu2kB6pQ4Clr5yug==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -1558,7 +1559,7 @@
   <div style="display:flex;align-items:center;gap:20px;position:relative;">
     <a href="/auth.html" class="nav-signin" style="font-size:0.7rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--faint);text-decoration:none;transition:color .3s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--faint)'" data-guest-only>Sign In</a>
     <a href="#invitation" class="nav-cta" data-guest-only>Apply</a>
-    <a href="/workspace.html" class="nav-cta ek-auth-cta">Enter your office</a>
+    <a href="/workspace.html" class="nav-cta ek-auth-cta"><span class="cta-full">Enter your office</span><span class="cta-short">Office</span></a>
     <button class="hamburger" id="hamburger-btn" aria-label="Toggle menu" onclick="toggleMobileNav()">
       <span></span><span></span><span></span>
     </button>
@@ -1945,7 +1946,7 @@
 <!-- HOW IT WORKS -->
 <section id="how" style="position:relative;overflow:hidden;">
   <div style="position:absolute;inset:0;background-image:url('/assets/workspace-ambient.webp');background-size:cover;background-position:center;opacity:0.07;pointer-events:none;z-index:0;"></div>
-  <div style="position:absolute;inset:0;background:linear-gradient(to bottom,#07050E 0%,transparent 30%,transparent 70%,#07050E 100%);pointer-events:none;z-index:1;"></div>
+  <div style="position:absolute;inset:0;background:linear-gradient(to bottom,#050505 0%,transparent 30%,transparent 70%,#050505 100%);pointer-events:none;z-index:1;"></div>
   <div class="section-inner" style="position:relative;z-index:2;">
     <div class="how-header">
       <div class="section-label reveal" style="justify-content:center">The Process</div>

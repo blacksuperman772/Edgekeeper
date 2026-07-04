@@ -9,6 +9,7 @@
   <title>EdgeKeeper — Workspace</title>
 
   <link rel="stylesheet" href="/assets/shared.css" />
+  <script src="/assets/analytics.js" defer></script>
   <script src="/assets/pillars.js" defer></script>
 
   <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.19.2/dist/livekit-client.umd.js"></script>
@@ -2758,6 +2759,7 @@ async function sendChat() {
   const inp = document.getElementById('chat-input');
   const text = inp.value.trim();
   if (!text) return;
+  window.ek?.('chat_sent');
   inp.value = '';
 
   const cmdMap = { '/journal': 'journal', '/rules': 'rules', '/passport': 'passport', '/analytics': 'analytics', '/guardian': 'guardian', '/vault': 'vault', '/breakroom': 'breakroom', '/break': 'breakroom' };

@@ -4622,6 +4622,56 @@ app.post('/api/network/message', requireAdmin, adminLimiter, async (req, res) =>
   res.status(201).json({ message: data });
 });
 
+// ── First-party analytics ─────────────────────────────────────────────────────
+// Append-only event ingestion (ek_events, migration 027). Event names are
+// allowlisted so the table can't be polluted; writes are fire-and-forget.
+const EK_EVENT_NAMES = new Set([
+  'page_view', 'signup_success', 'onboarding_complete', 'chat_sent',
+  'module_complete', 'checkout_click', 'voice_started', 'academy_enrolled',
+]);
+
+app.post('/api/event', sharedLimit('events', 60, 120), async (req, res) => {
+  const { event, props, path: pagePath, sid } = req.body || {};
+  if (!EK_EVENT_NAMES.has(event)) return res.status(204).end(); // silently drop unknown names
+  supabaseAdmin.from('ek_events').insert({
+    user_id: req.user?.id || null,
+    sid: typeof sid === 'string' ? sid.slice(0, 40) : null,
+    event,
+    path: typeof pagePath === 'string' ? pagePath.slice(0, 200) : null,
+    props: (props && typeof props === 'object') ? props : null,
+  }).then(() => {}, () => {});
+  res.status(204).end();
+});
+
+// Funnel counts for the admin: events by name over a window (default 7 days).
+app.get('/api/admin/funnel', requireAdmin, adminLimiter, async (req, res) => {
+  const days = Math.min(parseInt(req.query.days || '7', 10) || 7, 90);
+  const since = new Date(Date.now() - days * 86400000).toISOString();
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('ek_events')
+      .select('event, sid, user_id')
+      .gte('at', since)
+      .limit(50000);
+    if (error) throw error;
+    const byEvent = {};
+    for (const row of data || []) {
+      const b = byEvent[row.event] || (byEvent[row.event] = { count: 0, sids: new Set(), users: new Set() });
+      b.count++;
+      if (row.sid) b.sids.add(row.sid);
+      if (row.user_id) b.users.add(row.user_id);
+    }
+    const out = {};
+    for (const [k, v] of Object.entries(byEvent)) {
+      out[k] = { count: v.count, unique_sessions: v.sids.size, unique_users: v.users.size };
+    }
+    res.json({ days, events: out });
+  } catch (err) {
+    logServerError('funnel', err);
+    res.status(500).json({ error: 'Funnel query failed' });
+  }
+});
+
 // ── GDPR: data export + account deletion ─────────────────────────────────────
 // Self-service data rights. Export returns everything we hold about the user as
 // a single downloadable JSON document; delete removes every row and the auth

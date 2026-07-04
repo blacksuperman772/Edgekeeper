@@ -19,6 +19,13 @@
 html.ek-authed [data-guest-only] { display: none !important; }
 .ek-auth-cta { display: none; }
 html.ek-authed .ek-auth-cta { display: inline-flex; }
+/* "Enter your office" doesn't fit a phone topbar next to the logo — swap to a
+   short label under 640px. Markup: <span class="cta-full">/<span class="cta-short"> */
+.ek-auth-cta .cta-short { display: none; }
+@media (max-width: 640px) {
+  .ek-auth-cta .cta-full { display: none; }
+  .ek-auth-cta .cta-short { display: inline; }
+}
 
 /* ── Skeleton loading ────────────────────────────────────────────────────────
    Reusable shimmer placeholders. Use .ek-skel on a block; .ek-skel-line for a
@@ -66,6 +73,26 @@ html.ek-authed .ek-auth-cta { display: inline-flex; }
 }
 @media (max-width: 520px) {
   .ek-pillar { padding: 5px 10px; letter-spacing: 0.08em; }
+}
+
+/* ── Brand logo — one identity everywhere ────────────────────────────────────
+   Canonical wordmark (landing page): Cormorant Garamond, weight 400, wide
+   tracking, uppercase, gold K. Pages had drifted (lowercase, tight tracking,
+   missing gold K); these rules enforce the identity attributes site-wide while
+   leaving font-size to each page's context. */
+.nav-logo, .topbar-logo, .footer-logo, .brand {
+  font-family: 'Cormorant Garamond', Georgia, serif !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.2em !important;
+  text-transform: uppercase !important;
+  text-decoration: none !important;
+}
+.nav-logo span, .topbar-logo span, .footer-logo span, .brand span {
+  color: #b8a06a !important;
+}
+@media (max-width: 520px) {
+  /* tight topbars — relax tracking so the wordmark doesn't crowd the switcher */
+  .nav-logo, .topbar-logo, .brand { letter-spacing: 0.12em !important; }
 }
 
 /* ── Custom-cursor accessibility ─────────────────────────────────────────────

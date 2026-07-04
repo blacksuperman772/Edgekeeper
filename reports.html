@@ -13,16 +13,16 @@
   <style>
 
     :root {
-      --obsidian:    #07050E;
-      --surface:     #0D0B15;
-      --layer:       #12101A;
+      --obsidian:    #050505;
+      --surface:     #0d0d0d;
+      --layer:       #121212;
       --border:      rgba(255,255,255,0.06);
       --border-med:  rgba(255,255,255,0.1);
       --gold:        #B8A06A;
       --gold-dim:    rgba(184,160,106,0.4);
       --green:       #5EA68A;
       --green-dim:   rgba(94,166,138,0.4);
-      --violet:      rgba(124,58,237,0.5);
+      --violet:      rgba(184,160,106,0.5);
       --muted:       rgba(255,255,255,0.25);
       --text:        rgba(255,255,255,0.72);
       --text-bright: rgba(255,255,255,0.88);
@@ -68,12 +68,12 @@
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 48px;
       z-index: 500;
-      background: rgba(7,5,14,0.0);
+      background: rgba(5,5,5,0.0);
       border-bottom: 1px solid transparent;
       transition: background .5s, border-color .5s;
     }
     nav.scrolled {
-      background: rgba(7,5,14,0.96);
+      background: rgba(5,5,5,0.96);
       border-bottom-color: var(--border);
       backdrop-filter: blur(14px);
     }
@@ -126,6 +126,7 @@
       margin: 0 auto;
     }
     .hero-title {
+      font-family: var(--serif);
       font-size: clamp(2.4rem, 4vw, 3.6rem);
       font-weight: 300;
       color: var(--text-bright);
@@ -349,7 +350,7 @@
     .summary-block {
       margin-bottom: 64px;
       padding-left: 24px;
-      border-left: 1px solid rgba(124,58,237,0.35);
+      border-left: 1px solid rgba(184,160,106,0.35);
     }
     .summary-text {
       font-size: 1.05rem;
