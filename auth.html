@@ -608,7 +608,7 @@
   // ── URL params — capture intent before auth ──────────────────────────────────
   const _params = new URLSearchParams(window.location.search);
   const _next   = _params.get('next');   // e.g. 'onboarding' or full path like '/academy-onboarding'
-  const _mentor = _params.get('mentor'); // e.g. 'mike' | 'ashley'
+  const _mentor = _params.get('mentor'); // e.g. 'marcus' | 'iris' | 'theo'
   const _plan   = _params.get('plan');   // e.g. 'free' | 'starter' | 'pro' | 'institutional'
 
   // Persist mentor/plan in sessionStorage so onboarding and workspace can read it

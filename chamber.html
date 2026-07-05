@@ -113,8 +113,8 @@
   </main>
 
   <script>
-  // Iris’s persona and Marcus’s notebook are now fetched server-side in /api/chat.
-  // The client sends mentor:’ashley’ and a compact session_context only.
+  // Iris's persona and Marcus's notebook are now fetched server-side in /api/chat.
+  // The client sends mentor:'iris' and a compact session_context only.
 
   const STATES = {
     1: { name:'Stable',     dot:'var(--iris)',  desc:'The account is in order.', present:false },
@@ -295,7 +295,7 @@
     async function streamIris() {
       const res = await fetch('/api/chat', {
         method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
-        body: JSON.stringify({ mentor:'ashley', messages: history.slice(-16), stream: true }),
+        body: JSON.stringify({ mentor:'iris', messages: history.slice(-16), stream: true }),
       });
       if (res.status === 401) { window.location.href = '/auth.html?next=' + encodeURIComponent('/chamber'); const e = new Error('401'); e.handled = true; throw e; }
       if (!res.ok) { const e = new Error('http'); e.status = res.status; throw e; }
@@ -336,7 +336,7 @@
         try {
           const r = await fetch('/api/chat', {
             method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
-            body: JSON.stringify({ mentor:'ashley', messages: history.slice(-16) }),
+            body: JSON.stringify({ mentor:'iris', messages: history.slice(-16) }),
           });
           if (r.status === 401) { window.location.href = '/auth.html?next=' + encodeURIComponent('/chamber'); return; }
           if (!r.ok) { add('assistant', r.status === 429 ? 'Not now. Give it a moment.' : 'Hold on. Try again.'); }

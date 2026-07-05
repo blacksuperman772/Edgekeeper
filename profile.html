@@ -737,7 +737,7 @@
 
   /* ── ACCENT COLOR (mentor) ─────────────────────────────────────── */
   function applyMentorAccent(mentor) {
-    if (mentor === 'ashley') {
+    if (mentor === 'iris') {
       document.documentElement.style.setProperty('--accent',     'var(--green-bright)');
       document.documentElement.style.setProperty('--accent-dim', 'var(--green)');
       document.documentElement.style.setProperty('--accent-rgb', '74,222,128');
@@ -973,7 +973,7 @@
       populateCurrentFocus();
 
       // Fetch notebook after we know the mentor
-      const mentorKey = (profile.mentor === 'ashley') ? 'ashley' : 'mike';
+      const mentorKey = (profile.mentor === 'iris') ? 'iris' : 'marcus';
       try {
         const notebookResp = await fetch('/api/notebook/' + mentorKey);
         if (notebookResp.ok) {

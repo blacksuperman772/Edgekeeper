@@ -563,7 +563,7 @@
       const { profile } = await res.json();
 
       // Apply mentor accent color if Iris
-      if (profile && profile.mentor === 'ashley') {
+      if (profile && profile.mentor === 'iris') {
         document.documentElement.style.setProperty('--mentor-gold', '#5EA68A');
         document.documentElement.style.setProperty('--mentor-gold-dim', 'rgba(94,166,138,0.4)');
         document.getElementById('cursor').style.background = '#5EA68A';

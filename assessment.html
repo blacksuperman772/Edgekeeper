@@ -364,12 +364,12 @@
       background: rgba(184,160,106,0.05);
     }
 
-    /* override for ashley */
-    body.ashley .path-block:hover {
+    /* override for iris */
+    body.iris .path-block:hover {
       border-color: rgba(107,140,107,0.35);
       background: rgba(74,92,74,0.03);
     }
-    body.ashley .path-block.selected {
+    body.iris .path-block.selected {
       border-color: var(--green-b);
       background: rgba(74,92,74,0.05);
     }
@@ -545,8 +545,8 @@
     const SUPABASE_ANON = window.__EK_SUPABASE_ANON__;
 
     /* ── MENTOR ─────────────────────────────── */
-    const mentor = (localStorage.getItem('ek_mentor') || 'mike').toLowerCase();
-    const isMarcus = mentor !== 'ashley';
+    const mentor = (localStorage.getItem('ek_mentor') || 'marcus').toLowerCase();
+    const isMarcus = mentor !== 'iris';
 
     const ACCENT      = isMarcus ? '#b8a06a' : '#6b8c6b';
     const ACCENT_DIM  = isMarcus ? '#7a6a45' : '#4a5c4a';
@@ -558,8 +558,8 @@
     document.documentElement.style.setProperty('--mc-dim', ACCENT_DIM);
     document.documentElement.style.setProperty('--mc-bg',  ACCENT_BG);
 
-    /* body class for ashley overrides */
-    if (!isMarcus) document.body.classList.add('ashley');
+    /* body class for iris overrides */
+    if (!isMarcus) document.body.classList.add('iris');
 
     /* update text labels */
     document.getElementById('mentor-name-label').textContent = MENTOR_LABEL;
@@ -965,7 +965,7 @@
         answers: { ...answers, trading_path: selectedPath },
         initial_stage,
         initial_identity,
-        mentor: isMarcus ? 'mike' : 'ashley'
+        mentor: isMarcus ? 'marcus' : 'iris'
       };
 
       try {

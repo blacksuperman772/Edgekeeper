@@ -230,6 +230,22 @@ function requireAuthApi(req, res, next) {
   res.status(401).json({ error: 'Authentication required' });
 }
 
+// ── Canonical mentor slugs ─────────────────────────────────────────────────────
+// Public/db slugs use the display names marcus|iris|theo. Legacy mike/ashley
+// are accepted only at the boundary and immediately normalized.
+const MENTOR_SLUGS = Object.freeze({
+  marcus: 'marcus',
+  iris: 'iris',
+  theo: 'theo',
+  mike: 'marcus',
+  ashley: 'iris',
+});
+function canonicalMentor(slug) {
+  if (!slug || typeof slug !== 'string') return 'marcus';
+  const n = slug.toLowerCase().trim();
+  return MENTOR_SLUGS[n] || 'marcus';
+}
+
 // Apply session verification globally (non-blocking — just attaches user)
 app.use(verifySession);
 
@@ -565,12 +581,10 @@ app.get(['/favicon.ico', '/favicon.svg'], (req, res) => {
   res.sendFile(path.join(__dirname, 'favicon.svg'));
 });
 // ── Mentor + Method pages (public) ───────────────────────────────────────────
-// Mentor office pages. Public URLs use the display names (/marcus, /iris).
-// Internal slugs stay mike/ashley everywhere else (DB, API, voice config).
+// Public URLs use display names. Internal slugs are canonical (marcus|iris|theo).
 app.get('/marcus',  serveInjectedHtml(path.join(__dirname, 'mike.html')));
 app.get('/iris',    serveInjectedHtml(path.join(__dirname, 'ashley.html')));
 app.get(['/theo', '/theo.html'], serveInjectedHtml(path.join(__dirname, 'theo.html')));
-// 301 the old slug URLs so existing links and bookmarks still resolve.
 app.get(['/mike', '/mike.html'],     (req, res) => res.redirect(301, '/marcus'));
 app.get(['/ashley', '/ashley.html'], (req, res) => res.redirect(301, '/iris'));
 app.get('/method',  serveInjectedHtml(path.join(__dirname, 'method.html')));
@@ -607,7 +621,7 @@ app.post('/api/onboarding/register', apiLimiter, async (req, res) => {
   }
 
   const safePlan = ['free', 'starter', 'pro', 'professional', 'institutional'].includes(plan) ? plan : 'free';
-  const safeMentor = ['mike', 'ashley'].includes(mentor) ? mentor : 'mike';
+  const safeMentor = canonicalMentor(mentor);
 
   const { data: userData, error: createErr } = await supabaseAdmin.auth.admin.createUser({
     email,
@@ -641,7 +655,7 @@ app.post('/api/onboarding/register', apiLimiter, async (req, res) => {
   res.json({ success: true, user_id: userData.user.id, plan: safePlan });
 
   // Welcome email — fire-and-forget, never blocks the response
-  const mentorDisplay = safeMentor === 'ashley' ? 'Iris' : 'Marcus';
+  const mentorDisplay = canonicalMentor(safeMentor) === 'iris' ? 'Iris' : 'Marcus';
   sendEmail(
     email,
     `${mentorDisplay} is ready for you.`,
@@ -753,7 +767,7 @@ app.use(express.static(path.join(__dirname), {
 
 // ── Chat proxy (requires auth) ────────────────────────────────────────────────
 app.post('/api/chat', requireAuthApi, chatLimiter, sharedLimit('chat', 60, 30), async (req, res) => {
-  const { messages, mentor = 'mike', module_key, session_context, is_opener = false, stream = false } = req.body;
+  const { messages, mentor = 'marcus', module_key, session_context, is_opener = false, stream = false } = req.body;
 
   if (!Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'messages must be a non-empty array' });
@@ -761,7 +775,7 @@ app.post('/api/chat', requireAuthApi, chatLimiter, sharedLimit('chat', 60, 30), 
   if (messages.length > 35) {
     return res.status(400).json({ error: 'Too many messages in context' });
   }
-  if (!['mike', 'ashley', 'study_companion'].includes(mentor)) {
+  if (!['marcus', 'iris', 'study_companion'].includes(mentor)) {
     return res.status(400).json({ error: 'Invalid mentor' });
   }
   if (module_key !== undefined && !/^[a-z0-9_]{2,60}$/.test(String(module_key))) {
@@ -1393,14 +1407,15 @@ ${spec.check}` : '';
       .eq('id', userId).maybeSingle(),
     supabaseAdmin.from('notebooks')
       .select('running_narrative, current_theory, commitments, open_questions, concerns, breakthroughs, patterns')
-      .eq('user_id', userId).eq('mentor', 'mike').maybeSingle(),
+      .eq('user_id', userId).eq('mentor', 'marcus').maybeSingle(),
   ]);
 
   const profile = profileRes.data || {};
   const marcusNb = marcusNbRes.data || null;
 
   // ── Iris (Guardian) ───────────────────────────────────────────────────────────
-  if (mentor === 'ashley') {
+  const safeMentor = canonicalMentor(mentor);
+  if (safeMentor === 'iris') {
     const marcusContext = buildServerNotebookContext(marcusNb, 'marcus_read');
     return [
       IRIS_GUARDIAN_CHAT_PERSONA,
@@ -1457,14 +1472,14 @@ ${spec.check}` : '';
 // it sends only structured, bounded fields and the server builds the prompt. This
 // closes the unauthenticated "arbitrary prompt on our OpenAI key" abuse vector.
 const INTAKE_PERSONAS = {
-  mike: {
+  marcus: {
     name: 'Marcus', age: 52,
     background: 'Former professional trader and performance coach. 18 years trading professionally before transitioning to coaching. Has seen every pattern, every excuse, every breakthrough a trader can go through. Calm in the way a surgeon is calm.',
     coreBeliefs: ['Discipline creates freedom.', 'Motivation is unreliable — systems are not.', 'Repeated behavior reveals truth faster than words.', 'Confidence is earned through evidence, not encouragement.', 'Accountability matters — not as punishment, but as respect.'],
     style: 'Shorter responses. Questions with purpose. Does not over-explain. Challenges excuses. Dry humor exists but is earned. Slow to trust. Highly observant.',
     voice: 'YOUR VOICE — MARCUS:\nCalm. Economical. Perceptive. Direct but never harsh.\nYou have seen every pattern a thousand times. You read people fast.\nYou sound like a surgeon — precise, unhurried, no wasted words.\nYou challenge because you respect them, not to prove a point.\nForbidden: "As an AI", "I understand how you feel", "Tell me more", "Thanks for sharing", "How can I help", "That makes sense", "Great".',
   },
-  ashley: {
+  iris: {
     name: 'Iris', age: 42,
     background: 'Performance psychologist and behavioral coach. 15 years working with traders, athletes, and executives on performance under pressure. Understands that behavior is always information.',
     coreBeliefs: ['Most trading mistakes start as emotional decisions dressed as rational ones.', 'Self-awareness is the first and most powerful trading edge.', 'Shame blocks growth. Honesty enables it.', 'Patterns matter more than events.', 'The body knows before the mind does.'],
@@ -1472,7 +1487,7 @@ const INTAKE_PERSONAS = {
     voice: 'YOUR VOICE — IRIS:\nWarm. Grounded. Emotionally intelligent. Gentle but honest.\nYou notice what people cannot see in themselves.\nYou hear what is beneath the words — the fear, the fatigue, the hope.\nForbidden: "As an AI", "I understand", "That\'s great!", "Thanks for sharing", "Of course", "Absolutely".',
   },
 };
-const intakeKey = m => (m === 'ashley' ? 'ashley' : 'mike');
+const intakeKey = m => canonicalMentor(m);
 
 function buildIntakePrompt({ mentor, exchangeCount, level, theory, totalExchanges }) {
   const c = INTAKE_PERSONAS[intakeKey(mentor)];
@@ -1561,7 +1576,7 @@ app.post('/api/intake-chat', intakeLimiter,
       return res.status(400).json({ error: 'Message content too long' });
     }
   }
-  if (mentor != null && !['mike', 'ashley'].includes(mentor)) {
+  if (mentor != null && !['marcus', 'iris'].includes(mentor)) {
     return res.status(400).json({ error: 'Invalid mentor' });
   }
 
@@ -1622,7 +1637,7 @@ app.post('/api/intake-chat', intakeLimiter,
 
 app.post('/api/intake/save', requireAuthApi, apiLimiter, async (req, res) => {
   const { mentor, exchangeCount, history, level } = req.body || {};
-  const safeMentor = ['mike', 'ashley'].includes(mentor) ? mentor : 'mike';
+  const safeMentor = canonicalMentor(mentor);
   const safeHistory = Array.isArray(history) ? history.slice(-30) : [];
   const safeCount   = Math.max(0, parseInt(exchangeCount) || 0);
   const safeLevel   = typeof level === 'string' ? level.slice(0, 64) : '';
@@ -1682,7 +1697,8 @@ app.delete('/api/intake/save', requireAuthApi, apiLimiter, async (req, res) => {
 // ── Notebook sync ─────────────────────────────────────────────────────────────
 app.get('/api/notebook/:mentor', requireAuthApi, apiLimiter, async (req, res) => {
   const { mentor } = req.params;
-  if (!['mike', 'ashley'].includes(mentor)) {
+  const safeMentor = canonicalMentor(mentor);
+  if (!['marcus', 'iris', 'theo'].includes(safeMentor)) {
     return res.status(400).json({ error: 'Invalid mentor' });
   }
 
@@ -1690,7 +1706,7 @@ app.get('/api/notebook/:mentor', requireAuthApi, apiLimiter, async (req, res) =>
     .from('notebooks')
     .select('*')
     .eq('user_id', req.user.id)
-    .eq('mentor', mentor)
+    .eq('mentor', safeMentor)
     .maybeSingle();
 
   if (error) {
@@ -1703,7 +1719,8 @@ app.get('/api/notebook/:mentor', requireAuthApi, apiLimiter, async (req, res) =>
 
 app.post('/api/notebook/:mentor', requireAuthApi, apiLimiter, async (req, res) => {
   const { mentor } = req.params;
-  if (!['mike', 'ashley'].includes(mentor)) {
+  const safeMentor = canonicalMentor(mentor);
+  if (!['marcus', 'iris', 'theo'].includes(safeMentor)) {
     return res.status(400).json({ error: 'Invalid mentor' });
   }
 
@@ -1729,7 +1746,7 @@ app.post('/api/notebook/:mentor', requireAuthApi, apiLimiter, async (req, res) =
   const { data, error } = await supabaseAdmin
     .from('notebooks')
     .upsert(
-      { user_id: req.user.id, mentor, ...payload },
+      { user_id: req.user.id, mentor: safeMentor, ...payload },
       { onConflict: 'user_id,mentor' }
     )
     .select()
@@ -2266,14 +2283,14 @@ app.post('/api/voice/session', requireAuthApi, apiLimiter, async (req, res) => {
   }
 
   const mentor = req.body?.mentor;
-  if (!['mike', 'ashley', 'theo'].includes(mentor)) {
+  if (!['marcus','iris','theo'].includes(mentor)) {
     return res.status(400).json({ error: 'Invalid mentor' });
   }
 
   const apiKey  = process.env.ELEVENLABS_API_KEY;
   const VOICE_AGENTS = {
-    mike:   process.env.ELEVENLABS_MIKE_AGENT_ID,
-    ashley: process.env.ELEVENLABS_ASHLEY_AGENT_ID,
+    marcus: process.env.ELEVENLABS_MIKE_AGENT_ID,
+    iris:   process.env.ELEVENLABS_ASHLEY_AGENT_ID,
     theo:   process.env.ELEVENLABS_THEO_AGENT_ID,
   };
   const agentId = VOICE_AGENTS[mentor];
@@ -2297,8 +2314,9 @@ app.post('/api/voice/session', requireAuthApi, apiLimiter, async (req, res) => {
     } catch (_) {}
   }
 
-  const VOICE_PERSONAS = { mike: MIKE_VOICE_PERSONA, ashley: ASHLEY_VOICE_PERSONA, theo: THEO_VOICE_PERSONA };
-  const voicePersona = VOICE_PERSONAS[mentor] || MIKE_VOICE_PERSONA;
+  const VOICE_PERSONAS = { marcus: MIKE_VOICE_PERSONA, iris: ASHLEY_VOICE_PERSONA, theo: THEO_VOICE_PERSONA };
+  const safeMentor = canonicalMentor(mentor);
+  const voicePersona = VOICE_PERSONAS[safeMentor] || MIKE_VOICE_PERSONA;
   const voicePrompt  = voicePersona + brainContext;
 
   // Abort if ElevenLabs does not respond within 8 seconds
@@ -2797,7 +2815,7 @@ app.post('/api/vault', requireAuthApi, apiLimiter, async (req, res) => {
       lock_level:         lock_level         || 1,
       reason:             reason,
       estimated_outcome:  estimated_outcome  || null,
-      mentor:             mentor             || 'mike',
+      mentor:             canonicalMentor(mentor),
       account_balance:    guardianState?.balance          || null,
       daily_pnl_pct:      guardianState?.daily_pnl_pct    || null,
       consecutive_losses: guardianState?.consecutive_losses || null,
@@ -3047,7 +3065,7 @@ app.post('/api/assessment', requireAuthApi, apiLimiter, async (req, res) => {
     return res.status(400).json({ error: 'answers object required' });
   }
 
-  const safeMentor = ['mike', 'ashley'].includes(mentor) ? mentor : 'mike';
+  const safeMentor = canonicalMentor(mentor);
   const safeStage  = ['explorer','student','developing','consistent','performance','mentor_candidate'].includes(initial_stage)
     ? initial_stage : 'explorer';
 
@@ -3250,7 +3268,7 @@ app.post('/api/passport', requireAuthApi, apiLimiter, async (req, res) => {
   if (!passPostBypass && !['professional', 'institutional'].includes(passPostPlan)) {
     return res.status(403).json({ error: 'Decision Passport requires the Private Office plan or above.' });
   }
-  const { summary, badge, score, mentor = 'mike' } = req.body;
+  const { summary, badge, score, mentor = 'marcus' } = req.body;
   if (!summary || summary.trim().length < 5) {
     return res.status(400).json({ error: 'summary required' });
   }
@@ -3262,7 +3280,7 @@ app.post('/api/passport', requireAuthApi, apiLimiter, async (req, res) => {
       summary:    summary.trim().slice(0, 1000),
       badge:      ['disciplined', 'flagged', 'neutral', 'breakthrough'].includes(badge) ? badge : 'neutral',
       score:      score != null ? Math.min(100, Math.max(0, parseInt(score, 10))) : null,
-      mentor:     ['mike', 'ashley'].includes(mentor) ? mentor : 'mike',
+      mentor:     canonicalMentor(mentor),
     }, { onConflict: 'user_id,entry_date' })
     .select()
     .single();
@@ -3409,7 +3427,7 @@ app.patch('/api/settings', requireAuthApi, apiLimiter, async (req, res) => {
   for (const key of allowed) {
     if (req.body[key] !== undefined) update[key] = req.body[key];
   }
-  if (update.mentor && !['mike', 'ashley'].includes(update.mentor)) {
+  if (update.mentor && !canonicalMentor(update.mentor)) {
     return res.status(400).json({ error: 'Invalid mentor' });
   }
   if (update.display_name && typeof update.display_name === 'string') {
@@ -3428,7 +3446,7 @@ app.patch('/api/settings', requireAuthApi, apiLimiter, async (req, res) => {
 
 async function generateMentorMessage(userId, mentor, triggerType, context = '') {
   const mentorPrompts = {
-    mike: `You are Marcus. 52, ex-prop trader, now working in trading psychology at EdgeKeeper. You have been doing this long enough to know when someone is circling a problem and when they have gone quiet for a reason.
+    marcus: `You are Marcus. 52, ex-prop trader, now working in trading psychology at EdgeKeeper. You have been doing this long enough to know when someone is circling a problem and when they have gone quiet for a reason.
 
 Write a single proactive check-in message to a client you have history with. Trigger: ${triggerType}. Context: ${context}.
 
@@ -3442,7 +3460,7 @@ Examples of the right register:
 "Haven't heard from you. How's the plan holding up?"
 "Been a while. Where are you at?"`,
 
-    ashley: `You are Iris. 42, performance coach specializing in trading psychology at EdgeKeeper. You have been doing this work long enough to know that absence usually means something.
+    iris: `You are Iris. 42, performance coach specializing in trading psychology at EdgeKeeper. You have been doing this work long enough to know that absence usually means something.
 
 Write a single proactive check-in message to a client you have history with. Trigger: ${triggerType}. Context: ${context}.
 
@@ -3466,7 +3484,7 @@ Examples of the right register:
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
       body: JSON.stringify({
         model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-        messages: [{ role: 'system', content: mentorPrompts[mentor] || mentorPrompts.mike }],
+        messages: [{ role: 'system', content: mentorPrompts[mentor] || mentorPrompts.marcus }],
         max_completion_tokens: 120,
       }),
     });
@@ -3516,13 +3534,13 @@ async function runProactiveOutreach() {
       if (recentMsg) continue; // already sent this week
 
       const context = `User has been away for ${daysSinceActivity} days.`;
-      const content = await generateMentorMessage(user.id, user.mentor || 'mike', 'inactivity', context);
+      const content = await generateMentorMessage(user.id, canonicalMentor(user.mentor), 'inactivity', context);
       if (!content) continue;
 
       // Store the message in DB
       await supabaseAdmin.from('mentor_messages').insert({
         user_id:      user.id,
-        mentor:       user.mentor || 'mike',
+        mentor:       canonicalMentor(user.mentor),
         content,
         trigger_type: 'inactivity',
       });
@@ -3532,7 +3550,7 @@ async function runProactiveOutreach() {
         const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(user.id);
         const email = authUser?.user?.email;
         if (email) {
-          const mentorName = (user.mentor || 'mike') === 'ashley' ? 'Iris' : 'Marcus';
+          const mentorName = canonicalMentor(user.mentor || 'marcus') === 'iris' ? 'Iris' : 'Marcus';
           await sendEmail(
             email,
             `${mentorName} wants to check in`,
@@ -3713,7 +3731,7 @@ app.get('/billing/success', requireAuthPage, async (req, res) => {
 
       // Confirmation email
       const PLAN_DISPLAY = { free: 'Free Trial', starter: 'Resident', pro: 'Fellow', professional: 'Private Office', institutional: 'Institution' };
-      const mentorName = req.user.user_metadata?.mentor === 'ashley' ? 'Iris' : 'Marcus';
+      const mentorName = canonicalMentor(req.user.user_metadata?.mentor) === 'iris' ? 'Iris' : 'Marcus';
       sendEmail(
         req.user.email,
         `You're on the ${PLAN_DISPLAY[plan] || plan} plan.`,
@@ -4113,13 +4131,11 @@ app.post('/api/admin/run-outreach', requireAdmin, adminLimiter, async (req, res)
 // ── Admin: broadcast system announcement to all active users ─────────────────
 // Writes a mentor_messages row for every onboarded user
 app.post('/api/admin/announce', requireAdmin, adminLimiter, async (req, res) => {
-  const { content, mentor = 'mike' } = req.body || {};
+  const { content, mentor = 'marcus' } = req.body || {};
   if (!content || typeof content !== 'string' || content.trim().length < 5) {
     return res.status(400).json({ error: 'content required (min 5 chars)' });
   }
-  if (!['mike', 'ashley'].includes(mentor)) {
-    return res.status(400).json({ error: 'mentor must be mike or ashley' });
-  }
+  const safeMentor = canonicalMentor(mentor);
 
   try {
     const { data: users } = await supabaseAdmin
@@ -4131,7 +4147,7 @@ app.post('/api/admin/announce', requireAdmin, adminLimiter, async (req, res) => 
 
     const rows = users.map(u => ({
       user_id:      u.id,
-      mentor,
+      mentor: safeMentor,
       content:      content.trim().slice(0, 2000),
       trigger_type: 'admin_announce',
     }));
@@ -4144,7 +4160,7 @@ app.post('/api/admin/announce', requireAdmin, adminLimiter, async (req, res) => 
       worker_id:   'founder',
       worker_name: 'Founder',
       avatar_char: 'F',
-      content:     `Announcement sent to ${users.length} user${users.length !== 1 ? 's' : ''} via ${mentor === 'ashley' ? 'Iris' : 'Marcus'}: "${content.trim().slice(0, 80)}${content.trim().length > 80 ? '…' : ''}"`,
+      content:     `Announcement sent to ${users.length} user${users.length !== 1 ? 's' : ''} via ${canonicalMentor(mentor) === 'iris' ? 'Iris' : 'Marcus'}: "${content.trim().slice(0, 80)}${content.trim().length > 80 ? '…' : ''}"`,
       msg_type:    'status',
     });
 
@@ -4233,7 +4249,7 @@ async function generateBehavioralReport(userId, reportMonth) {
   const bypass = profile?.bypass_subscription || false;
   if (!bypass && !['professional', 'institutional'].includes(plan)) return;
 
-  const mentor = profile?.mentor || 'mike';
+  const mentor = canonicalMentor(profile?.mentor);
   const [year, month] = reportMonth.split('-').map(Number);
   const startOfMonth = new Date(year, month - 1, 1).toISOString();
   const endOfMonth   = new Date(year, month, 1).toISOString();
@@ -4268,7 +4284,7 @@ async function generateBehavioralReport(userId, reportMonth) {
     ? Math.round(scores.reduce((s, x) => s + (x.overall_score || 0), 0) / scores.length)
     : null;
 
-  const mentorVoice = mentor === 'ashley'
+  const mentorVoice = mentor === 'iris'
     ? 'Iris: warm, empathetic, holistic perspective on emotional and psychological patterns'
     : 'Marcus: direct, analytical, performance-focused observations on discipline and execution';
 
@@ -4334,7 +4350,7 @@ Journal excerpts:\n${journalExcerpts || '(no entries this month)'}`;
     const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId);
     const userEmail = authUser?.user?.email;
     if (userEmail) {
-      const mentorName = mentor === 'ashley' ? 'Iris' : 'Marcus';
+      const mentorName = mentor === 'iris' ? 'Iris' : 'Marcus';
       await sendEmail(
         userEmail,
         `Your ${new Date(reportMonth + '-02').toLocaleString('en-US', { month: 'long', year: 'numeric' })} report is ready`,
@@ -4401,7 +4417,7 @@ app.post('/api/review', requireAuthApi, apiLimiter, async (req, res) => {
 
   const row = {
     user_id:          req.user.id,
-    mentor:           profile?.mentor || 'mike',
+    mentor:           canonicalMentor(profile?.mentor),
     review_type,
     rule_followed:    rule_followed !== undefined ? Boolean(rule_followed) : null,
     emotional_state:  emotional_state || null,
@@ -4594,18 +4610,18 @@ app.get('/api/network/messages/:room', requireAuthApi, apiLimiter, async (req, r
 
 // POST /api/network/message — admin-only: post a message to a room as Marcus or Iris
 app.post('/api/network/message', requireAdmin, adminLimiter, async (req, res) => {
-  const { room_slug, content, author_role = 'mike' } = req.body || {};
+  const { room_slug, content, author_role = 'marcus' } = req.body || {};
   if (!room_slug || typeof room_slug !== 'string' || !/^[a-z0-9-]{1,60}$/.test(room_slug)) {
     return res.status(400).json({ error: 'Invalid room_slug' });
   }
   if (!content || typeof content !== 'string' || content.trim().length < 1) {
     return res.status(400).json({ error: 'content required' });
   }
-  if (!['mike','ashley','system'].includes(author_role)) {
-    return res.status(400).json({ error: 'author_role must be mike, ashley, or system' });
+  if (!['marcus','iris','system'].includes(author_role)) {
+    return res.status(400).json({ error: 'author_role must be marcus, iris, or system' });
   }
 
-  const authorName = author_role === 'ashley' ? 'Iris' : author_role === 'system' ? 'System' : 'Marcus';
+  const authorName = author_role === 'iris' ? 'Iris' : author_role === 'system' ? 'System' : 'Marcus';
 
   const { data, error } = await supabaseAdmin
     .from('network_messages')

@@ -500,8 +500,8 @@
           <textarea id="announce-text" placeholder="Message from Marcus to all active users…" style="width:100%;background:var(--stone);border:1px solid var(--border);color:var(--text);font-family:var(--sans);font-size:0.72rem;font-weight:300;padding:7px 9px;resize:none;outline:none;line-height:1.5;min-height:60px;transition:border-color .2s;" onfocus="this.style.borderColor='var(--gold-dim)'" onblur="this.style.borderColor='var(--border)'"></textarea>
           <div style="display:flex;gap:6px;margin-top:5px;">
             <select id="announce-mentor" style="background:var(--stone);border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:0.54rem;padding:4px 7px;flex:1;outline:none;">
-              <option value="mike">Marcus</option>
-              <option value="ashley">Iris</option>
+              <option value="marcus">Marcus</option>
+              <option value="iris">Iris</option>
             </select>
             <button class="action-btn" id="announce-btn" onclick="sendAnnouncement()" style="flex:1;margin-bottom:0;">Send</button>
           </div>
@@ -816,7 +816,7 @@ async function triggerOutreach() {
 // ── ANNOUNCE ─────────────────────────────────────────────────────────
 async function sendAnnouncement() {
   const content = (document.getElementById('announce-text')?.value || '').trim();
-  const mentor  = document.getElementById('announce-mentor')?.value || 'mike';
+  const mentor  = document.getElementById('announce-mentor')?.value || 'marcus';
   const btn     = document.getElementById('announce-btn');
   const fb      = document.getElementById('action-feedback');
   if (!content) { if (fb) fb.textContent = 'Write a message first.'; return; }

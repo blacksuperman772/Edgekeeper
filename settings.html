@@ -403,7 +403,8 @@
       <div class="field">
         <label for="mentor-select">Your Coach</label>
         <select id="mentor-select">
-          <option value="mike">Marcus — Direct, analytical, no-nonsense</option>
+          <option value="marcus">Marcus — Direct, analytical, no-nonsense</option>
+          <option value="iris">Iris — Warm, perceptive, behavioral</option>
         </select>
       </div>
       <div class="field">
@@ -533,7 +534,7 @@
       document.getElementById('billing-cancel-btn').style.display = isPaid ? '' : 'none';
 
       document.getElementById('display-name').value     = settings.display_name || '';
-      document.getElementById('mentor-select').value    = settings.mentor || 'mike';
+      document.getElementById('mentor-select').value    = settings.mentor || 'marcus';
       document.getElementById('timezone-select').value  = settings.timezone || 'UTC';
       document.getElementById('email-notifs').checked   = settings.email_notifications !== false;
       document.getElementById('proactive-msgs').checked = settings.proactive_messages !== false;

@@ -492,7 +492,7 @@ async function registerAndProceed() {
   btn.disabled    = true;
   btn.textContent = 'Creating your account…';
 
-  const mentorKey   = mentor?.key || 'mike';
+  const mentorKey   = mentor?.key || 'marcus';
   const guardianLvl = localStorage.getItem('ek_guardian') || 'warn';
   const nbRaw       = localStorage.getItem('ek_notebook_' + mentorKey);
   const nb          = nbRaw ? (JSON.parse(nbRaw) || {}) : {};
@@ -589,8 +589,8 @@ function escHtml(s) {
 
 // ── MENTOR DATA ───────────────────────────────────────────────────────
 const MENTORS = {
-  mike: {
-    key: 'mike', name: 'Marcus', initial: 'M',
+  marcus: {
+    key: 'marcus', name: 'Marcus', initial: 'M',
     color: '#b8a06a', colorDim: '#7a6a45', colorBg: 'rgba(184,160,106,0.05)',
     fallbackQuestions: [
       "Before we get into anything — what's the trade you keep making that you already know you shouldn't?",
@@ -612,8 +612,8 @@ const MENTORS = {
     guardianQ: "One last thing before you go inside. Iris needs to know how far you want her to go when she sees you about to make a decision you will regret.",
     transition: "I've got what I need.\nThere's real material here to work with.\nLet's get started.",
   },
-  ashley: {
-    key: 'ashley', name: 'Iris', initial: 'I',
+  iris: {
+    key: 'iris', name: 'Iris', initial: 'I',
     color: '#6b8c6b', colorDim: '#4a5c4a', colorBg: 'rgba(107,140,107,0.05)',
     fallbackQuestions: [
       "Before we get into trading — tell me how you've been feeling lately, outside the markets.",
@@ -666,7 +666,7 @@ function presenceCue(type) {
 
 // ── FIXED CONSTITUTIONS ───────────────────────────────────────────────
 const CONSTITUTION = {
-  mike: {
+  marcus: {
     age: 52,
     background: 'Former professional trader and performance coach. 18 years trading professionally before transitioning to coaching. Has seen every pattern, every excuse, every breakthrough a trader can go through. Calm in the way a surgeon is calm.',
     coreBeliefs: [
@@ -678,7 +678,7 @@ const CONSTITUTION = {
     ],
     style: 'Shorter responses. Questions with purpose. Does not over-explain. Challenges excuses. Dry humor exists but is earned. Slow to trust. Highly observant.',
   },
-  ashley: {
+  iris: {
     age: 42,
     background: 'Performance psychologist and behavioral coach. 15 years working with traders, athletes, and executives on performance under pressure. Understands that behavior is always information.',
     coreBeliefs: [
@@ -1089,7 +1089,7 @@ async function callAI() {
       body: JSON.stringify({
         task: 'intake',
         messages: history.slice(-16),
-        mentor: mentor ? mentor.key : 'mike',
+        mentor: mentor ? mentor.key : 'marcus',
         exchangeCount,
         level: sessionStorage.getItem('ek_selected_level') || '',
         theory: document.getElementById('theory-text')?.textContent?.trim() || '',
@@ -1125,8 +1125,8 @@ function buildPrompt() {
                 : hour < 21 ? 'evening'
                 :             'late evening';
 
-  const mKey = mentor ? mentor.key : 'mike';
-  const c = CONSTITUTION[mKey] || CONSTITUTION.mike;
+  const mKey = mentor ? mentor.key : 'marcus';
+  const c = CONSTITUTION[mKey] || CONSTITUTION.marcus;
 
   // Phases scale to total exchange count
   const midpoint = Math.floor(TOTAL_EXCHANGES / 2);
@@ -1168,7 +1168,7 @@ You have opinions. You notice what they've avoided.
 Your theory field: your strongest current hypothesis — the real thing beneath the surface.`,
   };
 
-  const mikeVoice = `YOUR VOICE — MARCUS:
+  const marcusVoice = `YOUR VOICE — MARCUS:
 Calm. Economical. Perceptive. Direct but never harsh.
 You have seen every pattern a thousand times. You read people fast.
 You sound like a surgeon — precise, unhurried, no wasted words.
@@ -1186,7 +1186,7 @@ Examples of your voice:
 
 Forbidden: "As an AI", "I understand how you feel", "Tell me more", "Thanks for sharing", "How can I help", "That makes sense", "Great".`;
 
-  const ashleyVoice = `YOUR VOICE — IRIS:
+  const irisVoice = `YOUR VOICE — IRIS:
 Warm. Grounded. Emotionally intelligent. Gentle but honest.
 You notice what people cannot see in themselves.
 You hear what is beneath the words — the fear, the fatigue, the hope.
@@ -1233,7 +1233,7 @@ Background: ${c.background}
 Core beliefs: ${c.coreBeliefs.map(b => `• ${b}`).join('  ')}
 Communication style: ${c.style}
 
-${mentor.key === 'mike' ? mikeVoice : ashleyVoice}
+${mentor.key === 'marcus' ? marcusVoice : irisVoice}
 
 TIME: ${timeCtx}. Reference naturally when it adds something ("It's late" / "You're here early") — never force it.
 
@@ -1446,9 +1446,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Marcus's intake. In the trinity model the workspace mentor is always Marcus —
   // Theo teaches in the Academy, Iris is the guardian you meet later through Marcus.
   // There is no "choose between two mentors" step anymore; any legacy ?mentor=ashley
-  // link is coerced to Marcus.
+  // or unsupported value is coerced to Marcus.
   sessionStorage.removeItem('ek_mentor');
-  selectMentor('mike');
+  selectMentor('marcus');
 });
 </script>
 <script src="/assets/cursor.js"></script>
