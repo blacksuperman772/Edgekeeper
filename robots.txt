@@ -13,4 +13,4 @@ Disallow: /api/
 Disallow: /supabase/
 Disallow: /node_modules/
 
-Sitemap: https://edgekeeper.io/sitemap.xml
+Sitemap: https://edgekeeper.org/sitemap.xml

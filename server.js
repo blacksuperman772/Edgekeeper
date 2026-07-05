@@ -3127,7 +3127,7 @@ app.post('/api/assessment', requireAuthApi, apiLimiter, async (req, res) => {
 });
 
 // ── Email helpers ─────────────────────────────────────────────────────────────
-const FROM_EMAIL = process.env.RESEND_FROM || 'EdgeKeeper <noreply@edgekeeper.io>';
+const FROM_EMAIL = process.env.RESEND_FROM || 'EdgeKeeper <noreply@edgekeeper.org>';
 const APP_URL    = process.env.APP_URL     || 'https://edge-keeper.vercel.app';
 
 async function sendEmail(to, subject, html) {
@@ -3609,7 +3609,7 @@ app.post('/api/billing/initiate', requireAuthApi, apiLimiter, async (req, res) =
     return res.status(400).json({ error: 'Invalid plan' });
   }
   if (plan === 'institutional') {
-    return res.json({ type: 'contact', email: process.env.CONTACT_EMAIL || 'hello@edgekeeper.io' });
+    return res.json({ type: 'contact', email: process.env.CONTACT_EMAIL || 'hello@edgekeeper.org' });
   }
 
   if (!req.user.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(req.user.email)) {
