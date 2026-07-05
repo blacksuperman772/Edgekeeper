@@ -2205,10 +2205,6 @@
       <span class="topbar-cmd"><span class="cmd-key">P</span> Passport</span>
       <span class="topbar-cmd"><span class="cmd-key">A</span> Analytics</span>
       <span class="topbar-cmd"><span class="cmd-key">G</span> Guardian</span>
-      <div class="topbar-mentor-pill">
-        <div class="topbar-mentor-dot"></div>
-        <span class="topbar-mentor-name" id="topbar-mentor-pill">Marcus · Active</span>
-      </div>
     </div>
   </header>
 
@@ -2421,12 +2417,12 @@
 <script>
 // ── MENTOR DATA ──────────────────────────────────────────────────────
 const MENTORS = {
-  mike: {
-    key: 'mike', name: 'Marcus', color: '#b8a06a', colorDim: '#7a6a45',
+  marcus: {
+    key: 'marcus', name: 'Marcus', color: '#b8a06a', colorDim: '#7a6a45',
     colorBg: 'rgba(184,160,106,0.05)',
   },
-  ashley: {
-    key: 'ashley', name: 'Iris', color: '#6b8c6b', colorDim: '#4a5c4a',
+  iris: {
+    key: 'iris', name: 'Iris', color: '#6b8c6b', colorDim: '#4a5c4a',
     colorBg: 'rgba(107,140,107,0.05)',
   },
 };
@@ -2572,7 +2568,6 @@ function applyTheme(m) {
   document.getElementById('sb-avatar').textContent = m.name[0];
   document.getElementById('sb-name').textContent = m.name;
   document.getElementById('topbar-mentor-label').textContent = m.name;
-  document.getElementById('topbar-mentor-pill').textContent = m.name + ' · Active';
   document.getElementById('bar-mentor-name') && (document.getElementById('bar-mentor-name').textContent = m.name);
 }
 
@@ -2679,8 +2674,8 @@ async function renderMentorIntro(text) {
   await sleep(1700 + Math.random() * 600);
   removeTyping();
 
-  const key      = mentor?.key || 'mike';
-  const portrait = key === 'ashley' ? '/assets/iris-portrait.webp' : '/assets/mike-portrait.webp';
+  const key      = mentor?.key || 'marcus';
+  const portrait = key === 'iris' ? '/assets/iris-portrait.webp' : '/assets/mike-portrait.webp';
   const initial  = mentor?.name ? mentor.name.charAt(0) : 'M';
 
   const msgs = document.getElementById('chat-messages');
@@ -3451,7 +3446,7 @@ async function generateGuardianRead(gdata) {
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], mentor: mentor ? mentor.key : 'mike' }),
+      body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], mentor: mentor ? mentor.key : 'marcus' }),
     });
     if (!res.ok) { readEl.textContent = 'Unable to assess right now.'; return; }
     const { content: rawRead } = await res.json();
@@ -3565,7 +3560,7 @@ async function loadMessagesPanel(body) {
   body.innerHTML = messages.map(m => `
     <div class="mentor-msg-item ${m.read_at ? '' : 'msg-unread'}" data-id="${escHtml(m.id)}">
       <div class="mmsg-meta">
-        <span class="mmsg-mentor">${escHtml(m.mentor === 'ashley' ? 'Iris' : 'Marcus')}</span>
+        <span class="mmsg-mentor">${escHtml(m.mentor === 'iris' ? 'Iris' : 'Marcus')}</span>
         <span class="mmsg-tag">${escHtml(TRIGGER_LABEL[m.trigger_type] || m.trigger_type)}</span>
         <span class="mmsg-time">${escHtml(FMT(m.created_at))}</span>
       </div>
@@ -3614,7 +3609,7 @@ async function loadReportsPanel(body) {
       ].filter(Boolean).join(' · ');
 
       return `<div style="border-bottom:1px solid var(--border);padding:28px 0;">
-        <div style="font-family:var(--mono);font-size:0.55rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;">${escHtml(r.report_month)} · ${escHtml((r.mentor || 'mike').charAt(0).toUpperCase() + r.mentor.slice(1))}</div>
+        <div style="font-family:var(--mono);font-size:0.55rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;">${escHtml(r.report_month)} · ${escHtml((r.mentor || 'marcus').charAt(0).toUpperCase() + r.mentor.slice(1))}</div>
         ${statsLine ? `<div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);margin-bottom:14px;">${escHtml(statsLine)}</div>` : ''}
         <div style="font-family:var(--serif);font-size:0.95rem;line-height:1.85;color:var(--text);font-style:italic;">${escHtml(r.summary)}</div>
         ${strengths}${focus}
@@ -3644,8 +3639,8 @@ async function refreshUnreadBadge() {
 function buildMentorProfile() {
   const nb = mentorNotebook;
   const mName = mentor ? mentor.name : 'Marcus';
-  const mKey  = mentor ? mentor.key : 'mike';
-  const c     = CONSTITUTION[mKey] || CONSTITUTION.mike;
+  const mKey  = mentor ? mentor.key : 'marcus';
+  const c     = CONSTITUTION[mKey] || CONSTITUTION.marcus;
 
   if (!nb || nb.sessionCount <= 1) {
     return `<div style="font-family:var(--serif);font-size:1rem;font-weight:300;font-style:italic;color:var(--muted);line-height:1.9;padding:8px 0;">
@@ -3902,7 +3897,7 @@ async function logVaultEntry(lockLevel, ctx) {
         instrument:   ctx?.instrument || null,
         direction:    ctx?.direction  || null,
         lot_size:     ctx?.lots       || null,
-        mentor:       mentor?.key || 'mike',
+        mentor:       mentor?.key || 'marcus',
       }),
     });
     // Update vault badge
@@ -3942,8 +3937,8 @@ function exitBreakRoom() {
 async function showGuardianReplay() {
   if (!breakRoomContext) return;
   const ctx = breakRoomContext;
-  const mKey = mentor ? mentor.key : 'mike';
-  const narration = ctx.narration[mKey] || ctx.narration.mike;
+  const mKey = mentor ? mentor.key : 'marcus';
+  const narration = ctx.narration[mKey] || ctx.narration.marcus;
 
   await getAIResponse('Introduce the guardian replay card — one sentence, calm, no judgment.', true);
   await sleep(700);
@@ -4199,9 +4194,10 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Marcus's Office — the workspace mentor is always Marcus in the trinity model.
   // Iris is the guardian in her Chamber (/chamber), not a workspace mentor; any legacy
-  // 'ashley' selection resolves to Marcus so no one lands in the retired co-mentor flow.
-  mentor = MENTORS.mike;
-  EK.setStr('mentor', 'mike');
+  // Any unsupported legacy mentor selection resolves to Marcus so no one lands
+  // in the retired co-mentor flow.
+  mentor = MENTORS.marcus;
+  EK.setStr('mentor', 'marcus');
 
   applyPlanGating();
   refreshUnreadBadge();
@@ -4245,8 +4241,8 @@ window.addEventListener('DOMContentLoaded', async () => {
       || (stageRaw ? (stageToLevel[stageRaw] || 'foundation') : null)
       || 'foundation';
 
-    const mentorKey = mentor?.key || 'mike';
-    const pool      = __ek_from_academy__ ? ACADEMY_ARRIVAL_INTROS : (MENTOR_INTROS[mentorKey] || MENTOR_INTROS.mike);
+    const mentorKey = mentor?.key || 'marcus';
+    const pool      = __ek_from_academy__ ? ACADEMY_ARRIVAL_INTROS : (MENTOR_INTROS[mentorKey] || MENTOR_INTROS.marcus);
     const firstScript = pool[Math.floor(Math.random() * pool.length)];
 
     await renderMentorIntro(firstScript);
@@ -4360,7 +4356,7 @@ const EK = {
 // AI conversation that follows (server builds context via buildChatSystemPrompt).
 // ══════════════════════════════════════════════════════════════════════
 const MENTOR_INTROS = {
-  mike: [
+  marcus: [
     "You've read the page by now. It's clean, it's tidy, and it's about a tenth of the story. A website can't sit across from you, so let me do this properly. I'm Marcus. Twenty years on trading desks watching sharp people lose everything to the same handful of mistakes. Now I work with traders one at a time, so it doesn't happen to them. That's you, starting today. What brought you here?",
     "Marcus. Whatever the site told you about me is true and incomplete — they always make you sound calmer than you are. Here's what actually matters: I don't trade for you, I don't pick your entries, and I won't tell you what you want to hear. I work on the part of you that keeps undoing your own work. Sit down. Tell me where things stand.",
     "Let me introduce myself the right way, because a profile page does no one justice. I'm Marcus. Two decades trading other people's capital taught me one thing above all others — the chart is rarely the problem. The person reading it usually is. I'm here for the person. So tell me, honestly: what made today the day you finally did this?",
@@ -4376,7 +4372,7 @@ const MENTOR_INTROS = {
 // FIXED CONSTITUTIONS — permanent, never changes, never drifts
 // ══════════════════════════════════════════════════════════════════════
 const CONSTITUTION = {
-  mike: {
+  marcus: {
     age: 52,
     background: 'Former professional trader and performance coach. 18 years trading professionally before transitioning to mentoring. Has seen every pattern, every excuse, every breakthrough a trader can go through. Calm in the way a surgeon is calm.',
     coreBeliefs: [
@@ -4425,7 +4421,7 @@ function saveNotebook(nb) {
     nb.lastUpdated = new Date().toISOString();
     localStorage.setItem(notebookStorageKey(nb.mentor), JSON.stringify(nb));
     // Mirror to server (non-blocking — localStorage is authoritative locally)
-    const mKey = (nb.mentor || 'mike').toLowerCase();
+    const mKey = (nb.mentor || 'marcus').toLowerCase();
     const serverFields = {
       session_count: nb.sessionCount, trust_level: nb.trustLevel,
       current_theory: nb.currentTheory, theory_history: nb.theoryHistory,
@@ -4888,7 +4884,7 @@ async function callOpenAI(messages) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       messages,
-      mentor:          mentor ? mentor.key : 'mike',
+      mentor:          mentor ? mentor.key : 'marcus',
       session_context: buildSessionContext(),
     }),
   });
@@ -4987,7 +4983,7 @@ async function streamChat(messages, onText) {
   const res = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages, mentor: mentor ? mentor.key : 'mike', session_context: buildSessionContext(), stream: true }),
+    body: JSON.stringify({ messages, mentor: mentor ? mentor.key : 'marcus', session_context: buildSessionContext(), stream: true }),
   });
   if (!res.ok) {
     if (res.status === 401) { handleSessionExpiry(); throw new Error('Session expired'); }
@@ -5327,7 +5323,7 @@ async function saveJournalEntry() {
   const badge     = document.getElementById('jnl-badge')?.value || '';
   const financial = (document.getElementById('jnl-financial')?.value || '').trim();
   const identity  = (document.getElementById('jnl-identity')?.value  || '').trim();
-  const mKey      = mentor ? mentor.key : 'mike';
+  const mKey      = mentor ? mentor.key : 'marcus';
 
   const entry = {
     date: new Date().toLocaleString('en-GB', { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }),
@@ -5526,7 +5522,7 @@ async function startVoiceSession() {
   if (voiceState !== 'idle') return;
   voiceState = 'connecting';
 
-  const mKey = mentor ? mentor.key : 'mike';
+  const mKey = mentor ? mentor.key : 'marcus';
 
   // Microphone access — check permission state first so we only prompt when needed.
   // If already granted, skip the pre-check and let the SDK request directly.
