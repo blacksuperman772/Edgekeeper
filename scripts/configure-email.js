@@ -77,7 +77,7 @@ const senderDomain = senderEmail.split('@')[1];
   console.log('\nConfiguring Supabase custom SMTP → Resend…');
   const body = {
     smtp_host:        'smtp.resend.com',
-    smtp_port:        465,
+    smtp_port: '465',
     smtp_user:        'resend',
     smtp_pass:        RESEND_API_KEY,
     smtp_admin_email: senderEmail,

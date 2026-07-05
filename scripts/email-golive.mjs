@@ -66,7 +66,7 @@ async function rGet(p) { return (await fetch('https://api.resend.com' + p, { hea
     const type = rec.type;                         // TXT | MX | CNAME
     const value = rec.value;
     const args = ['vercel', 'dns', 'add', DOMAIN, name, type];
-    if (type === 'MX') args.push(String(rec.priority || 10), value);
+    if (type === 'MX') args.push(value, String(rec.priority || 10));
     else args.push(value);
     try {
       execSync(args.map(a => `"${a}"`).join(' '), { stdio: 'pipe' });
@@ -92,7 +92,7 @@ async function rGet(p) { return (await fetch('https://api.resend.com' + p, { hea
   // 5. Supabase SMTP + templates
   const senderEmail = (g('RESEND_FROM').match(/<([^>]+)>/) || [, 'noreply@' + DOMAIN])[1];
   const smtp = {
-    smtp_host: 'smtp.resend.com', smtp_port: 465, smtp_user: 'resend',
+    smtp_host: 'smtp.resend.com', smtp_port: '465', smtp_user: 'resend',
     smtp_pass: RESEND, smtp_admin_email: senderEmail, smtp_sender_name: 'EdgeKeeper',
     mailer_secure_email_change_enabled: true,
   };
