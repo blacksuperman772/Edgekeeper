@@ -3128,7 +3128,7 @@ app.post('/api/assessment', requireAuthApi, apiLimiter, async (req, res) => {
 
 // ── Email helpers ─────────────────────────────────────────────────────────────
 const FROM_EMAIL = process.env.RESEND_FROM || 'EdgeKeeper <noreply@edgekeeper.org>';
-const APP_URL    = process.env.APP_URL     || 'https://edge-keeper.vercel.app';
+const APP_URL    = process.env.APP_URL     || 'https://edgekeeper.org';
 
 async function sendEmail(to, subject, html) {
   if (!resend) return; // silently skip if no key
