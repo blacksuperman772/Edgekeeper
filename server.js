@@ -70,11 +70,16 @@ app.use((req, res, next) => {
       // event handlers (onclick/onsubmit/etc., 160+ across pages). A nonce-based
       // policy does NOT cover inline event handlers and silently disables them,
       // which breaks the menu, intake form, and every interactive control.
-      "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.jsdelivr.net",
+      // blob: is required for the ElevenLabs voice SDK, which loads its
+      // raw-audio-processor AudioWorklet from a blob: URL — without it voice
+      // calls fail with "Failed to load the worklet module".
+      "script-src 'self' 'unsafe-inline' blob: https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.jsdelivr.net",
+      "worker-src 'self' blob:",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src https://fonts.gstatic.com",
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com https://api.polar.sh https://api.elevenlabs.io wss://api.elevenlabs.io wss://livekit.rtc.elevenlabs.io https://livekit.rtc.elevenlabs.io",
       "img-src 'self' data:",
+      "media-src 'self' blob:",
       "frame-ancestors 'none'",
     ].join('; ')
   );

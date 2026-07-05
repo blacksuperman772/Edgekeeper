@@ -5627,7 +5627,7 @@ async function startVoiceSession() {
     const northStar  = EK.str('north_star');
     const livingId   = EK.str('living_identity');
     const maturity   = EK.str('maturity') || 'developing';
-    const recentMsgs = (conversationHistory || []).slice(-6)
+    const recentMsgs = (getHistory() || []).slice(-6)
       .map(m => `${m.role === 'assistant' ? (mentor?.name || 'Mentor') : 'User'}: ${m.content}`)
       .join('\n');
 
@@ -5692,14 +5692,14 @@ async function startVoiceSession() {
       },
       onError: (message, context) => {
         console.error('Voice SDK error:', message, context);
-        showVoiceError('Connection lost. Check your microphone and try again.');
+        showVoiceError('The voice connection dropped. Please try again.');
         voiceState = 'idle'; stopVoiceTimer();
       },
     });
 
   } catch (err) {
     console.error('startVoiceSession:', err);
-    showVoiceError('Could not connect. Check your microphone permissions and try again.');
+    showVoiceError('Could not start the voice session. Please refresh and try again.');
     voiceState = 'idle';
   }
 }
