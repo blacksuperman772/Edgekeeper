@@ -9,7 +9,7 @@
  *
  * Run AFTER you have:
  *   1. A VALID Resend API key in .env (RESEND_API_KEY=re_...)
- *   2. Verified the sending domain (edgekeeper.io) in the Resend dashboard
+ *   2. Verified the sending domain (edgekeeper.org) in the Resend dashboard
  *
  * Usage:
  *   node scripts/configure-email.js          # validate + apply
@@ -25,7 +25,7 @@ const CHECK_ONLY = process.argv.includes('--check');
 const SUPABASE_URL   = process.env.SUPABASE_URL;
 const MGMT_TOKEN     = process.env.SUPABASE_MANAGEMENT_TOKEN;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const RESEND_FROM    = process.env.RESEND_FROM || 'EdgeKeeper <noreply@edgekeeper.io>';
+const RESEND_FROM    = process.env.RESEND_FROM || 'EdgeKeeper <noreply@edgekeeper.org>';
 
 class FailError extends Error {}
 // Set exit code and throw instead of process.exit(): exiting mid-fetch trips a
@@ -38,7 +38,7 @@ if (!RESEND_API_KEY) fail('RESEND_API_KEY missing from .env');
 
 const ref = SUPABASE_URL.replace('https://', '').split('.')[0];
 
-// Parse "EdgeKeeper <noreply@edgekeeper.io>" → { name, email }
+// Parse "EdgeKeeper <noreply@edgekeeper.org>" → { name, email }
 const m = RESEND_FROM.match(/^\s*(.*?)\s*<([^>]+)>\s*$/);
 const senderName  = (m ? m[1] : 'EdgeKeeper') || 'EdgeKeeper';
 const senderEmail = (m ? m[2] : RESEND_FROM).trim();

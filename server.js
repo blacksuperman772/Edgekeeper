@@ -3139,67 +3139,79 @@ async function sendEmail(to, subject, html) {
   }
 }
 
+// Branded, email-client-safe shell (table layout, inline styles, system fonts,
+// bulletproof button). Matches the Supabase auth templates (scripts/set-auth-emails.mjs).
 function _emailShell(accentColor, body) {
-  return `<!DOCTYPE html><html><body style="background:#050505;color:#d4d0c8;font-family:'Georgia',serif;margin:0;padding:40px 20px;">
-<div style="max-width:540px;margin:0 auto;">
-  <div style="font-size:0.55rem;letter-spacing:0.3em;text-transform:uppercase;color:#333;margin-bottom:40px;">EdgeKeeper</div>
-  ${body}
-  <div style="margin-top:56px;padding-top:24px;border-top:1px solid #111;font-size:0.55rem;color:#222;font-family:monospace;line-height:1.8;">
-    EdgeKeeper &middot; Private mentorship for serious traders<br>
-    <a href="${APP_URL}/settings.html" style="color:#333;">Manage notifications</a>
-  </div>
-</div></body></html>`;
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark light"></head>
+<body style="margin:0;padding:0;background:#050505;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#050505" style="background:#050505;"><tr><td align="center" style="padding:40px 16px;">
+  <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+    <tr><td style="padding:0 8px 26px;text-align:center;">
+      <span style="font-family:Georgia,'Times New Roman',serif;font-size:18px;letter-spacing:0.28em;color:#8a8a82;">EDGE<span style="color:${accentColor};">K</span>EEPER</span>
+    </td></tr>
+    <tr><td bgcolor="#0f0f0f" style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:8px;padding:42px 38px;">
+      ${body}
+    </td></tr>
+    <tr><td style="padding:26px 8px 0;text-align:center;">
+      <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11px;line-height:1.7;color:#55554f;">EdgeKeeper — a trader development institution.<br>Behavioral coaching only. This is not financial advice.<br><a href="${APP_URL}/settings.html" style="color:#6a6a62;text-decoration:none;">Manage notifications</a> &middot; <a href="${APP_URL}" style="color:#6a6a62;text-decoration:none;">edgekeeper.org</a></p>
+    </td></tr>
+  </table>
+</td></tr></table></body></html>`;
 }
 
+function _eyebrow(text, color) {
+  return `<p style="margin:0 0 16px;font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:bold;letter-spacing:0.2em;text-transform:uppercase;color:${color};">${text}</p>`;
+}
+function _headline(text) {
+  return `<h1 style="margin:0 0 18px;font-family:Georgia,'Times New Roman',serif;font-weight:normal;font-size:25px;line-height:1.3;color:#ece6db;">${text}</h1>`;
+}
+function _p(text) {
+  return `<p style="margin:0 0 16px;font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:#d4d0c8;">${text}</p>`;
+}
 function _cta(text, url, color) {
-  return `<a href="${url}" style="display:inline-block;margin-top:32px;padding:12px 28px;border:1px solid ${color};color:${color};text-decoration:none;font-family:monospace;font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;">${text}</a>`;
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:30px 0 4px;"><tr>
+    <td align="center" bgcolor="${color}" style="border-radius:4px;">
+      <a href="${url}" target="_blank" style="display:inline-block;padding:14px 32px;font-family:Helvetica,Arial,sans-serif;font-size:12px;font-weight:bold;letter-spacing:0.09em;text-transform:uppercase;color:#0a0a0a;text-decoration:none;border-radius:4px;">${text}</a>
+    </td></tr></table>`;
 }
 
 function welcomeEmailHtml(mentorName) {
   const color = mentorName === 'Iris' ? '#6b8c6b' : '#b8a06a';
-  return _emailShell(color, `
-    <div style="font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:${color};margin-bottom:28px;">${mentorName} &middot; EdgeKeeper</div>
-    <div style="font-size:1.1rem;line-height:1.9;color:#d4d0c8;">
-      Your intake is saved. ${mentorName} has already started building your profile.<br><br>
-      The conversation picks up exactly where you left off. No re-introduction needed.
-    </div>
-    ${_cta('Enter the workspace', APP_URL + '/workspace.html', color)}
-  `);
+  return _emailShell(color,
+    _eyebrow(mentorName + ' · EdgeKeeper', color) +
+    _headline('Your seat is ready.') +
+    _p('Your intake is saved, and ' + mentorName + ' has already started building your profile.') +
+    _p('The conversation picks up exactly where you left off — no re-introduction needed.') +
+    _cta('Enter the workspace', APP_URL + '/workspace.html', color));
 }
 
 function outreachEmailHtml(mentorName, messageContent) {
   const color = mentorName === 'Iris' ? '#6b8c6b' : '#b8a06a';
-  const safe  = messageContent.replace(/\n/g, '<br>').slice(0, 1200);
-  return _emailShell(color, `
-    <div style="font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:${color};margin-bottom:28px;">${mentorName} &middot; Checking in</div>
-    <div style="font-size:1.05rem;line-height:1.95;color:#d4d0c8;">${safe}</div>
-    ${_cta('Resume your session', APP_URL + '/workspace.html', color)}
-  `);
+  const safe  = String(messageContent || '').replace(/[<>]/g, '').replace(/\n/g, '<br>').slice(0, 1200);
+  return _emailShell(color,
+    _eyebrow(mentorName + ' · Checking in', color) +
+    `<p style="margin:0 0 16px;font-family:Georgia,'Times New Roman',serif;font-size:17px;line-height:1.9;color:#ece6db;">${safe}</p>` +
+    _cta('Resume your session', APP_URL + '/workspace.html', color));
 }
 
 function billingEmailHtml(mentorName, planLabel) {
   const color = mentorName === 'Iris' ? '#6b8c6b' : '#b8a06a';
-  return _emailShell(color, `
-    <div style="font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:${color};margin-bottom:28px;">${mentorName} &middot; Plan confirmed</div>
-    <div style="font-size:1.05rem;line-height:1.9;color:#d4d0c8;">
-      Your <span style="color:${color};">${planLabel}</span> plan is active.<br><br>
-      Everything you've unlocked is ready in the workspace. ${mentorName} will pick up from where you left off.
-    </div>
-    ${_cta('Open your workspace', APP_URL + '/workspace.html', color)}
-  `);
+  return _emailShell(color,
+    _eyebrow(mentorName + ' · Plan confirmed', color) +
+    _headline('Your ' + planLabel + ' plan is active.') +
+    _p('Everything you\'ve unlocked is ready in the workspace. ' + mentorName + ' will pick up from where you left off.') +
+    _cta('Open your workspace', APP_URL + '/workspace.html', color));
 }
 
 function reportEmailHtml(mentorName, reportMonth) {
   const color = mentorName === 'Iris' ? '#6b8c6b' : '#b8a06a';
   const label = new Date(reportMonth + '-02').toLocaleString('en-US', { month: 'long', year: 'numeric' });
-  return _emailShell(color, `
-    <div style="font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:${color};margin-bottom:28px;">${mentorName} &middot; Monthly report</div>
-    <div style="font-size:1.05rem;line-height:1.9;color:#d4d0c8;">
-      Your ${label} behavioral report is ready.<br><br>
-      ${mentorName} has gone through your journal entries, rule violations, and discipline scores for the month.
-    </div>
-    ${_cta('Read your report', APP_URL + '/reports.html', color)}
-  `);
+  return _emailShell(color,
+    _eyebrow(mentorName + ' · Monthly report', color) +
+    _headline('Your ' + label + ' report is ready.') +
+    _p(mentorName + ' has gone through your journal entries, rule violations, and discipline scores for the month.') +
+    _cta('Read your report', APP_URL + '/reports.html', color));
 }
 
 // ── Decision Passport ─────────────────────────────────────────────────────────
