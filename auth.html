@@ -844,6 +844,7 @@
     try {
       const { data, error } = await sb.auth.signUp({ email, password });
       if (error) throw error;
+      window.ek?.('signup_success', { flow: data.session ? 'instant' : 'confirm' });
 
       if (data.session) {
         // Email confirmation not required — session returned immediately

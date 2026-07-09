@@ -212,6 +212,7 @@
       .tracks-grid { grid-template-columns: 1fr; }
     }
   </style>
+  <script src="/assets/analytics.js" defer></script>
 </head>
 <body>
 <div class="ambient"></div>
@@ -467,6 +468,7 @@ async function enrollAndGo() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ track: selectedTrack }),
     });
+    window.ek?.('academy_enrolled', { track: selectedTrack });
   } catch (_) {}
   window.location.href = '/study.html?module=' + selectedFirst + '&track=' + selectedTrack + '&first=1';
 }
@@ -516,6 +518,8 @@ async function submitSignup(e) {
     localStorage.setItem('ek_academy_first_module', selectedFirst);
     localStorage.setItem('ek_academy_enrolled_at',  Date.now());
 
+    window.ek?.('signup_success', { flow: 'academy' });
+    window.ek?.('academy_enrolled', { track: selectedTrack });
     window.location.href = '/study.html?module=' + selectedFirst + '&track=' + selectedTrack + '&first=1';
 
   } catch (err) {

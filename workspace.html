@@ -5713,6 +5713,7 @@ async function startVoiceSession() {
       overrides: sessionOverrides,
       onConnect: ({ conversationId }) => {
         console.log('Voice session connected:', conversationId);
+        window.ek?.('voice_started', { mentor: mentor?.slug || mentor?.name || null });
       },
       onMessage: ({ message, source }) => {
         // SDK Role type is "user" | "ai" — NOT "agent"

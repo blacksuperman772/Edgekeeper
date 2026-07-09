@@ -565,6 +565,7 @@ async function registerAndProceed() {
 
     if (assessComplete) {
       clearIntakeProgress();
+      window.ek?.('onboarding_complete', { mentor: mentorKey, paid: !!isPaid });
       window.location.href = isPaid
         ? `/workspace.html?mentor=${mentorKey}&newplan=${_plan}`
         : `/workspace.html?mentor=${mentorKey}`;
