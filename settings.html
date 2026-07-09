@@ -519,9 +519,9 @@
 
   const PLAN_LABELS = {
     free:          { name: 'Free Trial',     price: 'Free' },
-    starter:       { name: 'Resident',       price: '$79 / month' },
-    pro:           { name: 'Fellow',         price: '$149 / month' },
-    professional:  { name: 'Private Office', price: '$299 / month' },
+    starter:       { name: 'Resident',       price: '$99 / month' },
+    pro:           { name: 'Fellow',         price: '$249 / month' },
+    professional:  { name: 'Private Office', price: '$599 / month' },
     institutional: { name: 'Institution',    price: 'Custom' },
   };
 
@@ -551,12 +551,9 @@
       document.getElementById('email-notifs').checked   = settings.email_notifications !== false;
       document.getElementById('proactive-msgs').checked = settings.proactive_messages !== false;
 
-      if (SUPABASE_URL && SUPABASE_URL !== '%%SUPABASE_URL%%') {
-        const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
-        const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
-        const { data: { user } } = await sb.auth.getUser();
-        if (user) currentEmail = user.email;
-      }
+      // Email comes straight from /api/settings now — no CDN Supabase import on
+      // the critical path, so a slow/blocked CDN can never leave the page blank.
+      currentEmail = settings.email || null;
 
       document.getElementById('loading').style.display       = 'none';
       document.getElementById('settings-body').style.display = '';
