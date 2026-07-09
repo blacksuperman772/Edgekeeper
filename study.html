@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/assets/shared.css" />
   <script src="/assets/analytics.js" defer></script>
   <script src="/assets/pillars.js" defer></script>
+  <script src="/assets/academy-content.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.19.2/dist/livekit-client.umd.js"></script>
   <script>window.livekitClient = window.LivekitClient;</script>
   <script src="https://cdn.jsdelivr.net/npm/@11labs/client@0.2.0/dist/lib.umd.js"></script>
@@ -353,6 +354,57 @@
       }
       html.sb-open #sb-backdrop { opacity: 1; pointer-events: auto; }
     }
+
+    /* ── Primer ── */
+    #primer-mount { margin-top: 22px; }
+    .primer {
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding-top: 20px;
+    }
+    .primer-label {
+      font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--theo); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+    }
+    .primer-body p {
+      font-size: 0.92rem; line-height: 1.75; color: rgba(255,255,255,0.7);
+      margin: 0 0 14px;
+    }
+    .primer-diagram {
+      margin: 4px 0 20px; padding: 16px; color: rgba(255,255,255,0.75);
+      background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
+    }
+
+    /* ── Quiz ── */
+    .quiz { margin-top: 26px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 20px; }
+    .quiz-label {
+      font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--theo); margin-bottom: 4px;
+    }
+    .quiz-progress { font-size: 0.75rem; color: rgba(255,255,255,0.4); margin-bottom: 18px; }
+    .quiz-q { margin-bottom: 22px; }
+    .quiz-q-text { font-size: 0.9rem; color: rgba(255,255,255,0.85); line-height: 1.6; margin-bottom: 12px; }
+    .quiz-opt {
+      display: block; width: 100%; text-align: left; box-sizing: border-box;
+      padding: 11px 14px; margin-bottom: 8px;
+      background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 6px; color: rgba(255,255,255,0.72);
+      font-family: inherit; font-size: 0.86rem; cursor: pointer;
+      transition: border-color .2s, background .2s;
+    }
+    .quiz-opt:hover:not(:disabled) { border-color: var(--theo-d); }
+    .quiz-opt:disabled { cursor: default; }
+    .quiz-opt.correct { border-color: #5EA68A; background: rgba(94,166,138,0.1); color: #cfe8dd; }
+    .quiz-opt.wrong { border-color: #C77; background: rgba(204,119,119,0.08); color: #e8cfcf; }
+    .quiz-explain {
+      font-size: 0.82rem; line-height: 1.6; color: rgba(255,255,255,0.55);
+      margin-top: 6px; padding-left: 12px; border-left: 2px solid var(--theo-d);
+    }
+    .quiz-done {
+      margin-top: 8px; font-size: 0.86rem; color: var(--theo);
+      padding: 12px 14px; background: rgba(184,160,106,0.06);
+      border: 1px solid var(--theo-d); border-radius: 6px;
+    }
   </style>
 </head>
 <body>
@@ -386,6 +438,7 @@
       <div class="mod-track-tag" id="mod-track-tag">Track 01 · Market Foundations</div>
       <h1 class="mod-title" id="mod-title">Loading...</h1>
       <p class="mod-desc" id="mod-desc"></p>
+      <div id="primer-mount"></div>
     </div>
 
     <div id="mod-body">
@@ -549,6 +602,84 @@ document.getElementById('mod-track-tag').textContent    = mod.track + ' · ' + m
 document.getElementById('mod-title').textContent        = mod.title;
 document.getElementById('mod-desc').textContent         = mod.desc;
 document.title = mod.title + ' — EdgeKeeper Academy';
+
+// ── Primer + quiz (static content from /assets/academy-content.js) ──────
+function renderPrimer(key) {
+  const mount = document.getElementById('primer-mount');
+  if (!mount) return;
+  const A = window.EK_ACADEMY || {};
+  const primer  = A.primers  && A.primers[key];
+  const diagram = A.diagrams && A.diagrams[key];
+  if (!primer) { mount.innerHTML = ''; return; }
+  mount.innerHTML =
+    '<div class="primer">' +
+      '<div class="primer-label">Primer · read first</div>' +
+      (diagram ? '<div class="primer-diagram">' + diagram + '</div>' : '') +
+      '<div class="primer-body">' + primer + '</div>' +
+    '</div>';
+}
+
+function renderQuiz(key) {
+  const mount = document.getElementById('quiz-mount');
+  if (!mount) return;
+  const quiz = (window.EK_ACADEMY && window.EK_ACADEMY.quizzes && window.EK_ACADEMY.quizzes[key]) || null;
+  if (!quiz || !quiz.length) { mount.innerHTML = ''; return; }
+
+  let answered = 0, correct = 0;
+  const wrap = document.createElement('div');
+  wrap.className = 'quiz';
+  wrap.innerHTML = '<div class="quiz-label">Check your understanding</div>' +
+                   '<div class="quiz-progress" id="quiz-progress">' + quiz.length + ' questions</div>';
+
+  quiz.forEach((item, qi) => {
+    const q = document.createElement('div');
+    q.className = 'quiz-q';
+    const qt = document.createElement('div');
+    qt.className = 'quiz-q-text';
+    qt.textContent = (qi + 1) + '. ' + item.q;
+    q.appendChild(qt);
+
+    const explain = document.createElement('div');
+    explain.className = 'quiz-explain';
+    explain.style.display = 'none';
+    explain.textContent = item.explain;
+
+    item.options.forEach((opt, oi) => {
+      const b = document.createElement('button');
+      b.className = 'quiz-opt';
+      b.textContent = opt;
+      b.onclick = () => {
+        q.querySelectorAll('.quiz-opt').forEach(x => x.disabled = true);
+        const right = oi === item.answer;
+        b.classList.add(right ? 'correct' : 'wrong');
+        if (!right) { const c = q.querySelectorAll('.quiz-opt')[item.answer]; if (c) c.classList.add('correct'); }
+        explain.style.display = 'block';
+        answered++; if (right) correct++;
+        const prog = document.getElementById('quiz-progress');
+        if (prog) prog.textContent = answered + ' of ' + quiz.length + ' answered';
+        if (answered === quiz.length) {
+          const done = document.createElement('div');
+          done.className = 'quiz-done';
+          done.textContent = 'You got ' + correct + ' of ' + quiz.length + '. ' +
+            (correct === quiz.length ? 'Clean sweep — that concept has landed.'
+              : correct >= Math.ceil(quiz.length / 2) ? 'Solid. Review the ones you missed with Theo.'
+              : 'Worth another pass — ask Theo to walk through the misses.');
+          wrap.appendChild(done);
+        }
+      };
+      q.appendChild(b);
+    });
+    q.appendChild(explain);
+    wrap.appendChild(q);
+  });
+
+  mount.innerHTML = '';
+  mount.appendChild(wrap);
+}
+
+renderPrimer(moduleKey);
+// Q&A is Theo's job — he asks check questions in the chat, not a sidebar widget.
+// (Quiz banks retained in academy-content.js to feed Theo's in-chat checks.)
 
 // nav links
 const prevBtn = document.getElementById('nav-prev');
@@ -1267,7 +1398,7 @@ async function startTheoVoice() {
   try {
     const res = await fetch('/api/voice/session', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-      body: JSON.stringify({ mentor: 'theo' }),
+      body: JSON.stringify({ mentor: 'theo', module_key: moduleKey }),
     });
     if (res.status === 401) { window.location.href = '/auth.html?next=' + encodeURIComponent('/study.html?module=' + moduleKey); return; }
     if (!res.ok) {
@@ -1275,16 +1406,28 @@ async function startTheoVoice() {
       resetVoice(res.status === 429 ? 'No voice sessions left on your plan.' : (e.error || 'Voice unavailable right now.'));
       return;
     }
-    const { signedUrl, prompt: serverPrompt } = await res.json();
+    const { signedUrl, prompt: serverPrompt, firstMessage, timeOfDay } = await res.json();
     const ELConv = window.client && window.client.Conversation;
     if (!ELConv || typeof ELConv.startSession !== 'function') { resetVoice('Voice engine failed to load. Refresh and try again.'); return; }
 
     const moduleCtx = 'You are mid-lesson with this student on the module "' + mod.title + '": ' + mod.desc + ' Teach and check understanding by voice, one idea at a time.';
     const fullPrompt = [serverPrompt, moduleCtx].filter(Boolean).join('\n\n');
 
-    theoConv = await ELConv.startSession({
+    // Replace the ElevenLabs stock greeting with a human, module-specific opener.
+    const timeNod = { 'late night':'Up late.', 'morning':'Morning.', 'afternoon':'Afternoon.', 'evening':'Evening.', 'late evening':'Late one tonight.' }[timeOfDay] || '';
+    const openers = [
+      (timeNod + ' Let\'s get into ' + mod.title.toLowerCase() + '.').trim(),
+      (timeNod + ' We\'re on ' + mod.title.toLowerCase() + ' today — grab something to write with.').trim(),
+      (timeNod + ' Good, you came back. ' + mod.title + ' — let\'s work.').trim(),
+    ];
+    const opener = openers[Math.floor(Math.random() * openers.length)] || firstMessage || null;
+
+    const agentOverride = { prompt: { prompt: fullPrompt } };
+    if (opener) agentOverride.first_message = opener;
+
+    // Shared session callbacks — reused whether or not overrides are applied.
+    const sessionCallbacks = {
       signedUrl,
-      overrides: fullPrompt ? { agent: { prompt: { prompt: fullPrompt } } } : undefined,
       onMessage: ({ message, source }) => {
         if (source === 'ai') { addMsg('companion', message); history.push({ role: 'assistant', content: message }); }
         else { history.push({ role: 'user', content: message }); }
@@ -1299,7 +1442,18 @@ async function startTheoVoice() {
       },
       onDisconnect: () => { if (theoVoiceState !== 'ending') endTheoVoice(); },
       onError: (m) => { console.error('Theo voice:', m); resetVoice('Connection lost. Check your mic and try again.'); },
-    });
+    };
+
+    try {
+      theoConv = await ELConv.startSession({ ...sessionCallbacks, overrides: { agent: agentOverride } });
+    } catch (overrideErr) {
+      // The Theo agent may not have prompt/first-message overrides enabled in its
+      // ElevenLabs security settings, which rejects the session. Fall back to a
+      // plain connect so the call still works (mentor still speaks first via the
+      // agent's own configured first message).
+      console.warn('Theo voice: overrides rejected, connecting without them —', overrideErr);
+      theoConv = await ELConv.startSession(sessionCallbacks);
+    }
   } catch (err) {
     console.error('startTheoVoice:', err);
     resetVoice('Could not connect. Check your microphone permissions.');

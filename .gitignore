@@ -12,3 +12,6 @@ chrome/
 _login.html
 _skeltest.html
 _mobtest.html
+
+.vercel
+.env*

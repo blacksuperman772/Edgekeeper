@@ -358,6 +358,150 @@
     }
     .footer-links a:hover { color: var(--muted); }
 
+    /* ── PLATFORM PICKER ── */
+    .picker { margin: 0 0 20px; }
+    .picker-q {
+      font-family: var(--serif);
+      font-size: 1.7rem; font-weight: 400;
+      color: var(--bright); margin-bottom: 6px;
+    }
+    .picker-sub {
+      font-size: 0.9rem; color: var(--text-dim);
+      margin-bottom: 26px; max-width: 46ch;
+    }
+    .picker-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      max-width: 620px;
+    }
+    .picker-card {
+      display: flex; flex-direction: column; gap: 6px;
+      text-align: left;
+      padding: 20px 22px;
+      background: rgba(255,255,255,0.015);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color .25s, background .25s, transform .15s;
+      font-family: inherit;
+    }
+    .picker-card:hover { border-color: var(--gold-dim); background: rgba(184,160,106,0.05); }
+    .picker-card:active { transform: translateY(1px); }
+    .picker-card.selected { border-color: var(--gold); background: rgba(184,160,106,0.07); }
+    .picker-card-name {
+      font-family: var(--sans); font-size: 0.98rem; font-weight: 400;
+      color: var(--bright); letter-spacing: 0.01em;
+    }
+    .picker-card-note {
+      font-family: var(--mono); font-size: 0.6rem;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted);
+    }
+    .picker-card.manual { grid-column: 1 / -1; border-style: dashed; }
+    .picker-card.manual .picker-card-name { color: var(--gold); }
+    .picker-hint {
+      display: none;
+      margin-top: 22px;
+      padding: 16px 20px;
+      background: rgba(184,160,106,0.05);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.84rem; line-height: 1.7; color: var(--text-dim);
+      max-width: 620px;
+    }
+    .picker-hint b { color: var(--gold); font-weight: 500; }
+
+    /* Sections are hidden until a platform is picked */
+    .platform-section { display: none; }
+    .platform-section.active { display: block; }
+    .section-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: none; border: none; cursor: pointer;
+      font-family: var(--mono); font-size: 0.62rem;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 26px; padding: 0;
+      transition: color .25s;
+    }
+    .section-back:hover { color: var(--gold); }
+
+    /* ── ONE-TAP CONNECT CARD ── */
+    .connect-card {
+      margin: 4px 0 34px;
+      padding: 28px 30px;
+      background: rgba(184,160,106,0.05);
+      border: 1px solid var(--gold-dim);
+      border-radius: 10px;
+      max-width: 620px;
+    }
+    .connect-badge {
+      display: inline-block;
+      font-family: var(--mono); font-size: 0.58rem;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 12px;
+    }
+    .connect-title {
+      font-family: var(--serif); font-size: 1.5rem; font-weight: 400;
+      color: var(--bright); margin: 0 0 8px;
+    }
+    .connect-sub { font-size: 0.88rem; line-height: 1.7; color: var(--text-dim); margin: 0 0 22px; }
+    .cf-row { margin-bottom: 18px; }
+    .cf-label {
+      display: block; font-family: var(--mono); font-size: 0.6rem;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 8px;
+    }
+    .cf-radios { display: flex; gap: 10px; }
+    .cf-radio {
+      flex: 1; display: flex; align-items: center; gap: 8px;
+      padding: 11px 14px; border: 1px solid var(--border); border-radius: 6px;
+      font-size: 0.85rem; color: var(--text); cursor: pointer; transition: border-color .2s;
+    }
+    .cf-radio:hover { border-color: var(--gold-dim); }
+    .cf-radio input { accent-color: var(--gold); }
+    .cf-input {
+      width: 100%; box-sizing: border-box;
+      padding: 12px 14px; background: rgba(0,0,0,0.25);
+      border: 1px solid var(--border); border-radius: 6px;
+      color: var(--bright); font-family: var(--mono); font-size: 0.9rem;
+      outline: none; transition: border-color .2s;
+    }
+    .cf-input:focus { border-color: var(--gold); }
+    .cf-input::placeholder { color: rgba(255,255,255,0.2); }
+    .cf-hint { display: block; font-size: 0.74rem; color: var(--muted); margin-top: 7px; }
+    .cf-submit {
+      width: 100%; padding: 13px 20px; margin-top: 4px;
+      background: var(--gold); border: none; border-radius: 6px;
+      color: #14110A; font-family: var(--sans); font-size: 0.9rem; font-weight: 500;
+      letter-spacing: 0.02em; cursor: pointer; transition: opacity .2s, transform .12s;
+    }
+    .cf-submit:hover { opacity: 0.9; }
+    .cf-submit:active { transform: translateY(1px); }
+    .cf-submit:disabled { opacity: 0.5; cursor: default; }
+    .cf-status { margin-top: 16px; font-size: 0.84rem; line-height: 1.6; color: var(--text-dim); }
+    .cf-status.error { color: #D98A7A; }
+    .cf-status.ok { color: var(--gold); }
+    .cf-status a { color: var(--gold); }
+    .cf-spin {
+      display: inline-block; width: 11px; height: 11px; margin-right: 7px;
+      border: 1.5px solid var(--gold-dim); border-top-color: var(--gold);
+      border-radius: 50%; animation: cfspin 0.7s linear infinite; vertical-align: -1px;
+    }
+    @keyframes cfspin { to { transform: rotate(360deg); } }
+
+    /* Manual EA path demoted to a disclosure */
+    .mt-manual { margin-top: 8px; border-top: 1px solid var(--border); padding-top: 20px; }
+    .mt-manual > summary {
+      cursor: pointer; list-style: none; font-family: var(--mono);
+      font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted); transition: color .2s;
+    }
+    .mt-manual > summary:hover { color: var(--gold); }
+    .mt-manual > summary::-webkit-details-marker { display: none; }
+    .mt-manual > summary::before { content: '+ '; color: var(--gold-dim); }
+    .mt-manual[open] > summary::before { content: '– '; }
+    .mt-manual-body { padding-top: 24px; }
+
     @media (max-width: 768px) {
       nav { padding: 0 24px; }
       .nav-links { display: none; }
@@ -366,6 +510,10 @@
       .code-block { max-width: 100%; font-size: 0.7rem; }
       footer { flex-direction: column; gap: 16px; text-align: center; padding: 32px 24px; }
       .footer-links { justify-content: center; }
+      .picker-grid { grid-template-columns: 1fr; }
+      .picker-q { font-size: 1.45rem; }
+      .connect-card { padding: 22px 20px; }
+      .cf-radios { flex-direction: column; }
     }
   </style>
 </head>
@@ -396,67 +544,156 @@
   <!-- PAGE HEADER -->
   <header class="page-header reveal">
     <span class="page-header-label">Guardian Layer · Setup Guide</span>
-    <h1 class="page-title">Broker<br>Integrations</h1>
-    <p class="page-subtitle">Connect your trading account to your Guardian Layer. Choose the integration that matches your platform below.</p>
+    <h1 class="page-title">Connect Your<br>Account</h1>
+    <p class="page-subtitle">Your Guardian watches the account you connect and steps in when a rule is about to break. Pick where you trade and we will show you the one path that fits.</p>
   </header>
 
+  <!-- ── PLATFORM PICKER ── -->
+  <div class="picker reveal" id="picker">
+    <div class="picker-q">Where do you trade?</div>
+    <p class="picker-sub">Choose your platform. We will show only the steps that apply to you.</p>
+    <div class="picker-grid">
+      <button class="picker-card" onclick="pickPlatform('mt')">
+        <span class="picker-card-name">MetaTrader 4 / 5</span>
+        <span class="picker-card-note">Desktop · one-time EA install</span>
+      </button>
+      <button class="picker-card" onclick="pickPlatform('ctrader')">
+        <span class="picker-card-name">cTrader</span>
+        <span class="picker-card-note">Desktop · cBot webhook</span>
+      </button>
+      <button class="picker-card" onclick="pickPlatform('tv')">
+        <span class="picker-card-name">TradingView</span>
+        <span class="picker-card-note">Pine alert webhook</span>
+      </button>
+      <button class="picker-card manual" onclick="pickPlatform('manual')">
+        <span class="picker-card-name">Log my trades myself</span>
+        <span class="picker-card-note">Any device · no setup · works on mobile</span>
+      </button>
+    </div>
+    <div class="picker-hint" id="picker-mobile-hint">
+      Connecting a broker (MetaTrader, cTrader, TradingView) is a one-time setup you do on a <b>desktop computer</b> — phones can't install trading platform add-ons. On your phone, choose <b>Log my trades myself</b> below. Your Guardian still learns from everything you record, and you can connect a broker later from a computer.
+    </div>
+  </div>
+
   <!-- ── SECTION 1: MT4 / MT5 ── -->
-  <section class="int-section reveal">
-    <span class="int-section-label">Section 01</span>
+  <section class="int-section platform-section" id="section-mt">
+    <button class="section-back" onclick="backToPicker()">← All platforms</button>
+    <span class="int-section-label">MetaTrader</span>
     <h2 class="int-section-title">MetaTrader 4 / MetaTrader 5</h2>
-    <p class="int-section-desc">Download the Guardian EA. Install it on any chart in MetaTrader. It monitors your account and reports trade activity to your Guardian Layer.</p>
+    <p class="int-section-desc">Connect your account and your Guardian starts watching it — flagging oversized positions and drawdown before they cost you.</p>
 
-    <ul class="steps-list">
-      <li class="step-item">
-        <span class="step-num">01</span>
-        <span class="step-text">Download the EA file below</span>
-      </li>
-      <li class="step-item">
-        <span class="step-num">02</span>
-        <span class="step-text">In MetaTrader: <code>File → Open Data Folder → MQL4/Experts</code> (or <code>MQL5/Experts</code>)</span>
-      </li>
-      <li class="step-item">
-        <span class="step-num">03</span>
-        <span class="step-text">Copy the <code>.ex4</code> / <code>.ex5</code> file into the Experts folder</span>
-      </li>
-      <li class="step-item">
-        <span class="step-num">04</span>
-        <span class="step-text">Restart MetaTrader, drag the EA onto any chart</span>
-      </li>
-      <li class="step-item">
-        <span class="step-num">05</span>
-        <span class="step-text">Paste your Guardian token when prompted (shown below)</span>
-      </li>
-    </ul>
+    <!-- One-tap login connect (shown when MetaApi is configured) -->
+    <div class="connect-card" id="mt-connect-card" style="display:none;">
+      <span class="connect-badge">Fastest · works on mobile</span>
+      <h3 class="connect-title">Connect with your broker login</h3>
+      <p class="connect-sub">You enter your account on a secure page — <b>EdgeKeeper never sees your password.</b> No download, no install. Your Guardian connects and starts watching within a minute.</p>
 
-    <div class="download-row">
-      <a href="/api/guardian/ea/mt4" class="btn-download">
-        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M6.5 1v8M3 6.5l3.5 3.5 3.5-3.5M1 12h11" stroke="#B8A06A" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        Download MT4 EA (.ex4)
-      </a>
-      <a href="/api/guardian/ea/mt5" class="btn-download">
-        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M6.5 1v8M3 6.5l3.5 3.5 3.5-3.5M1 12h11" stroke="#B8A06A" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        Download MT5 EA (.ex5)
-      </a>
-    </div>
-
-    <div class="token-group">
-      <span class="token-label">Your Guardian Token</span>
-      <div class="token-box">
-        <div class="token-value" id="token-display">ek_&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</div>
-        <button class="token-btn" id="token-reveal-btn" onclick="revealToken()">Reveal</button>
-        <button class="copy-btn" id="token-copy-btn" onclick="copyToken()">Copy</button>
+      <div id="connect-form">
+        <div class="cf-row">
+          <span class="cf-label">Platform</span>
+          <div class="cf-radios">
+            <label class="cf-radio"><input type="radio" name="mt-platform" value="mt5" checked> MetaTrader 5</label>
+            <label class="cf-radio"><input type="radio" name="mt-platform" value="mt4"> MetaTrader 4</label>
+          </div>
+        </div>
+        <div class="cf-row">
+          <label class="cf-label" for="mt-server">Broker server name</label>
+          <input class="cf-input" id="mt-server" type="text" list="broker-servers" placeholder="Start typing your broker…" autocomplete="off" spellcheck="false">
+          <datalist id="broker-servers">
+            <option value="ICMarketsSC-Demo"></option>
+            <option value="ICMarketsSC-MT5"></option>
+            <option value="ICMarketsEU-Live"></option>
+            <option value="Pepperstone-Demo"></option>
+            <option value="Pepperstone-Live"></option>
+            <option value="OANDA-Demo-1"></option>
+            <option value="OANDA-Live-1"></option>
+            <option value="Exness-MT5Trial"></option>
+            <option value="Exness-MT5Real"></option>
+            <option value="XMGlobal-MT5"></option>
+            <option value="XMGlobal-Demo"></option>
+            <option value="FTMO-Demo"></option>
+            <option value="FTMO-Server"></option>
+            <option value="Deriv-Demo"></option>
+            <option value="DerivSVG-Server"></option>
+            <option value="MetaQuotes-Demo"></option>
+            <option value="RoboForex-Pro"></option>
+            <option value="RoboForex-Demo"></option>
+            <option value="Alpari-MT5"></option>
+            <option value="FxPro-MT5"></option>
+            <option value="Vantage-Live"></option>
+            <option value="Vantage-Demo"></option>
+            <option value="FusionMarkets-Live"></option>
+            <option value="EightcapGlobal-Live"></option>
+            <option value="ThinkMarkets-Live"></option>
+            <option value="Tickmill-Live"></option>
+            <option value="Admirals-Demo"></option>
+            <option value="Blueberry-Live"></option>
+          </datalist>
+          <span class="cf-hint">Start typing to pick from common brokers, or enter your exact server name — it’s shown in your MetaTrader login window, next to your account number.</span>
+        </div>
+        <button class="cf-submit" id="mt-connect-btn" onclick="startBrokerLink()">Continue to secure login →</button>
       </div>
+      <div class="cf-status" id="mt-connect-status"></div>
     </div>
+
+    <!-- Manual EA install — advanced fallback -->
+    <details class="mt-manual" id="mt-manual">
+      <summary>Prefer to install the Guardian EA manually?</summary>
+      <div class="mt-manual-body">
+        <ul class="steps-list">
+          <li class="step-item">
+            <span class="step-num">01</span>
+            <span class="step-text">Download the EA file below</span>
+          </li>
+          <li class="step-item">
+            <span class="step-num">02</span>
+            <span class="step-text">In MetaTrader: <code>File → Open Data Folder → MQL4/Experts</code> (or <code>MQL5/Experts</code>)</span>
+          </li>
+          <li class="step-item">
+            <span class="step-num">03</span>
+            <span class="step-text">Copy the <code>.ex4</code> / <code>.ex5</code> file into the Experts folder</span>
+          </li>
+          <li class="step-item">
+            <span class="step-num">04</span>
+            <span class="step-text">Restart MetaTrader, drag the EA onto any chart</span>
+          </li>
+          <li class="step-item">
+            <span class="step-num">05</span>
+            <span class="step-text">Paste your Guardian token when prompted (shown below)</span>
+          </li>
+        </ul>
+
+        <div class="download-row">
+          <a href="/api/guardian/ea/mt4" class="btn-download">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6.5 1v8M3 6.5l3.5 3.5 3.5-3.5M1 12h11" stroke="#B8A06A" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Download MT4 EA (.ex4)
+          </a>
+          <a href="/api/guardian/ea/mt5" class="btn-download">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6.5 1v8M3 6.5l3.5 3.5 3.5-3.5M1 12h11" stroke="#B8A06A" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Download MT5 EA (.ex5)
+          </a>
+        </div>
+
+        <div class="token-group">
+          <span class="token-label">Your Guardian Token</span>
+          <div class="token-box">
+            <div class="token-value" id="token-display">ek_&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</div>
+            <button class="token-btn" id="token-reveal-btn" onclick="revealToken()">Reveal</button>
+            <button class="copy-btn" id="token-copy-btn" onclick="copyToken()">Copy</button>
+          </div>
+        </div>
+      </div>
+    </details>
   </section>
 
   <!-- ── SECTION 2: cTrader ── -->
-  <section class="int-section reveal">
-    <span class="int-section-label">Section 02</span>
+  <section class="int-section platform-section" id="section-ctrader">
+    <button class="section-back" onclick="backToPicker()">← All platforms</button>
+    <span class="int-section-label">cTrader</span>
     <h2 class="int-section-title">cTrader</h2>
     <p class="int-section-desc">Use the webhook integration. cTrader cBot can send trade events to EdgeKeeper via HTTPS.</p>
 
@@ -491,8 +728,9 @@
   </section>
 
   <!-- ── SECTION 3: TradingView ── -->
-  <section class="int-section reveal">
-    <span class="int-section-label">Section 03</span>
+  <section class="int-section platform-section" id="section-tv">
+    <button class="section-back" onclick="backToPicker()">← All platforms</button>
+    <span class="int-section-label">TradingView</span>
     <h2 class="int-section-title">TradingView</h2>
     <p class="int-section-desc">Use Pine Script alerts and webhook to send signals to your Guardian Layer.</p>
 
@@ -522,10 +760,25 @@
   </section>
 
   <!-- ── SECTION 4: Manual ── -->
-  <section class="int-section reveal" style="border-bottom:none;">
-    <span class="int-section-label">Section 04</span>
-    <h2 class="int-section-title">Manual Entry</h2>
-    <p class="int-section-desc">No broker connection? Record sessions directly in your Guardian Layer.</p>
+  <section class="int-section platform-section" id="section-manual" style="border-bottom:none;">
+    <button class="section-back" onclick="backToPicker()">← All platforms</button>
+    <span class="int-section-label">Manual Logging</span>
+    <h2 class="int-section-title">Log your trades yourself</h2>
+    <p class="int-section-desc">No install, no webhook, works on your phone. Record each session in your Guardian Layer and it learns your patterns from what you enter — the same rule engine, driven by your own log instead of a broker feed. This is the fastest way to start, and you can connect a broker later from a computer.</p>
+    <ul class="steps-list">
+      <li class="step-item">
+        <span class="step-num">01</span>
+        <span class="step-text">Open your Guardian Layer</span>
+      </li>
+      <li class="step-item">
+        <span class="step-num">02</span>
+        <span class="step-text">After a session, log your balance, result, and how the trade felt</span>
+      </li>
+      <li class="step-item">
+        <span class="step-num">03</span>
+        <span class="step-text">The Guardian flags patterns and warns you before you break a rule again</span>
+      </li>
+    </ul>
     <a href="/workspace.html" class="btn-link">Open Guardian Layer →</a>
   </section>
 
@@ -555,12 +808,15 @@
   // ── Auth guard ─────────────────────────────────────────────────
   let _guardianToken  = null;
   let _webhookBaseUrl = null;
+  let _metaapiEnabled = false;
 
   async function init() {
     try {
       const res = await fetch('/api/profile');
       if (!res.ok) { window.location.href = '/auth.html'; return; }
-      const { profile } = await res.json();
+      const data = await res.json();
+      const profile = data.profile;
+      _metaapiEnabled = !!data.metaapiEnabled;
 
       // Apply mentor accent color if Iris
       if (profile && profile.mentor === 'iris') {
@@ -588,6 +844,57 @@
       entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
     }, { threshold: 0.07 });
     document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // One-tap login connect: show when MetaApi is configured on the server.
+    if (_metaapiEnabled) {
+      const card = document.getElementById('mt-connect-card');
+      if (card) card.style.display = 'block';
+      // If a broker is already linked, reflect it.
+      checkExistingLink();
+    } else {
+      // No one-tap available — open the manual EA path by default.
+      const manual = document.getElementById('mt-manual');
+      if (manual) { manual.open = true; manual.querySelector('summary').style.display = 'none'; }
+    }
+
+    // On phones, surface the "do this on desktop / log manually here" guidance.
+    // When one-tap login is available, MetaTrader/cTrader work on mobile too, so
+    // the desktop-only caveat no longer applies to those.
+    if (!_metaapiEnabled && window.matchMedia('(max-width: 768px)').matches) {
+      const hint = document.getElementById('picker-mobile-hint');
+      if (hint) hint.style.display = 'block';
+    }
+
+    // Deep link: ?platform=manual  or  #manual  (e.g. from onboarding)
+    const param = new URLSearchParams(window.location.search).get('platform');
+    const hash  = (window.location.hash || '').replace('#', '');
+    const target = param || hash;
+    if (['mt', 'ctrader', 'tv', 'manual'].includes(target)) {
+      pickPlatform(target);
+    }
+  }
+
+  // ── Platform picker ────────────────────────────────────────────
+  const PLATFORM_IDS = ['mt', 'ctrader', 'tv', 'manual'];
+
+  function pickPlatform(id) {
+    if (!PLATFORM_IDS.includes(id)) return;
+    document.getElementById('picker').style.display = 'none';
+    PLATFORM_IDS.forEach(p => {
+      const sec = document.getElementById('section-' + p);
+      if (sec) sec.classList.toggle('active', p === id);
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function backToPicker() {
+    PLATFORM_IDS.forEach(p => {
+      const sec = document.getElementById('section-' + p);
+      if (sec) sec.classList.remove('active');
+    });
+    const picker = document.getElementById('picker');
+    picker.style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   // ── Token reveal ───────────────────────────────────────────────
@@ -687,6 +994,90 @@
     }
   }
 
+
+  // ── One-tap broker link (MetaApi) ──────────────────────────────
+  let _linkPoll = null;
+
+  function setLinkStatus(html, cls) {
+    const el = document.getElementById('mt-connect-status');
+    if (!el) return;
+    el.className = 'cf-status' + (cls ? ' ' + cls : '');
+    el.innerHTML = html;
+  }
+
+  function showConnected(d) {
+    const form = document.getElementById('connect-form');
+    if (form) form.style.display = 'none';
+    const srv = d.server ? escHtml(d.server) : 'your broker';
+    setLinkStatus('✓ Connected to ' + srv + '. Your Guardian is watching this account. <a href="/workspace.html">Open Guardian Layer →</a>', 'ok');
+  }
+
+  async function checkExistingLink() {
+    try {
+      const res = await fetch('/api/guardian/link/status');
+      if (!res.ok) return;
+      const d = await res.json();
+      if (d.status === 'connected') {
+        showConnected(d);
+      } else if (d.metaapi_account_id || d.status === 'pending_credentials') {
+        setLinkStatus('A connection is set up but not live yet. Finish entering your login on the MetaApi page, then it will connect automatically.', '');
+        startPolling();
+      }
+    } catch (_) {}
+  }
+
+  async function startBrokerLink() {
+    const btn = document.getElementById('mt-connect-btn');
+    const platform = (document.querySelector('input[name="mt-platform"]:checked') || {}).value || 'mt5';
+    const server = (document.getElementById('mt-server').value || '').trim();
+    if (!server) { setLinkStatus('Enter your broker server name first.', 'error'); return; }
+
+    btn.disabled = true;
+    setLinkStatus('<span class="cf-spin"></span>Setting up your secure connection…', '');
+
+    try {
+      const res = await fetch('/api/guardian/link/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platform, server }),
+      });
+      const d = await res.json().catch(() => ({}));
+
+      if (res.status === 202 && d.pending) {
+        setLinkStatus('<span class="cf-spin"></span>Detecting your broker settings — this can take up to a minute. Tap Continue again shortly.', '');
+        btn.disabled = false;
+        return;
+      }
+      if (!res.ok) {
+        setLinkStatus(escHtml(d.error || 'Could not start the connection.'), 'error');
+        btn.disabled = false;
+        return;
+      }
+      if (d.configurationLink) {
+        window.open(d.configurationLink, '_blank', 'noopener');
+        setLinkStatus('<span class="cf-spin"></span>A secure MetaApi page opened in a new tab. Enter your broker login and password there — we’ll detect the connection automatically.', '');
+        startPolling();
+        btn.disabled = false;
+      }
+    } catch (e) {
+      setLinkStatus('Network error. Please try again.', 'error');
+      btn.disabled = false;
+    }
+  }
+
+  function startPolling() {
+    if (_linkPoll) clearInterval(_linkPoll);
+    let tries = 0;
+    _linkPoll = setInterval(async () => {
+      if (++tries > 75) { clearInterval(_linkPoll); return; } // ~5 minutes
+      try {
+        const res = await fetch('/api/guardian/link/status');
+        if (!res.ok) return;
+        const d = await res.json();
+        if (d.status === 'connected') { clearInterval(_linkPoll); showConnected(d); }
+      } catch (_) {}
+    }, 4000);
+  }
 
   // ── Boot ───────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', init);

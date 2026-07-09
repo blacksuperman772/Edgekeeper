@@ -208,7 +208,15 @@
     try { data = await res.json(); } catch (_) {}
     const g = data.guardian;
 
-    if (!g) {
+    // A guardian_data row can exist as an empty placeholder (created at onboarding
+    // with no real feed). Only treat the account as watched when there is genuine
+    // data — otherwise show the connect prompt rather than a misleading "Stable".
+    const hasRealData = g && (
+      g.balance != null || g.equity != null || g.daily_pnl_pct != null ||
+      (g.consecutive_losses || 0) > 0 || (g.max_drawdown_pct || 0) > 0 || (g.open_lots || 0) > 0
+    );
+
+    if (!hasRealData) {
       root.innerHTML = '<div class="gate"><h1>Iris is here. There is nothing to watch yet.</h1>'
         + '<p>Connect a trading account and Iris begins watching it — drawdown, losing streaks, the moments discipline slips. She stays silent until something needs her.</p>'
         + '<a href="/integrations.html">Connect an account →</a></div>';

@@ -1,5 +1,7 @@
 chrome/
 node_modules/
+.env
+.env.*
 _login.html
 _skeltest.html
 _mobtest.html

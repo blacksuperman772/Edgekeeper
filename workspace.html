@@ -2242,12 +2242,12 @@
       <button class="nav-item" data-min-plan="starter" onclick="showPanel('journal')">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="2" width="10" height="12" rx="1"/><path d="M6 6h4M6 9h3"/></svg>
         Journal
-        <span class="nav-badge">14</span>
+        <span class="nav-badge" id="journal-badge" style="display:none"></span>
       </button>
       <button class="nav-item" data-min-plan="starter" onclick="showPanel('rules')">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l2 2 4-4M4 9l2 2 4-4"/></svg>
         Rules
-        <span class="nav-badge">5</span>
+        <span class="nav-badge" id="rules-badge" style="display:none"></span>
       </button>
       <button class="nav-item" data-min-plan="pro" onclick="showPanel('passport')">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1"/><circle cx="8" cy="7" r="2"/><path d="M4 13c0-2 8-2 8 0"/></svg>
@@ -4148,8 +4148,62 @@ function applyPlanGating() {
   }
 }
 
+// Real nav counts for Journal and Rules — replaces the old hardcoded 14 / 5.
+// A count of 0 hides the badge (matches an untouched, honest empty state).
+async function refreshNavCounts() {
+  const setBadge = (id, n) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (n > 0) { el.textContent = n; el.style.display = ''; }
+    else { el.style.display = 'none'; }
+  };
+  try {
+    const [jr, rr] = await Promise.all([
+      fetch('/api/journal').then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch('/api/rules').then(r => r.ok ? r.json() : null).catch(() => null),
+    ]);
+    if (jr) setBadge('journal-badge', jr.total ?? (jr.entries ? jr.entries.length : 0));
+    if (rr) setBadge('rules-badge', (rr.rules || []).filter(x => x.is_active).length);
+  } catch (_) {}
+}
+
+// First-run activation nudge: if a Fellow+ user hasn't connected a trading
+// account yet, Iris/Guardian is dormant — walk them to the connect flow so the
+// thing they paid for actually turns on. /api/guardian returns 403 for non-Fellow
+// plans, so a rejected/errored call simply shows no banner.
+function showGuardianNudge() {
+  if (document.getElementById('guardian-nudge')) return;
+  const bar = document.createElement('div');
+  bar.id = 'guardian-nudge';
+  bar.style.cssText = 'display:flex;align-items:center;gap:16px;padding:12px 24px;background:rgba(184,160,106,0.07);border-bottom:1px solid rgba(184,160,106,0.18);font-family:var(--sans,sans-serif);';
+  bar.innerHTML =
+    '<span style="width:7px;height:7px;border-radius:50%;background:#b8a06a;flex-shrink:0;box-shadow:0 0 8px rgba(184,160,106,0.6);"></span>' +
+    '<span style="flex:1;font-size:0.82rem;color:var(--text,#d4d0c8);line-height:1.5;">Your Guardian is waiting. Connect your trading account so Iris can watch your risk in real time — she stays silent until something needs her.</span>' +
+    '<a href="/integrations.html" style="flex-shrink:0;font-family:var(--mono,monospace);font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#b8a06a;text-decoration:none;border:1px solid rgba(184,160,106,0.4);padding:8px 16px;border-radius:4px;white-space:nowrap;">Connect account →</a>' +
+    '<button aria-label="Dismiss" style="flex-shrink:0;background:none;border:none;color:var(--muted,#666);font-size:1.15rem;cursor:pointer;line-height:1;padding:2px 6px;">&times;</button>';
+  bar.querySelector('button').onclick = () => { bar.remove(); try { sessionStorage.setItem('ek_guardian_nudge_dismissed', '1'); } catch (_) {} };
+  const topbar = document.querySelector('.topbar');
+  if (topbar) topbar.insertAdjacentElement('afterend', bar);
+  else document.body.insertBefore(bar, document.body.firstChild);
+}
+
+async function checkGuardianActivation() {
+  try { if (sessionStorage.getItem('ek_guardian_nudge_dismissed')) return; } catch (_) {}
+  try {
+    const r = await fetch('/api/guardian');
+    if (!r.ok) return; // 403 = plan without Guardian, or transient error → no nudge
+    const d = await r.json();
+    const g = d.guardian;
+    const connected = g && (g.balance != null || g.equity != null || g.daily_pnl_pct != null ||
+      (g.consecutive_losses || 0) > 0 || (g.max_drawdown_pct || 0) > 0 || (g.open_lots || 0) > 0);
+    if (!connected) showGuardianNudge();
+  } catch (_) {}
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
   const params = new URLSearchParams(window.location.search);
+  refreshNavCounts();          // fire-and-forget — never blocks init
+  checkGuardianActivation();   // fire-and-forget — activation nudge for unconnected Fellow+
 
   // Safety net: never let the loading skeleton stick if init hangs (slow/failed fetch).
   const _officeReady = () => document.body.classList.add('ek-office-ready');
@@ -5609,7 +5663,7 @@ async function startVoiceSession() {
       voiceState = 'idle'; return;
     }
     if (res.status === 501) {
-      showVoiceError('Voice sessions coming soon. Check back shortly.');
+      showVoiceError('Voice is temporarily unavailable. Please try again shortly.');
       voiceState = 'idle'; return;
     }
     if (!res.ok) {
