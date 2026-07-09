@@ -597,39 +597,21 @@
           </div>
         </div>
         <div class="cf-row">
-          <label class="cf-label" for="mt-server">Broker server name</label>
-          <input class="cf-input" id="mt-server" type="text" list="broker-servers" placeholder="Start typing your broker…" autocomplete="off" spellcheck="false">
-          <datalist id="broker-servers">
-            <option value="ICMarketsSC-Demo"></option>
-            <option value="ICMarketsSC-MT5"></option>
-            <option value="ICMarketsEU-Live"></option>
-            <option value="Pepperstone-Demo"></option>
-            <option value="Pepperstone-Live"></option>
-            <option value="OANDA-Demo-1"></option>
-            <option value="OANDA-Live-1"></option>
-            <option value="Exness-MT5Trial"></option>
-            <option value="Exness-MT5Real"></option>
-            <option value="XMGlobal-MT5"></option>
-            <option value="XMGlobal-Demo"></option>
-            <option value="FTMO-Demo"></option>
-            <option value="FTMO-Server"></option>
-            <option value="Deriv-Demo"></option>
-            <option value="DerivSVG-Server"></option>
-            <option value="MetaQuotes-Demo"></option>
-            <option value="RoboForex-Pro"></option>
-            <option value="RoboForex-Demo"></option>
-            <option value="Alpari-MT5"></option>
-            <option value="FxPro-MT5"></option>
-            <option value="Vantage-Live"></option>
-            <option value="Vantage-Demo"></option>
-            <option value="FusionMarkets-Live"></option>
-            <option value="EightcapGlobal-Live"></option>
-            <option value="ThinkMarkets-Live"></option>
-            <option value="Tickmill-Live"></option>
-            <option value="Admirals-Demo"></option>
-            <option value="Blueberry-Live"></option>
-          </datalist>
-          <span class="cf-hint">Start typing to pick from common brokers, or enter your exact server name — it’s shown in your MetaTrader login window, next to your account number.</span>
+          <label class="cf-label" for="mt-broker">Your broker</label>
+          <select class="cf-input" id="mt-broker" onchange="onBrokerChange()">
+            <option value="">Select your broker…</option>
+            <option value="__other__">Other / not listed</option>
+          </select>
+        </div>
+        <div class="cf-row" id="server-select-row" style="display:none;">
+          <label class="cf-label" for="mt-server">Server</label>
+          <select class="cf-input" id="mt-server" onchange="onServerChange()"></select>
+          <span class="cf-hint">Pick the server that matches your account — it’s shown in your MetaTrader login window, next to your account number.</span>
+        </div>
+        <div class="cf-row" id="server-custom-row" style="display:none;">
+          <label class="cf-label" for="mt-server-custom">Exact server name</label>
+          <input class="cf-input" id="mt-server-custom" type="text" placeholder="e.g. YourBroker-Live" autocomplete="off" spellcheck="false">
+          <span class="cf-hint">Type it exactly as shown in your MetaTrader login window, next to your account number.</span>
         </div>
         <button class="cf-submit" id="mt-connect-btn" onclick="startBrokerLink()">Continue to secure login →</button>
       </div>
@@ -849,6 +831,7 @@
     if (_metaapiEnabled) {
       const card = document.getElementById('mt-connect-card');
       if (card) card.style.display = 'block';
+      populateBrokers();
       // If a broker is already linked, reflect it.
       checkExistingLink();
     } else {
@@ -1026,11 +1009,73 @@
     } catch (_) {}
   }
 
+  // ── Broker → server picker ─────────────────────────────────────
+  const EK_BROKERS = {
+    'IC Markets':        ['ICMarketsSC-MT5', 'ICMarketsSC-Demo', 'ICMarketsSC-Live', 'ICMarketsEU-Live'],
+    'Pepperstone':       ['Pepperstone-Demo', 'Pepperstone-Live', 'Pepperstone-Edge01-Live'],
+    'OANDA':             ['OANDA-Demo-1', 'OANDA-Live-1', 'OANDA-v20 Live-1'],
+    'Exness':            ['Exness-MT5Real', 'Exness-MT5Trial', 'Exness-MT5Real8'],
+    'XM':                ['XMGlobal-MT5', 'XMGlobal-Demo', 'XMGlobal-MT5 2'],
+    'FTMO':              ['FTMO-Server', 'FTMO-Demo', 'FTMO-Server2'],
+    'Deriv':             ['DerivSVG-Server', 'Deriv-Demo', 'DerivSVG-Server-02'],
+    'RoboForex':         ['RoboForex-Pro', 'RoboForex-ECN', 'RoboForex-Demo'],
+    'FxPro':             ['FxPro-MT5', 'FxPro.com-Demo'],
+    'Vantage':           ['Vantage-Live', 'Vantage-Demo', 'VantageInternational-Live'],
+    'Eightcap':          ['EightcapGlobal-Live', 'EightcapGlobal-Demo'],
+    'ThinkMarkets':      ['ThinkMarkets-Live', 'ThinkMarkets-Demo'],
+    'Tickmill':          ['Tickmill-Live', 'Tickmill-Demo'],
+    'Admirals':          ['AdmiralsGroup-Live', 'Admirals-Demo'],
+    'Fusion Markets':    ['FusionMarkets-Live', 'FusionMarkets-Demo'],
+    'Blueberry Markets': ['Blueberry-Live', 'Blueberry-Demo'],
+    'FBS':               ['FBS-Real', 'FBS-Demo'],
+    'HFM (HotForex)':    ['HFMarketsGlobal-Live', 'HFMarketsGlobal-Demo'],
+    'Axi':               ['AxiCorp-Live', 'AxiCorp-Demo'],
+    'FP Markets':        ['FPMarkets-Live', 'FPMarkets-Demo'],
+  };
+
+  function populateBrokers() {
+    const sel = document.getElementById('mt-broker');
+    if (!sel || sel.dataset.populated) return;
+    const other = sel.querySelector('option[value="__other__"]');
+    Object.keys(EK_BROKERS).sort().forEach(b => {
+      const o = document.createElement('option'); o.value = b; o.textContent = b;
+      sel.insertBefore(o, other);
+    });
+    sel.dataset.populated = '1';
+  }
+
+  function onBrokerChange() {
+    const b = (document.getElementById('mt-broker') || {}).value || '';
+    const selRow = document.getElementById('server-select-row');
+    const custRow = document.getElementById('server-custom-row');
+    const srvSel = document.getElementById('mt-server');
+    if (!b) { selRow.style.display = 'none'; custRow.style.display = 'none'; return; }
+    if (b === '__other__') { selRow.style.display = 'none'; custRow.style.display = 'block'; return; }
+    srvSel.innerHTML = '';
+    (EK_BROKERS[b] || []).forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; srvSel.appendChild(o); });
+    const oth = document.createElement('option'); oth.value = '__custom__'; oth.textContent = 'My server isn’t listed…'; srvSel.appendChild(oth);
+    selRow.style.display = 'block'; custRow.style.display = 'none';
+  }
+
+  function onServerChange() {
+    const srvSel = document.getElementById('mt-server');
+    document.getElementById('server-custom-row').style.display = (srvSel && srvSel.value === '__custom__') ? 'block' : 'none';
+  }
+
+  function selectedServer() {
+    const b = (document.getElementById('mt-broker') || {}).value || '';
+    const srvSel = document.getElementById('mt-server');
+    if (b === '__other__' || (srvSel && srvSel.value === '__custom__')) {
+      return ((document.getElementById('mt-server-custom') || {}).value || '').trim();
+    }
+    return srvSel ? (srvSel.value || '').trim() : '';
+  }
+
   async function startBrokerLink() {
     const btn = document.getElementById('mt-connect-btn');
     const platform = (document.querySelector('input[name="mt-platform"]:checked') || {}).value || 'mt5';
-    const server = (document.getElementById('mt-server').value || '').trim();
-    if (!server) { setLinkStatus('Enter your broker server name first.', 'error'); return; }
+    const server = selectedServer();
+    if (!server) { setLinkStatus('Choose your broker and server first.', 'error'); return; }
 
     btn.disabled = true;
     setLinkStatus('<span class="cf-spin"></span>Setting up your secure connection…', '');
