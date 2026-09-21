@@ -13,7 +13,10 @@
           "content/**",
           "robots.txt",
           "sitemap.xml",
-          "404.html"
+          "404.html",
+          "manifest.webmanifest",
+          "service-worker.js",
+          "favicon.svg"
         ]
       }
     }

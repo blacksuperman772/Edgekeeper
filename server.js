@@ -163,6 +163,22 @@ function serveInjectedHtml(filePath) {
       const raw   = htmlCache.get(filePath) ?? fs.readFileSync(filePath, 'utf8');
       let html    = injectSupabaseConfig(raw);
 
+      // Keep install metadata consistent across the many standalone HTML surfaces.
+      // API responses and authenticated documents remain explicitly non-cacheable.
+      html = html.replace(/<meta\s+name=["']viewport["'][^>]*>/i,
+        '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">');
+      html = html.replace(/<\/head>/i, [
+        '<link rel="manifest" href="/manifest.webmanifest">',
+        '<meta name="theme-color" content="#050505">',
+        '<meta name="mobile-web-app-capable" content="yes">',
+        '<meta name="apple-mobile-web-app-capable" content="yes">',
+        '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">',
+        '<meta name="apple-mobile-web-app-title" content="EdgeKeeper">',
+        '<link rel="apple-touch-icon" sizes="180x180" href="/assets/app-icon-180.svg">',
+        '<script defer src="/assets/pwa.js"></script></head>',
+      ].join(''));
+
+
       // Server-render the auth state onto <html> so public pages show the correct
       // nav (guest vs signed-in) on first paint — no flash of "Sign In / Apply"
       // for a logged-in visitor. Paired with the shared.css [data-guest-only] /
