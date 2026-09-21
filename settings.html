@@ -454,6 +454,24 @@
           <span class="toggle-track"></span>
         </label>
       </div>
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <div class="toggle-title">App Notifications</div>
+          <div class="toggle-sub" id="push-status">Receive important mentor messages on this device</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="push-notifs" />
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-info"><div class="toggle-title">Reminders</div></div>
+        <label class="toggle"><input type="checkbox" id="push-reminders" /><span class="toggle-track"></span></label>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-info"><div class="toggle-title">System Updates</div></div>
+        <label class="toggle"><input type="checkbox" id="push-system" /><span class="toggle-track"></span></label>
+      </div>
       <button class="save-btn" id="save-notifs-btn" onclick="saveNotifications()" style="margin-top:20px">Save Notifications</button>
       <div id="notifs-status" class="status-msg"></div>
     </div>
@@ -550,6 +568,13 @@
       document.getElementById('timezone-select').value  = settings.timezone || 'UTC';
       document.getElementById('email-notifs').checked   = settings.email_notifications !== false;
       document.getElementById('proactive-msgs').checked = settings.proactive_messages !== false;
+      document.getElementById('push-notifs').checked    = settings.push_notifications === true;
+      document.getElementById('push-reminders').checked = settings.push_reminders !== false;
+      document.getElementById('push-system').checked    = settings.push_system !== false;
+      if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+        document.getElementById('push-notifs').disabled = true;
+        document.getElementById('push-status').textContent = 'Push notifications are not supported in this browser.';
+      }
 
       // Email comes straight from /api/settings now — no CDN Supabase import on
       // the critical path, so a slow/blocked CDN can never leave the page blank.
@@ -598,6 +623,16 @@
     const btn = document.getElementById('save-notifs-btn');
     btn.disabled = true; btn.classList.add('saving'); btn.textContent = 'Saving…';
     try {
+      const wantsPush = document.getElementById('push-notifs').checked;
+      if (wantsPush && window.EKPush) {
+        const pushResult = await window.EKPush.enable();
+        if (!pushResult.ok && pushResult.reason === 'permission_denied') {
+          document.getElementById('push-notifs').checked = false;
+          document.getElementById('push-status').textContent = 'Notifications are blocked in this browser. Enable them in device settings to use them.';
+        }
+      } else if (!wantsPush && window.EKPush) {
+        await window.EKPush.disable();
+      }
       const res = await fetch('/api/settings', {
         method: 'PATCH',
         credentials: 'include',
@@ -605,6 +640,9 @@
         body: JSON.stringify({
           email_notifications: document.getElementById('email-notifs').checked,
           proactive_messages:  document.getElementById('proactive-msgs').checked,
+          push_notifications:  document.getElementById('push-notifs').checked,
+          push_reminders:      document.getElementById('push-reminders').checked,
+          push_system:         document.getElementById('push-system').checked,
         }),
       });
       if (!res.ok) throw new Error('Save failed');

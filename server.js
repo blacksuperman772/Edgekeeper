@@ -12,6 +12,7 @@ const cron         = require('node-cron');
 const { createClient } = require('@supabase/supabase-js');
 const { can, PAID_PLANS, GUARDIAN_PLANS } = require('./lib/entitlements');
 const metaapi = require('./lib/metaapi');
+const notifications = require('./lib/notifications');
 // Stripe — primary billing provider when configured (falls back to Polar otherwise).
 const Stripe = require('stripe');
 const stripeClient = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
@@ -587,7 +588,16 @@ app.get('/api/auth/me', async (req, res) => {
 });
 
 // ── Root redirect ─────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.redirect('/edgekeeper.html'));
+app.get('/', async (req, res) => {
+  if (!req.user) return res.redirect('/edgekeeper.html');
+  try {
+    const { data } = await supabaseAdmin.from('user_profiles')
+      .select('onboarding_complete').eq('id', req.user.id).maybeSingle();
+    return res.redirect(data?.onboarding_complete ? '/workspace.html' : '/onboarding.html');
+  } catch (_) {
+    return res.redirect('/workspace.html');
+  }
+});
 
 // ── Public HTML pages (no auth required) ─────────────────────────────────────
 app.get('/edgekeeper.html', serveInjectedHtml(path.join(__dirname, 'edgekeeper.html')));
@@ -3875,13 +3885,68 @@ app.patch('/api/messages/:id', requireAuthApi, apiLimiter, async (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Web Push notifications ──────────────────────────────────────────────────
+app.get('/api/push/vapid-public-key', requireAuthApi, apiLimiter, (req, res) => {
+  if (!notifications.configured()) return res.status(503).json({ error: 'Push notifications are not configured.' });
+  res.json({ publicKey: process.env.VAPID_PUBLIC_KEY });
+});
+
+app.post('/api/push/subscribe', requireAuthApi, apiLimiter, async (req, res) => {
+  const subscription = req.body?.subscription;
+  if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
+    return res.status(400).json({ error: 'Invalid push subscription.' });
+  }
+  const { error } = await supabaseAdmin.from('push_subscriptions').upsert({
+    user_id: req.user.id,
+    endpoint: String(subscription.endpoint).slice(0, 2000),
+    subscription,
+    device_label: String(req.body?.deviceLabel || 'mobile').slice(0, 80),
+    last_seen_at: new Date().toISOString(),
+  }, { onConflict: 'user_id,endpoint' });
+  if (error) return res.status(500).json({ error: 'Could not save push subscription.' });
+  await supabaseAdmin.from('user_profiles').update({ push_notifications: true }).eq('id', req.user.id);
+  res.json({ ok: true });
+});
+
+app.delete('/api/push/subscribe', requireAuthApi, apiLimiter, async (req, res) => {
+  const endpoint = String(req.body?.endpoint || '');
+  if (endpoint) await supabaseAdmin.from('push_subscriptions').delete().eq('user_id', req.user.id).eq('endpoint', endpoint);
+  else await supabaseAdmin.from('push_subscriptions').delete().eq('user_id', req.user.id);
+  res.json({ ok: true });
+});
+
+app.get('/api/push/preferences', requireAuthApi, apiLimiter, async (req, res) => {
+  const { data, error } = await supabaseAdmin.from('user_profiles')
+    .select('push_notifications, push_important, push_messages, push_reminders, push_system, push_marketing')
+    .eq('id', req.user.id).maybeSingle();
+  if (error) return res.status(500).json({ error: 'Database error' });
+  res.json({ preferences: data || {} });
+});
+
+app.patch('/api/push/preferences', requireAuthApi, apiLimiter, async (req, res) => {
+  const allowed = ['push_notifications', 'push_important', 'push_messages', 'push_reminders', 'push_system', 'push_marketing'];
+  const update = {};
+  for (const key of allowed) if (typeof req.body?.[key] === 'boolean') update[key] = req.body[key];
+  const { error } = await supabaseAdmin.from('user_profiles').update(update).eq('id', req.user.id);
+  if (error) return res.status(500).json({ error: 'Could not save notification preferences.' });
+  res.json({ ok: true });
+});
+
+app.get('/api/push/history', requireAuthApi, apiLimiter, async (req, res) => {
+  const { data, error } = await supabaseAdmin.from('push_notification_log')
+    .select('id, notification_type, entity_id, deep_link, title, body, sent_at')
+    .eq('user_id', req.user.id).order('sent_at', { ascending: false }).limit(30);
+  if (error) return res.status(500).json({ error: 'Database error' });
+  res.json({ notifications: data || [] });
+});
+
 // ── User settings ─────────────────────────────────────────────────────────────
 
 // GET /api/settings — fetch user settings
 app.get('/api/settings', requireAuthApi, apiLimiter, async (req, res) => {
   const { data, error } = await supabaseAdmin
     .from('user_profiles')
-    .select('mentor, email_notifications, proactive_messages, display_name, timezone, subscription_status')
+    .select('mentor, email_notifications, proactive_messages, push_notifications, push_reminders, push_system, display_name, timezone, subscription_status')
     .eq('id', req.user.id)
     .maybeSingle();
   if (error) return res.status(500).json({ error: 'Database error' });
@@ -3892,7 +3957,7 @@ app.get('/api/settings', requireAuthApi, apiLimiter, async (req, res) => {
 
 // PATCH /api/settings — update preferences
 app.patch('/api/settings', requireAuthApi, apiLimiter, async (req, res) => {
-  const allowed = ['email_notifications', 'proactive_messages', 'display_name', 'timezone', 'mentor'];
+  const allowed = ['email_notifications', 'proactive_messages', 'push_notifications', 'push_reminders', 'push_system', 'display_name', 'timezone', 'mentor'];
   const update  = {};
   for (const key of allowed) {
     if (req.body[key] !== undefined) update[key] = req.body[key];
@@ -4008,12 +4073,19 @@ async function runProactiveOutreach() {
       if (!content) continue;
 
       // Store the message in DB
-      await supabaseAdmin.from('mentor_messages').insert({
+      const { data: savedMessage } = await supabaseAdmin.from('mentor_messages').insert({
         user_id:      user.id,
         mentor:       canonicalMentor(user.mentor),
         content,
         trigger_type: 'inactivity',
-      });
+      }).select('id').single();
+      await notifications.sendToUser(supabaseAdmin, user.id, {
+        type: 'message',
+        title: `${canonicalMentor(user.mentor) === 'iris' ? 'Iris' : 'Marcus'} left you a message`,
+        body: content,
+        entityId: savedMessage?.id,
+        deepLink: '/workspace.html?panel=messages',
+      }).catch(err => console.error('Push outreach error:', err.message));
 
       // Send email if user has email notifications on
       if (user.email_notifications !== false) {
@@ -4816,6 +4888,13 @@ app.post('/api/admin/announce', requireAdmin, adminLimiter, async (req, res) => 
 
     const { error } = await supabaseAdmin.from('mentor_messages').insert(rows);
     if (error) throw error;
+
+    await Promise.all(users.map(user => notifications.sendToUser(supabaseAdmin, user.id, {
+      type: 'important',
+      title: `${safeMentor === 'iris' ? 'Iris' : 'Marcus'} has an update`,
+      body: content.trim(),
+      deepLink: '/workspace.html?panel=messages',
+    }).catch(err => console.error('Push announcement error:', err.message))));
 
     // Also post to office chat so the team sees it was sent
     await supabaseAdmin.from('office_messages').insert({

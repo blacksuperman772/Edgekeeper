@@ -194,6 +194,9 @@ pm2 save
 | `ELEVENLABS_API_KEY` | ✅ | ElevenLabs → Profile → API Keys |
 | `ELEVENLABS_MIKE_AGENT_ID` | ✅ | ElevenLabs → Conversational AI |
 | `ELEVENLABS_ASHLEY_AGENT_ID` | ✅ | ElevenLabs → Conversational AI |
+| `VAPID_SUBJECT` | push | `mailto:hello@edgekeeper.org` |
+| `VAPID_PUBLIC_KEY` | push | Generated with `npx web-push generate-vapid-keys` |
+| `VAPID_PRIVATE_KEY` | push | Generated with `npx web-push generate-vapid-keys` |
 | `PORT` | optional | Default: 3000 |
 | `SITE_URL` | production | Your live domain, e.g. `https://edgekeeper.io` |
 

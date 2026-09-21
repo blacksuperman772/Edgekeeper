@@ -1,6 +1,6 @@
 'use strict';
 
-const VERSION = 'edgekeeper-shell-v1';
+const VERSION = 'edgekeeper-shell-v2';
 const STATIC_CACHE = VERSION + '-static';
 const NAVIGATION_CACHE = VERSION + '-navigation';
 const OFFLINE_URL = '/offline.html';
@@ -38,6 +38,37 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
+self.addEventListener('push', (event) => {
+  let payload = {};
+  try { payload = event.data ? event.data.json() : {}; } catch (_) {}
+  const title = payload.title || 'EdgeKeeper';
+  const options = {
+    body: payload.body || 'You have an update waiting in EdgeKeeper.',
+    icon: payload.icon || '/assets/app-icon-192.svg',
+    badge: payload.badge || '/assets/app-icon-192.svg',
+    tag: payload.type || 'edgekeeper',
+    data: { url: payload.url || '/workspace.html', type: payload.type || 'system', entityId: payload.entityId || null },
+    renotify: true,
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || '/workspace.html', self.location.origin).href;
+  event.waitUntil((async () => {
+    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of clients) {
+      if ('focus' in client) {
+        await client.focus();
+        if ('navigate' in client && new URL(client.url).origin === self.location.origin) await client.navigate(target);
+        return;
+      }
+    }
+    if (self.clients.openWindow) await self.clients.openWindow(target);
+  })());
 });
 
 self.addEventListener('fetch', (event) => {

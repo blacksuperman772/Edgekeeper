@@ -36,6 +36,29 @@
   text-align: center;
 }
 
+.ek-install-banner {
+  position: fixed;
+  z-index: 2147483646;
+  right: calc(14px + var(--ek-safe-right));
+  bottom: calc(14px + var(--ek-safe-bottom));
+  left: calc(14px + var(--ek-safe-left));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(184, 160, 106, 0.45);
+  background: rgba(5, 5, 5, 0.97);
+  color: var(--text, #d4d0c8);
+  font: 0.7rem 'DM Mono', monospace;
+}
+.ek-install-banner span { flex: 1; }
+.ek-install-banner button { border: 0; background: none; color: var(--gold, #b8a06a); font: inherit; padding: 8px 4px; }
+.ek-install-banner button:last-child { color: var(--muted, #888); font-size: 1rem; }
+
+html.ek-standalone body { min-height: 100dvh; }
+html.ek-standalone .topbar { top: var(--ek-safe-top, 0px); }
+html.ek-standalone .workspace { min-height: 100dvh; }
+
 /* ── Auth-aware nav ──────────────────────────────────────────────────────────
    The server sets <html class="ek-authed"> for signed-in visitors (serveInjectedHtml).
    Guest-only CTAs (Sign In / Apply) are hidden for signed-in users; auth-only CTAs
