@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#070707">
+  <title>EdgeKeeper · App</title>
+  <link rel="stylesheet" href="/assets/shared.css">
+  <style>
+    :root { --app-bg:#070707; --app-surface:#11110f; --app-line:rgba(232,228,220,.11); --app-text:#e8e4dc; --app-muted:#8d8980; --app-gold:#b8a06a; --app-green:#6b8c6b; }
+    html, body { min-height:100%; background:var(--app-bg); }
+    body { margin:0; color:var(--app-text); font-family:'Inter',sans-serif; overflow-x:hidden; }
+    body::before { content:""; position:fixed; inset:0; pointer-events:none; background:radial-gradient(circle at 50% -10%, rgba(184,160,106,.12), transparent 38%), linear-gradient(180deg,#0b0b0a 0%,#070707 48%,#0a0b09 100%); z-index:-1; }
+    .app-frame { min-height:100dvh; padding:calc(18px + var(--ek-safe-top,0px)) calc(16px + var(--ek-safe-right,0px)) calc(92px + var(--ek-safe-bottom,0px)) calc(16px + var(--ek-safe-left,0px)); max-width:720px; margin:0 auto; }
+    .app-header { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:28px; }
+    .app-wordmark { color:var(--app-text); font:400 1.05rem 'Cormorant Garamond',Georgia,serif; letter-spacing:.2em; text-transform:uppercase; }
+    .app-wordmark span { color:var(--app-gold); }
+    .app-avatar { width:42px; height:42px; display:grid; place-items:center; border:1px solid rgba(184,160,106,.5); border-radius:50%; color:var(--app-gold); font:500 .72rem 'DM Mono',monospace; }
+    .connection { display:flex; align-items:center; gap:7px; color:var(--app-muted); font: .62rem 'DM Mono',monospace; letter-spacing:.08em; text-transform:uppercase; }
+    .connection::before { content:""; width:6px; height:6px; border-radius:50%; background:#6b8c6b; box-shadow:0 0 12px #6b8c6b; }
+    .connection.offline::before { background:#9d6c58; box-shadow:none; }
+    .eyebrow { color:var(--app-gold); font: .63rem 'DM Mono',monospace; letter-spacing:.2em; text-transform:uppercase; margin-bottom:10px; }
+    h1 { margin:0; max-width:14ch; font:400 clamp(2.2rem,10vw,4rem)/.98 'Cormorant Garamond',Georgia,serif; letter-spacing:0; }
+    .intro { margin:14px 0 26px; color:var(--app-muted); font-size:.94rem; line-height:1.65; max-width:34rem; }
+    .primary-action { display:flex; align-items:center; justify-content:space-between; width:100%; min-height:58px; padding:0 18px; border:1px solid rgba(184,160,106,.55); background:rgba(184,160,106,.08); color:var(--app-gold); text-decoration:none; font:.69rem 'DM Mono',monospace; letter-spacing:.14em; text-transform:uppercase; }
+    .section { margin-top:34px; }
+    .section-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .section-title { color:var(--app-muted); font:.63rem 'DM Mono',monospace; letter-spacing:.16em; text-transform:uppercase; }
+    .section-link { color:var(--app-gold); font:.62rem 'DM Mono',monospace; text-decoration:none; }
+    .space-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .space { min-height:126px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; border:1px solid var(--app-line); background:rgba(255,255,255,.025); color:var(--app-text); text-decoration:none; }
+    .space.marcus { border-color:rgba(184,160,106,.38); }.space.theo { border-color:rgba(107,140,107,.38); }.space.iris { border-color:rgba(107,140,107,.2); }
+    .space-mark { font:1.45rem 'Cormorant Garamond',Georgia,serif; }.space-name { font:.7rem 'DM Mono',monospace; letter-spacing:.12em; text-transform:uppercase; }.space-sub { margin-top:5px; color:var(--app-muted); font-size:.72rem; line-height:1.35; }
+    .activity { border-top:1px solid var(--app-line); }.activity-row { display:flex; align-items:center; gap:12px; min-height:62px; border-bottom:1px solid var(--app-line); text-decoration:none; color:inherit; }.activity-dot { width:7px; height:7px; border-radius:50%; background:var(--app-gold); flex:0 0 auto; }.activity-copy { min-width:0; flex:1; }.activity-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.84rem; }.activity-meta { margin-top:4px; color:var(--app-muted); font:.6rem 'DM Mono',monospace; letter-spacing:.05em; }.activity-arrow { color:var(--app-muted); }
+    .app-bottom { position:fixed; z-index:20; right:0; bottom:0; left:0; display:grid; grid-template-columns:repeat(5,1fr); padding:8px calc(12px + var(--ek-safe-right,0px)) calc(8px + var(--ek-safe-bottom,0px)) calc(12px + var(--ek-safe-left,0px)); border-top:1px solid var(--app-line); background:rgba(7,7,7,.94); backdrop-filter:blur(18px); }
+    .app-tab { display:flex; min-height:52px; align-items:center; justify-content:center; flex-direction:column; gap:5px; color:var(--app-muted); text-decoration:none; font:.55rem 'DM Mono',monospace; letter-spacing:.08em; text-transform:uppercase; }.app-tab.active { color:var(--app-gold); }.app-tab svg { width:18px; height:18px; }
+    .skeleton { color:var(--app-muted); font:.68rem 'DM Mono',monospace; padding:18px 0; }
+    @media (min-width:700px) { .app-frame { padding-top:calc(30px + var(--ek-safe-top,0px)); } }
+  </style>
+</head>
+<body>
+  <main class="app-frame" aria-label="EdgeKeeper application">
+    <header class="app-header">
+      <div><div class="app-wordmark">Edge<span>K</span>eeper</div><div class="connection" id="connection">Connected</div></div>
+      <a class="app-avatar" href="/settings.html" id="avatar" aria-label="Open settings">EK</a>
+    </header>
+    <section>
+      <div class="eyebrow" id="greeting">Your practice, continued.</div>
+      <h1 id="headline">Come back to the work.</h1>
+      <p class="intro" id="intro">Your mentor, your rules, and the record of who you are becoming are here.</p>
+      <a class="primary-action" href="/workspace.html">Open Marcus's office <span>→</span></a>
+    </section>
+    <section class="section">
+      <div class="section-head"><div class="section-title">Your spaces</div></div>
+      <div class="space-grid">
+        <a class="space marcus" href="/workspace.html"><span class="space-mark">M</span><span><span class="space-name">Marcus</span><span class="space-sub">Performance mentor</span></span></a>
+        <a class="space theo" href="/my-academy"><span class="space-mark">T</span><span><span class="space-name">Theo</span><span class="space-sub">Learning path</span></span></a>
+        <a class="space iris" href="/chamber"><span class="space-mark">I</span><span><span class="space-name">Iris</span><span class="space-sub">Guardian layer</span></span></a>
+      </div>
+    </section>
+    <section class="section">
+      <div class="section-head"><div class="section-title">Recent activity</div><a class="section-link" href="/workspace.html?panel=messages">Messages</a></div>
+      <div class="activity" id="activity"><div class="skeleton">Restoring your record…</div></div>
+    </section>
+  </main>
+  <nav class="app-bottom" aria-label="Application navigation">
+    <a class="app-tab active" href="/app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 10.5 12 3l9 7.5v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 20v-6h6v6"/></svg>Home</a>
+    <a class="app-tab" href="/workspace.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg>Marcus</a>
+    <a class="app-tab" href="/my-academy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m3 10 9-5 9 5-9 5z"/><path d="M7 12v5c3 2 7 2 10 0v-5"/></svg>Theo</a>
+    <a class="app-tab" href="/chamber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3 20 7v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg>Iris</a>
+    <a class="app-tab" href="/settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.8 1.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5v.1h-2.5v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1-1.8-1.8.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H6.5v-2.5h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1 1.8-1.8.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.5V5h2.5v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1 1.8 1.8-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1h.1v2.5h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</a>
+  </nav>
+  <script>
+    const connection = document.getElementById('connection');
+    function syncConnection() { connection.classList.toggle('offline', !navigator.onLine); connection.textContent = navigator.onLine ? 'Connected' : 'Offline'; }
+    addEventListener('online', syncConnection); addEventListener('offline', syncConnection); syncConnection();
+    fetch('/api/profile', { credentials:'include' }).then(r => r.ok ? r.json() : null).then(data => {
+      const p = data && data.profile; if (!p) return;
+      const name = p.display_name || p.email?.split('@')[0] || '';
+      if (name) { document.getElementById('greeting').textContent = 'Welcome back, ' + name + '.'; document.getElementById('headline').textContent = 'Return to the work.'; document.getElementById('avatar').textContent = name.slice(0,2).toUpperCase(); }
+    }).catch(() => {});
+    fetch('/api/messages', { credentials:'include' }).then(r => r.ok ? r.json() : null).then(data => {
+      const messages = data?.messages || []; const target = document.getElementById('activity');
+      if (!messages.length) { target.innerHTML = '<div class="skeleton">No new messages. Your record is quiet.</div>'; return; }
+      target.innerHTML = messages.slice(0,3).map(m => '<a class="activity-row" href="/workspace.html?panel=messages"><span class="activity-dot"></span><span class="activity-copy"><span class="activity-title">' + (m.content || 'A message from your mentor.').replace(/[<>]/g,'') + '</span><span class="activity-meta">' + (m.mentor || 'mentor').toUpperCase() + ' · ' + new Date(m.created_at).toLocaleDateString() + '</span></span><span class="activity-arrow">→</span></a>').join('');
+    }).catch(() => { document.getElementById('activity').innerHTML = '<div class="skeleton">Your activity will appear when connected.</div>'; });
+  </script>
+</body>
+</html>

@@ -14,7 +14,6 @@ const STATIC_ASSETS = [
   '/assets/reveal-safety.js',
   '/assets/pillars.js',
   '/assets/analytics.js',
-  '/edgekeeper.html',
   OFFLINE_URL,
 ];
 
@@ -92,10 +91,6 @@ self.addEventListener('fetch', (event) => {
 async function networkFirstNavigation(request) {
   try {
     const response = await fetch(request);
-    if (response.ok && new URL(request.url).pathname === '/edgekeeper.html') {
-      const cache = await caches.open(NAVIGATION_CACHE);
-      await cache.put(request, response.clone());
-    }
     return response;
   } catch (_) {
     return (await caches.match(request)) ||

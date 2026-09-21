@@ -115,7 +115,7 @@ app.use(cookieParser());
 // Pre-reads every served HTML file at boot so request handlers don't block the
 // event loop with synchronous reads on each hit.
 const HTML_FILES = [
-  'edgekeeper.html', 'auth.html', 'reset-password.html', 'academy.html',
+  'edgekeeper.html', 'app.html', 'auth.html', 'reset-password.html', 'academy.html',
   'onboarding.html', 'profile.html', 'workspace.html', 'settings.html',
   'assessment.html', 'academy-onboarding.html', 'study.html', 'chamber.html',
   'reviews.html', 'reports.html', 'integrations.html', 'network.html',
@@ -601,6 +601,8 @@ app.get('/', async (req, res) => {
 
 // ── Public HTML pages (no auth required) ─────────────────────────────────────
 app.get('/edgekeeper.html', serveInjectedHtml(path.join(__dirname, 'edgekeeper.html')));
+app.get('/app', requireAuthPage, serveInjectedHtml(path.join(__dirname, 'app.html')));
+app.get('/app.html', requireAuthPage, serveInjectedHtml(path.join(__dirname, 'app.html')));
 
 // Auth page — redirect already-authenticated users straight to workspace.
 // Without this, a logged-in user hitting /auth.html would see the form
