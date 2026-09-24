@@ -266,10 +266,10 @@ function serveInjectedHtml(filePath) {
             + '.ek-menu svg{width:20px;height:20px}'
             + 'html.ek-app{height:100%!important;overflow:hidden!important}'
             + 'html.ek-app body{height:100%!important;overflow:hidden!important;margin:0!important;padding:' + hdrH + ' 0 0 0!important;box-sizing:border-box!important}'
-            + 'html.ek-app .workspace{grid-template-rows:0 1fr!important;height:100%!important;overflow:hidden!important}'
+            + 'html.ek-app .workspace{grid-template-rows:1fr!important;height:100%!important;overflow:hidden!important}'
             + 'html.ek-app .workspace>.main{height:100%!important}'
             + 'html.ek-app #office-skeleton{display:none!important}'
-            + 'html.ek-app .shell{grid-template-rows:0 1fr!important;height:100%!important;overflow:hidden!important}'
+            + 'html.ek-app .shell{grid-template-rows:1fr!important;height:100%!important;overflow:hidden!important}'
             + 'html.ek-app #split{flex:1!important;min-height:0!important;overflow:hidden!important}'
             + 'html.ek-app #companion-panel{overflow:hidden!important;flex:1!important;height:auto!important;display:flex!important;flex-direction:column!important}'
             + 'html.ek-app #thread{overflow-y:auto!important;flex:1!important;min-height:0!important}'
@@ -282,7 +282,7 @@ function serveInjectedHtml(filePath) {
             + 'html.ek-app .scrim{top:' + hdrH + '!important}'
             + 'html.ek-app .panel-col.open{top:' + hdrH + '!important}'
             + 'html.ek-app .panel-body{height:calc(100% - 56px)!important}'
-            + 'html.ek-app #intake-room{top:' + hdrH + '!important;bottom:0!important}'
+            + 'html.ek-app #intake-room{top:' + hdrH + '!important;bottom:0!important;left:0!important;right:0!important;overflow:hidden!important;border:1px solid rgba(232,228,220,.08)!important;border-top:none!important}'
             + 'html.ek-app .ambient{display:none!important}';
 
           let backUrl = '/app', title = '', menuBtn = '';
