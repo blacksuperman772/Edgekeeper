@@ -575,6 +575,26 @@
         .then(function() { location.href = '/edgekeeper.html'; })
         .catch(function() { location.href = '/edgekeeper.html'; });
     }
+
+    (function pushPrompt() {
+      if (!('Notification' in window) || Notification.permission !== 'default') return;
+      if (localStorage.getItem('ek_push_dismissed')) return;
+      setTimeout(function() {
+        var bar = document.createElement('div');
+        bar.id = 'push-bar';
+        bar.style.cssText = 'position:fixed;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:#111;border-bottom:1px solid rgba(232,228,220,.08);z-index:10000;font:300 .78rem Inter,-apple-system,sans-serif;color:#bfbab2';
+        bar.innerHTML = '<span>Stay in the loop when your mentors have something.</span><span style="display:flex;gap:8px;flex-shrink:0"><button id="push-yes" style="padding:6px 14px;background:#b8a06a;color:#050505;border:none;border-radius:6px;font:500 .72rem Inter,sans-serif;cursor:pointer">Enable</button><button id="push-no" style="padding:6px 10px;background:none;color:#5e5a55;border:none;font:.72rem Inter,sans-serif;cursor:pointer">Later</button></span>';
+        document.body.appendChild(bar);
+        document.getElementById('push-yes').onclick = function() {
+          bar.remove();
+          if (window.EKPush) window.EKPush.enable();
+        };
+        document.getElementById('push-no').onclick = function() {
+          bar.remove();
+          localStorage.setItem('ek_push_dismissed', '1');
+        };
+      }, 2000);
+    })();
   </script>
 </body>
 </html>

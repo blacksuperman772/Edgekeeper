@@ -192,8 +192,9 @@ function serveInjectedHtml(filePath) {
       // [data-auth-only] rules.
       if (req.user) html = html.replace(/<html(\s|>)/i, '<html class="ek-authed"$1');
 
-      // App mode — inject full bottom nav + layout fixes when the ek_app cookie is set.
-      // Skip injection on app.html itself (it has its own nav).
+      // App mode — WhatsApp-style navigation injection.
+      // Immersive pages (workspace, chamber, study) get a back header; no bottom nav.
+      // Hub pages (everything else) get the bottom tab bar + more sheet.
       const isAppMode = req.cookies?.ek_app === '1' && req.user && !filePath.endsWith('app.html');
       if (isAppMode) {
         if (/<html[^>]*class="/.test(html)) {
@@ -201,51 +202,74 @@ function serveInjectedHtml(filePath) {
         } else {
           html = html.replace(/<html(\s|>)/i, '<html class="ek-app"$1');
         }
-        html = html.replace(/<\/head>/i,
-          '<style>'
-          + 'html.ek-app .topbar,html.ek-app #main-nav,html.ek-app #nav,html.ek-app #top-bar,html.ek-app body>nav,html.ek-app .page-header,html.ek-app .ek-pillars{display:none!important}'
-          + 'html.ek-app body{padding-top:0!important;padding-bottom:calc(54px + env(safe-area-inset-bottom,0px))!important}'
-          + 'html.ek-app .workspace{grid-template-rows:0 1fr!important;height:calc(100dvh - 54px)!important}'
-          + 'html.ek-app .shell{grid-template-rows:0 1fr!important;height:calc(100dvh - 54px)!important}'
-          + 'html.ek-app #split{height:calc(100dvh - 54px)!important}'
-          + '.ek-appnav{position:fixed;bottom:0;left:0;right:0;display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid rgba(232,228,220,.1);background:rgba(4,4,4,.92);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);padding-bottom:env(safe-area-inset-bottom,0px);z-index:9999;font-family:"Inter",-apple-system,sans-serif}'
-          + '.ek-appnav a,.ek-appnav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:54px;color:#3a3835;background:none;border:none;cursor:pointer;font:300 .44rem "DM Mono",monospace;letter-spacing:.04em;text-transform:uppercase;text-decoration:none;-webkit-tap-highlight-color:transparent;transition:color .15s}'
-          + '.ek-appnav svg{width:19px;height:19px}'
-          + '.ek-appnav .ek-on{color:#b8a06a}'
-          + '.ek-appnav a:active,.ek-appnav button:active{opacity:.6}'
-          + '.ek-mo{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;opacity:0;pointer-events:none;transition:opacity .2s}'
-          + '.ek-mo.ek-show{opacity:1;pointer-events:auto}'
-          + '.ek-ms{position:fixed;left:0;right:0;bottom:0;background:#0a0a09;border-top:1px solid rgba(232,228,220,.1);border-radius:14px 14px 0 0;z-index:10001;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 60px);font-family:"Inter",-apple-system,sans-serif}'
-          + '.ek-ms.ek-show{transform:translateY(0)}'
-          + '.ek-ms-g{display:flex;justify-content:center;padding:10px 0 4px}'
-          + '.ek-ms-g::after{content:"";width:32px;height:3px;border-radius:2px;background:rgba(255,255,255,.08)}'
-          + '.ek-ms a,.ek-ms button{display:flex;align-items:center;gap:16px;padding:16px 20px;border-top:1px solid rgba(232,228,220,.06);color:#bfbab2;background:none;border-left:none;border-right:none;border-bottom:none;width:100%;text-align:left;font:300 .84rem "Inter",-apple-system,sans-serif;cursor:pointer;text-decoration:none;transition:background .12s}'
-          + '.ek-ms a:first-of-type{border-top:none;margin-top:6px}'
-          + '.ek-ms a:active,.ek-ms button:active{background:rgba(255,255,255,.02)}'
-          + '.ek-ms svg{width:17px;height:17px;color:#5e5a55;flex-shrink:0}'
-          + '.ek-ms .ek-out{color:#9d6c58;margin-top:8px;border-top:1px solid rgba(232,228,220,.1)}'
-          + '.ek-ms .ek-out svg{color:#9d6c58}'
-          + '</style></head>');
 
-        const navHtml = '<nav class="ek-appnav">'
-          + '<a href="/app" class="ek-nav-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 10.5 12 3l9 7.5v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 20v-6h6v6"/></svg>Home</a>'
-          + '<a href="/workspace.html" class="ek-nav-marcus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg>Marcus</a>'
-          + '<a href="/my-academy" class="ek-nav-theo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m3 10 9-5 9 5-9 5z"/><path d="M7 12v5c3 2 7 2 10 0v-5"/></svg>Theo</a>'
-          + '<a href="/chamber" class="ek-nav-iris"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3 20 7v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg>Iris</a>'
-          + '<button class="ek-nav-more" onclick="document.getElementById(\'ek-mo\').classList.add(\'ek-show\');document.getElementById(\'ek-ms\').classList.add(\'ek-show\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>More</button>'
-          + '</nav>'
-          + '<div id="ek-mo" class="ek-mo" onclick="this.classList.remove(\'ek-show\');document.getElementById(\'ek-ms\').classList.remove(\'ek-show\')"></div>'
-          + '<div id="ek-ms" class="ek-ms"><div class="ek-ms-g"></div>'
-          + '<a href="/profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M5 20c0-3 3-6 7-6s7 3 7 6"/></svg>Trader profile</a>'
-          + '<a href="/reports.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16v16H4z"/><path d="M8 16V12M12 16V8M16 16v-2"/></svg>Reports</a>'
-          + '<a href="/reviews.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M9 12h6M9 16h3"/></svg>Trade reviews</a>'
-          + '<a href="/integrations.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.6 13.5 15.4 17M8.6 10.5l6.8-3.5"/></svg>Broker integrations</a>'
-          + '<a href="/settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>Settings</a>'
-          + '<button class="ek-out" onclick="fetch(\'/api/auth/session\',{method:\'DELETE\',credentials:\'include\'}).then(function(){location.href=\'/edgekeeper.html\'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign out</button>'
-          + '</div>'
-          + '<script>(function(){var p=location.pathname,t="";if(p==="/app"||p==="/app.html")t="home";else if(p==="/workspace.html")t="marcus";else if(p==="/my-academy"||p==="/study.html"||p==="/study"||p==="/academy.html")t="theo";else if(p==="/chamber"||p==="/chamber.html")t="iris";else t="more";var e=document.querySelector(".ek-nav-"+t);if(e)e.classList.add("ek-on")})()</script>';
+        const isImmersive = /workspace\.html|chamber\.html|study\.html/.test(filePath);
+        let css = 'html.ek-app .topbar,html.ek-app #main-nav,html.ek-app #nav,html.ek-app #top-bar,html.ek-app body>nav,html.ek-app .page-header,html.ek-app .ek-pillars{display:none!important}'
+          + 'html.ek-app .page-wrap{padding-top:16px!important}'
+          + 'html.ek-app #cursor,html.ek-app #cursor-ring{display:none!important}';
 
-        html = html.replace(/<\/body>/i, navHtml + '</body>');
+        if (isImmersive) {
+          css += '.ek-back{position:fixed;top:0;left:0;right:0;height:48px;display:flex;align-items:center;padding:0 4px;background:#050505;border-bottom:1px solid rgba(232,228,220,.08);z-index:9999;font-family:"Inter",-apple-system,sans-serif}'
+            + '.ek-back a{display:flex;align-items:center;gap:6px;color:#bfbab2;text-decoration:none;font:400 .84rem "Inter",-apple-system,sans-serif;padding:10px 12px;border-radius:8px;-webkit-tap-highlight-color:transparent}'
+            + '.ek-back a:active{opacity:.6}'
+            + '.ek-back svg{width:22px;height:22px}'
+            + 'html.ek-app body{padding-top:48px!important;padding-bottom:0!important}'
+            + 'html.ek-app .workspace{grid-template-rows:0 1fr!important;height:calc(100dvh - 48px)!important}'
+            + 'html.ek-app #office-skeleton{top:48px!important;grid-template-rows:0 1fr!important}'
+            + 'html.ek-app #office-skeleton .os-top{display:none!important}'
+            + 'html.ek-app .shell{grid-template-rows:0 1fr!important;height:calc(100dvh - 48px)!important}'
+            + 'html.ek-app #split{height:calc(100dvh - 48px)!important}';
+
+          let backUrl = '/app', title = '';
+          if (filePath.endsWith('workspace.html')) title = 'Marcus';
+          else if (filePath.endsWith('chamber.html')) title = 'Iris';
+          else if (filePath.endsWith('study.html')) { title = 'Lesson'; backUrl = '/my-academy'; }
+
+          html = html.replace(/<\/head>/i, '<style>' + css + '</style></head>');
+          html = html.replace(/<\/body>/i,
+            '<header class="ek-back"><a href="' + backUrl + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 19l-7-7 7-7"/></svg>' + title + '</a></header></body>');
+        } else {
+          css += 'html.ek-app body{padding-top:0!important;padding-bottom:calc(54px + env(safe-area-inset-bottom,0px))!important}'
+            + '.ek-appnav{position:fixed;bottom:0;left:0;right:0;display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid rgba(232,228,220,.1);background:rgba(4,4,4,.92);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);padding-bottom:env(safe-area-inset-bottom,0px);z-index:9999;font-family:"Inter",-apple-system,sans-serif}'
+            + '.ek-appnav a,.ek-appnav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:54px;color:#3a3835;background:none;border:none;cursor:pointer;font:300 .44rem "DM Mono",monospace;letter-spacing:.04em;text-transform:uppercase;text-decoration:none;-webkit-tap-highlight-color:transparent;transition:color .15s}'
+            + '.ek-appnav svg{width:19px;height:19px}'
+            + '.ek-appnav .ek-on{color:#b8a06a}'
+            + '.ek-appnav a:active,.ek-appnav button:active{opacity:.6}'
+            + '.ek-mo{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;opacity:0;pointer-events:none;transition:opacity .2s}'
+            + '.ek-mo.ek-show{opacity:1;pointer-events:auto}'
+            + '.ek-ms{position:fixed;left:0;right:0;bottom:0;background:#0a0a09;border-top:1px solid rgba(232,228,220,.1);border-radius:14px 14px 0 0;z-index:10001;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 60px);font-family:"Inter",-apple-system,sans-serif}'
+            + '.ek-ms.ek-show{transform:translateY(0)}'
+            + '.ek-ms-g{display:flex;justify-content:center;padding:10px 0 4px}'
+            + '.ek-ms-g::after{content:"";width:32px;height:3px;border-radius:2px;background:rgba(255,255,255,.08)}'
+            + '.ek-ms a,.ek-ms button{display:flex;align-items:center;gap:16px;padding:16px 20px;border-top:1px solid rgba(232,228,220,.06);color:#bfbab2;background:none;border-left:none;border-right:none;border-bottom:none;width:100%;text-align:left;font:300 .84rem "Inter",-apple-system,sans-serif;cursor:pointer;text-decoration:none;transition:background .12s}'
+            + '.ek-ms a:first-of-type{border-top:none;margin-top:6px}'
+            + '.ek-ms a:active,.ek-ms button:active{background:rgba(255,255,255,.02)}'
+            + '.ek-ms svg{width:17px;height:17px;color:#5e5a55;flex-shrink:0}'
+            + '.ek-ms .ek-out{color:#9d6c58;margin-top:8px;border-top:1px solid rgba(232,228,220,.1)}'
+            + '.ek-ms .ek-out svg{color:#9d6c58}';
+
+          html = html.replace(/<\/head>/i, '<style>' + css + '</style></head>');
+
+          const navHtml = '<nav class="ek-appnav">'
+            + '<a href="/app" class="ek-nav-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 10.5 12 3l9 7.5v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 20v-6h6v6"/></svg>Home</a>'
+            + '<a href="/workspace.html" class="ek-nav-marcus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg>Marcus</a>'
+            + '<a href="/my-academy" class="ek-nav-theo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m3 10 9-5 9 5-9 5z"/><path d="M7 12v5c3 2 7 2 10 0v-5"/></svg>Theo</a>'
+            + '<a href="/chamber" class="ek-nav-iris"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3 20 7v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg>Iris</a>'
+            + '<button class="ek-nav-more" onclick="document.getElementById(\'ek-mo\').classList.add(\'ek-show\');document.getElementById(\'ek-ms\').classList.add(\'ek-show\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>More</button>'
+            + '</nav>'
+            + '<div id="ek-mo" class="ek-mo" onclick="this.classList.remove(\'ek-show\');document.getElementById(\'ek-ms\').classList.remove(\'ek-show\')"></div>'
+            + '<div id="ek-ms" class="ek-ms"><div class="ek-ms-g"></div>'
+            + '<a href="/profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M5 20c0-3 3-6 7-6s7 3 7 6"/></svg>Trader profile</a>'
+            + '<a href="/reports.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16v16H4z"/><path d="M8 16V12M12 16V8M16 16v-2"/></svg>Reports</a>'
+            + '<a href="/reviews.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M9 12h6M9 16h3"/></svg>Trade reviews</a>'
+            + '<a href="/integrations.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.6 13.5 15.4 17M8.6 10.5l6.8-3.5"/></svg>Broker integrations</a>'
+            + '<a href="/settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>Settings</a>'
+            + '<button class="ek-out" onclick="fetch(\'/api/auth/session\',{method:\'DELETE\',credentials:\'include\'}).then(function(){location.href=\'/edgekeeper.html\'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign out</button>'
+            + '</div>'
+            + '<script>(function(){var p=location.pathname,t="";if(p==="/app"||p==="/app.html")t="home";else if(p==="/workspace.html")t="marcus";else if(p==="/my-academy"||p==="/study.html"||p==="/study"||p==="/academy.html")t="theo";else if(p==="/chamber"||p==="/chamber.html")t="iris";else t="more";var e=document.querySelector(".ek-nav-"+t);if(e)e.classList.add("ek-on")})()</script>';
+
+          html = html.replace(/<\/body>/i, navHtml + '</body>');
+        }
       }
 
       // The global CSP (set in the security middleware above) already allows the
