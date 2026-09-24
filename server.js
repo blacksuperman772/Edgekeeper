@@ -192,32 +192,6 @@ function serveInjectedHtml(filePath) {
       // [data-auth-only] rules.
       if (req.user) html = html.replace(/<html(\s|>)/i, '<html class="ek-authed"$1');
 
-      // Persistent bottom nav for installed PWA (standalone mode).
-      // Hidden on desktop and browser tabs; only shows when html.ek-standalone is set by pwa.js.
-      // Injected on every authenticated page so nav survives navigation within the installed app.
-      // Skip injecting nav on /app — that page has its own bounded shell with a nav already.
-      const isAppShell = req.path === '/app' || req.path === '/app.html';
-      if (req.user && !isAppShell) {
-        const appNav = `<style>
-.ek-app-nav{display:none;position:fixed;z-index:20;right:0;bottom:0;left:0;grid-template-columns:repeat(5,1fr);padding:8px calc(12px + var(--ek-safe-right,0px)) calc(8px + var(--ek-safe-bottom,0px)) calc(12px + var(--ek-safe-left,0px));border-top:1px solid rgba(232,228,220,.11);background:rgba(7,7,7,.94);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);}
-html.ek-standalone .ek-app-nav{display:grid;}
-.ek-app-nav a{display:flex;min-height:52px;align-items:center;justify-content:center;flex-direction:column;gap:5px;color:#8d8980;text-decoration:none;font:.55rem 'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;}
-.ek-app-nav a.active,.ek-app-nav a[aria-current]{color:#b8a06a;}
-.ek-app-nav svg{width:18px;height:18px;flex-shrink:0;}
-html.ek-standalone body:not(.app-page){padding-bottom:calc(68px + var(--ek-safe-bottom,0px))!important;}
-html.ek-standalone .workspace{padding-bottom:0!important;}
-</style>
-<nav class="ek-app-nav" aria-label="App navigation">
-<a href="/app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 10.5 12 3l9 7.5v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 20v-6h6v6"/></svg>Home</a>
-<a href="/workspace.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg>Marcus</a>
-<a href="/my-academy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m3 10 9-5 9 5-9 5z"/><path d="M7 12v5c3 2 7 2 10 0v-5"/></svg>Theo</a>
-<a href="/chamber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3 20 7v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg>Iris</a>
-<a href="/settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.8 1.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5v.1h-2.5v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1-1.8-1.8.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H6.5v-2.5h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1 1.8-1.8.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.5V5h2.5v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1 1.8 1.8-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1h.1v2.5h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</a>
-</nav>
-<script>(function(){var p=location.pathname.replace(/\\.html$/,'');var map={'/app':0,'/workspace':1,'/my-academy':2,'/chamber':3,'/settings':4};var idx=map[p];if(idx===undefined)return;var links=document.querySelectorAll('.ek-app-nav a');if(links[idx])links[idx].setAttribute('aria-current','page');}());</script>`;
-        html = html.replace(/<\/body>/i, appNav + '</body>');
-      }
-
       // The global CSP (set in the security middleware above) already allows the
       // inline scripts and event handlers this page relies on. No per-page CSP
       // override or nonce injection — that approach breaks inline event handlers.
