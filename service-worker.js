@@ -6,9 +6,9 @@ const NAVIGATION_CACHE = VERSION + '-navigation';
 const OFFLINE_URL = '/offline.html';
 
 const STATIC_ASSETS = [
-  '/assets/app-icon-180.svg',
-  '/assets/app-icon-192.svg',
-  '/assets/app-icon-512.svg',
+  '/assets/app-icon-180.png',
+  '/assets/app-icon-192.png',
+  '/assets/app-icon-512.png',
   '/assets/shared.css',
   '/assets/pwa.js',
   '/assets/reveal-safety.js',
@@ -45,8 +45,8 @@ self.addEventListener('push', (event) => {
   const title = payload.title || 'EdgeKeeper';
   const options = {
     body: payload.body || 'You have an update waiting in EdgeKeeper.',
-    icon: payload.icon || '/assets/app-icon-192.svg',
-    badge: payload.badge || '/assets/app-icon-192.svg',
+    icon: payload.icon || '/assets/app-icon-192.png',
+    badge: payload.badge || '/assets/app-icon-192.png',
     tag: payload.type || 'edgekeeper',
     data: { url: payload.url || '/workspace.html', type: payload.type || 'system', entityId: payload.entityId || null },
     renotify: true,
