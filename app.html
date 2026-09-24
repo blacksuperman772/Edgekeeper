@@ -603,9 +603,14 @@
         document.getElementById('activity').innerHTML = '<div class="act-empty">Activity appears when connected.</div>';
       });
 
-    setTimeout(function() {
-      document.getElementById('splash').classList.add('done');
-    }, 1000);
+    (function() {
+      var sp = document.getElementById('splash');
+      try {
+        if (sessionStorage.getItem('ek_splash')) { sp.classList.add('done'); return; }
+        sessionStorage.setItem('ek_splash', '1');
+      } catch(e) { sp.classList.add('done'); return; }
+      setTimeout(function() { sp.classList.add('done'); }, 1000);
+    })();
 
     function signOut() {
       closeMore();

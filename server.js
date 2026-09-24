@@ -215,12 +215,15 @@ function serveInjectedHtml(filePath) {
           + 'html.ek-app body{cursor:auto!important;min-height:100dvh;justify-content:center;padding:24px 16px}'
           + 'html.ek-app main{width:100%;max-width:400px;margin:0 auto}'
           + 'html.ek-app .auth-card{border:none;padding:0}'
-          + 'html.ek-app .auth-card::before{content:"";display:block;width:28px;height:28px;margin:0 auto 32px;border:1.5px solid rgba(184,160,106,.5);border-radius:6px;background:rgba(184,160,106,.06)}'
           + 'html.ek-app .auth-eyebrow{display:none}'
           + 'html.ek-app .auth-headline{text-align:center;font-size:1.35rem}'
           + 'html.ek-app .auth-subline{text-align:center}'
-          + 'html.ek-app .privacy-note{text-align:center;font-size:.65rem}';
+          + 'html.ek-app .privacy-note{text-align:center;font-size:.65rem}'
+          + '.ek-auth-mark{text-align:center;margin-bottom:28px;font:400 .72rem "Cormorant Garamond",Georgia,serif;letter-spacing:.28em;text-transform:uppercase;color:#555}'
+          + '.ek-auth-mark b{font-weight:400;color:#7a6a45}';
         html = html.replace(/<\/head>/i, '<style>' + appAuthCss + '</style></head>');
+        html = html.replace(/<div class="auth-card">/i,
+          '<div class="auth-card"><div class="ek-auth-mark">edge<b>k</b>eeper</div>');
       }
 
       const isAppMode = req.cookies?.ek_app === '1' && req.user && !filePath.endsWith('app.html');
@@ -246,13 +249,13 @@ function serveInjectedHtml(filePath) {
             + '.ek-back a{display:flex;align-items:center;gap:6px;color:#bfbab2;text-decoration:none;font:400 .84rem "Inter",-apple-system,sans-serif;padding:10px 12px;border-radius:8px;-webkit-tap-highlight-color:transparent}'
             + '.ek-back a:active{opacity:.6}'
             + '.ek-back svg{width:22px;height:22px}'
-            + 'html.ek-app body{padding-top:48px!important;padding-bottom:0!important;overflow:hidden!important;height:100%!important}'
             + 'html.ek-app html{height:100%!important;overflow:hidden!important}'
-            + 'html.ek-app .workspace{grid-template-rows:0 1fr!important;height:100%!important}'
-            + 'html.ek-app #office-skeleton{top:48px!important;grid-template-rows:0 1fr!important}'
+            + 'html.ek-app body{padding-top:48px!important;padding-bottom:0!important;overflow:hidden!important;height:100%!important;max-height:100%!important}'
+            + 'html.ek-app .workspace{grid-template-rows:0 1fr!important;height:100%!important;max-height:100%!important;overflow:hidden!important}'
+            + 'html.ek-app #office-skeleton{top:48px!important;bottom:0!important;grid-template-rows:0 1fr!important}'
             + 'html.ek-app #office-skeleton .os-top{display:none!important}'
-            + 'html.ek-app .shell{grid-template-rows:0 1fr!important;height:100%!important}'
-            + 'html.ek-app #split{height:100%!important;flex:1!important}'
+            + 'html.ek-app .shell{grid-template-rows:0 1fr!important;height:100%!important;max-height:100%!important;overflow:hidden!important}'
+            + 'html.ek-app #split{flex:1!important;min-height:0!important;overflow:hidden!important}'
             + 'html.ek-app .sidebar{top:48px!important}'
             + 'html.ek-app .side{top:48px!important}'
             + 'html.ek-app #module-panel{top:48px!important}'
