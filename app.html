@@ -71,17 +71,6 @@
       z-index: 10;
     }
     .hdr-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
-    .hdr-back {
-      display: none;
-      width: 28px; height: 28px;
-      align-items: center;
-      justify-content: center;
-      color: var(--gold);
-      background: none; border: none;
-      cursor: pointer; flex-shrink: 0;
-    }
-    .hdr-back svg { width: 16px; height: 16px; }
-    .hdr-back.show { display: flex; }
     .hdr-mark {
       font: 400 .72rem var(--serif);
       letter-spacing: .28em;
@@ -89,13 +78,6 @@
       color: var(--muted);
     }
     .hdr-mark em { font-style: normal; color: var(--gold-dim); }
-    .hdr-page {
-      display: none;
-      font: 300 .78rem var(--sans);
-      color: var(--text-2);
-      letter-spacing: .02em;
-    }
-    .hdr-page.show { display: block; }
     .hdr-right { display: flex; align-items: center; gap: 14px; }
     .hdr-dot {
       width: 4px; height: 4px;
@@ -110,25 +92,24 @@
       color: var(--gold-dim);
       letter-spacing: .04em;
       cursor: pointer;
+      text-decoration: none;
     }
 
     /* ── Body ── */
-    .body { flex: 1; position: relative; overflow: hidden; }
-
-    /* ── Home ── */
-    .home {
-      position: absolute; inset: 0;
-      overflow-y: auto; overflow-x: hidden;
+    .body {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
     }
-    .home.off { display: none; }
+
+    /* ── Greeting ── */
     .hi {
       padding: 32px 20px 0;
       max-width: 480px;
       margin: 0 auto;
+      position: relative;
     }
-
-    /* ambient glow behind greeting */
     .hi::before {
       content: "";
       position: fixed;
@@ -140,7 +121,6 @@
       z-index: 0;
     }
     .hi > * { position: relative; z-index: 1; }
-
     .hi-time {
       font: 300 .5rem var(--mono);
       letter-spacing: .22em;
@@ -177,6 +157,7 @@
       text-align: left;
       font-family: inherit;
       color: inherit;
+      text-decoration: none;
       transition: opacity .12s;
     }
     .sp:first-child { border-top: 1px solid var(--line); }
@@ -214,11 +195,7 @@
     .sp:active .sp-arrow { color: var(--muted); }
 
     /* ── Divider ── */
-    .sep {
-      max-width: 480px;
-      margin: 0 auto;
-      padding: 0 20px;
-    }
+    .sep { max-width: 480px; margin: 0 auto; padding: 0 20px; }
     .sep-line {
       height: 1px;
       background: linear-gradient(90deg, transparent, var(--line-2) 30%, var(--line-2) 70%, transparent);
@@ -244,6 +221,7 @@
       border: none;
       color: var(--text-2);
       font-family: inherit;
+      text-decoration: none;
       transition: background .12s;
     }
     .qr:first-child { border-radius: 2px 0 0 2px; }
@@ -284,6 +262,8 @@
       padding: 13px 0;
       border-top: 1px solid var(--line);
       cursor: pointer;
+      text-decoration: none;
+      color: inherit;
     }
     .act-row:active { opacity: .6; }
     .act-dot {
@@ -313,32 +293,6 @@
       color: var(--faint);
     }
 
-    /* ── Frame ── */
-    .frame {
-      position: absolute; inset: 0;
-      border: 0; width: 100%; height: 100%;
-      background: var(--bg);
-    }
-    .frame.off { display: none; }
-    .frame-load {
-      position: absolute; inset: 0;
-      display: flex; align-items: center; justify-content: center;
-      background: var(--bg);
-      z-index: 5;
-      transition: opacity .35s ease;
-    }
-    .frame-load.done { opacity: 0; pointer-events: none; }
-    .frame-load .dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--gold-dim);
-      animation: breathe 1.6s ease-in-out infinite;
-    }
-    @keyframes breathe {
-      0%, 100% { opacity: .2; transform: scale(.7); }
-      50% { opacity: .8; transform: scale(1); }
-    }
-
     /* ── Nav ── */
     .nav {
       flex-shrink: 0;
@@ -363,6 +317,7 @@
       font: 300 .44rem var(--mono);
       letter-spacing: .04em;
       text-transform: uppercase;
+      text-decoration: none;
       -webkit-tap-highlight-color: transparent;
       transition: color .15s;
     }
@@ -413,6 +368,7 @@
       text-align: left;
       font: 300 .84rem var(--sans);
       cursor: pointer;
+      text-decoration: none;
       transition: background .12s;
     }
     .sheet-item:first-of-type { border-top: none; margin-top: 6px; }
@@ -427,106 +383,97 @@
 
     <header class="hdr">
       <div class="hdr-left">
-        <button class="hdr-back" id="back-btn" onclick="goBack()" aria-label="Back">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 19l-7-7 7-7"/></svg>
-        </button>
-        <span class="hdr-mark" id="hdr-mark">edge<em>k</em>eeper</span>
-        <span class="hdr-page" id="hdr-page"></span>
+        <span class="hdr-mark">edge<em>k</em>eeper</span>
       </div>
       <div class="hdr-right">
         <span class="hdr-dot" id="hdr-dot"></span>
-        <span class="hdr-initial" id="hdr-initial" onclick="openPage('/profile.html','Profile')"></span>
+        <a class="hdr-initial" id="hdr-initial" href="/profile.html"></a>
       </div>
     </header>
 
     <div class="body">
-      <div class="home" id="home-view">
 
-        <div class="hi">
-          <div class="hi-time" id="hi-time"></div>
-          <h1 class="hi-name" id="hi-name">EdgeKeeper</h1>
-          <p class="hi-line" id="hi-line">Your practice, continued.</p>
-        </div>
-
-        <div class="spaces">
-          <button class="sp marcus" onclick="switchTab('marcus')">
-            <span class="sp-glyph">M</span>
-            <span class="sp-text">
-              <div class="sp-name">Marcus</div>
-              <div class="sp-role">Your mentor</div>
-            </span>
-            <span class="sp-arrow">&#x203A;</span>
-          </button>
-          <button class="sp theo" onclick="switchTab('theo')">
-            <span class="sp-glyph">T</span>
-            <span class="sp-text">
-              <div class="sp-name">Theo</div>
-              <div class="sp-role">The academy</div>
-            </span>
-            <span class="sp-arrow">&#x203A;</span>
-          </button>
-          <button class="sp iris" onclick="switchTab('iris')">
-            <span class="sp-glyph">I</span>
-            <span class="sp-text">
-              <div class="sp-name">Iris</div>
-              <div class="sp-role">Risk guardian</div>
-            </span>
-            <span class="sp-arrow">&#x203A;</span>
-          </button>
-        </div>
-
-        <div class="sep"><div class="sep-line"></div></div>
-
-        <div class="quick-row">
-          <button class="qr" onclick="openPage('/reports.html','Reports')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16v16H4z"/><path d="M8 16V12M12 16V8M16 16v-2"/></svg>
-            <span class="qr-label">Reports</span>
-          </button>
-          <button class="qr" onclick="openPage('/reviews.html','Reviews')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M9 12h6M9 16h3"/></svg>
-            <span class="qr-label">Reviews</span>
-          </button>
-          <button class="qr" onclick="openPage('/integrations.html','Integrations')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.6 13.5 15.4 17M8.6 10.5l6.8-3.5"/></svg>
-            <span class="qr-label">Brokers</span>
-          </button>
-          <button class="qr" onclick="openPage('/settings.html','Settings')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-            <span class="qr-label">Settings</span>
-          </button>
-        </div>
-
-        <div class="act">
-          <div class="act-head">
-            <span class="act-label">Recent</span>
-          </div>
-          <div id="activity"><div class="act-empty">Restoring your record...</div></div>
-        </div>
-
+      <div class="hi">
+        <div class="hi-time" id="hi-time"></div>
+        <h1 class="hi-name" id="hi-name">EdgeKeeper</h1>
+        <p class="hi-line" id="hi-line">Your practice, continued.</p>
       </div>
 
-      <iframe class="frame off" id="page-frame" src="about:blank" title="Page content"></iframe>
-      <div class="frame-load done" id="frame-loader"><div class="dot"></div></div>
+      <div class="spaces">
+        <a class="sp marcus" href="/workspace.html">
+          <span class="sp-glyph">M</span>
+          <span class="sp-text">
+            <div class="sp-name">Marcus</div>
+            <div class="sp-role">Your mentor</div>
+          </span>
+          <span class="sp-arrow">&#x203A;</span>
+        </a>
+        <a class="sp theo" href="/my-academy">
+          <span class="sp-glyph">T</span>
+          <span class="sp-text">
+            <div class="sp-name">Theo</div>
+            <div class="sp-role">The academy</div>
+          </span>
+          <span class="sp-arrow">&#x203A;</span>
+        </a>
+        <a class="sp iris" href="/chamber">
+          <span class="sp-glyph">I</span>
+          <span class="sp-text">
+            <div class="sp-name">Iris</div>
+            <div class="sp-role">Risk guardian</div>
+          </span>
+          <span class="sp-arrow">&#x203A;</span>
+        </a>
+      </div>
+
+      <div class="sep"><div class="sep-line"></div></div>
+
+      <div class="quick-row">
+        <a class="qr" href="/reports.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16v16H4z"/><path d="M8 16V12M12 16V8M16 16v-2"/></svg>
+          <span class="qr-label">Reports</span>
+        </a>
+        <a class="qr" href="/reviews.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M9 12h6M9 16h3"/></svg>
+          <span class="qr-label">Reviews</span>
+        </a>
+        <a class="qr" href="/integrations.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.6 13.5 15.4 17M8.6 10.5l6.8-3.5"/></svg>
+          <span class="qr-label">Brokers</span>
+        </a>
+        <a class="qr" href="/settings.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <span class="qr-label">Settings</span>
+        </a>
+      </div>
+
+      <div class="act">
+        <div class="act-head">
+          <span class="act-label">Recent</span>
+        </div>
+        <div id="activity"><div class="act-empty">Restoring your record...</div></div>
+      </div>
+
     </div>
 
     <nav class="nav">
-      <button class="tab on" data-tab="home" onclick="switchTab('home')">
+      <a class="tab on" href="/app">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 10.5 12 3l9 7.5v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 20v-6h6v6"/></svg>
         Home
-      </button>
-      <button class="tab" data-tab="marcus" onclick="switchTab('marcus')">
+      </a>
+      <a class="tab" href="/workspace.html">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg>
         Marcus
-      </button>
-      <button class="tab" data-tab="theo" onclick="switchTab('theo')">
+      </a>
+      <a class="tab" href="/my-academy">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m3 10 9-5 9 5-9 5z"/><path d="M7 12v5c3 2 7 2 10 0v-5"/></svg>
         Theo
-      </button>
-      <button class="tab" data-tab="iris" onclick="switchTab('iris')">
+      </a>
+      <a class="tab" href="/chamber">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3 20 7v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg>
         Iris
-      </button>
-      <button class="tab" data-tab="more" onclick="toggleMore()">
+      </a>
+      <button class="tab" onclick="toggleMore()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
         More
       </button>
@@ -535,26 +482,26 @@
     <div class="overlay" id="overlay" onclick="closeMore()"></div>
     <div class="sheet" id="sheet">
       <div class="sheet-grip"></div>
-      <button class="sheet-item" onclick="openPage('/profile.html','Profile')">
+      <a class="sheet-item" href="/profile.html">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M5 20c0-3 3-6 7-6s7 3 7 6"/></svg>
         Trader profile
-      </button>
-      <button class="sheet-item" onclick="openPage('/reports.html','Reports')">
+      </a>
+      <a class="sheet-item" href="/reports.html">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16v16H4z"/><path d="M8 16V12M12 16V8M16 16v-2"/></svg>
         Reports
-      </button>
-      <button class="sheet-item" onclick="openPage('/reviews.html','Reviews')">
+      </a>
+      <a class="sheet-item" href="/reviews.html">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M9 12h6M9 16h3"/></svg>
         Trade reviews
-      </button>
-      <button class="sheet-item" onclick="openPage('/integrations.html','Integrations')">
+      </a>
+      <a class="sheet-item" href="/integrations.html">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.6 13.5 15.4 17M8.6 10.5l6.8-3.5"/></svg>
         Broker integrations
-      </button>
-      <button class="sheet-item" onclick="openPage('/settings.html','Settings')">
+      </a>
+      <a class="sheet-item" href="/settings.html">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
         Settings
-      </button>
+      </a>
       <button class="sheet-item out" onclick="signOut()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Sign out
@@ -564,76 +511,6 @@
   </div>
 
   <script>
-    var TAB_URLS = {
-      marcus: '/workspace.html?app=1',
-      theo:   '/my-academy?app=1',
-      iris:   '/chamber?app=1'
-    };
-    var TAB_LABELS = { marcus: 'Marcus', theo: 'Academy', iris: 'Guardian' };
-
-    var active = 'home';
-    var sub = null;
-    var frame   = document.getElementById('page-frame');
-    var home    = document.getElementById('home-view');
-    var loader  = document.getElementById('frame-loader');
-    var mark    = document.getElementById('hdr-mark');
-    var pageLbl = document.getElementById('hdr-page');
-    var backBtn = document.getElementById('back-btn');
-    var tabs    = document.querySelectorAll('.tab');
-
-    function switchTab(id) {
-      if (id === active && !sub) return;
-      closeMore();
-      sub = null;
-
-      active = id;
-      hilite();
-      backBtn.classList.remove('show');
-      pageLbl.classList.remove('show');
-      mark.style.display = '';
-
-      if (id === 'home') {
-        home.classList.remove('off');
-        frame.classList.add('off');
-        loader.classList.add('done');
-      } else {
-        home.classList.add('off');
-        frame.classList.remove('off');
-        loader.classList.remove('done');
-        frame.src = TAB_URLS[id];
-        mark.style.display = 'none';
-        pageLbl.textContent = TAB_LABELS[id] || id;
-        pageLbl.classList.add('show');
-      }
-    }
-
-    function openPage(url, title) {
-      closeMore();
-      sub = { url: url, title: title };
-      active = 'more';
-      hilite();
-
-      mark.style.display = 'none';
-      pageLbl.textContent = title;
-      pageLbl.classList.add('show');
-      backBtn.classList.add('show');
-
-      home.classList.add('off');
-      frame.classList.remove('off');
-      loader.classList.remove('done');
-      frame.src = url + (url.indexOf('?') > -1 ? '&' : '?') + 'app=1';
-    }
-
-    function goBack() { sub = null; switchTab('home'); }
-
-    frame.addEventListener('load', function() {
-      setTimeout(function() { loader.classList.add('done'); }, 120);
-    });
-
-    function hilite() {
-      tabs.forEach(function(t) { t.classList.toggle('on', t.dataset.tab === active); });
-    }
-
     function toggleMore() {
       var s = document.getElementById('sheet');
       var o = document.getElementById('overlay');
@@ -645,20 +522,17 @@
       document.getElementById('sheet').classList.remove('show');
     }
 
-    // Status
     function sync() {
       document.getElementById('hdr-dot').classList.toggle('off', !navigator.onLine);
     }
     addEventListener('online', sync); addEventListener('offline', sync); sync();
 
-    // Time greeting
     (function() {
       var h = new Date().getHours();
       var g = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
       document.getElementById('hi-time').textContent = g;
     })();
 
-    // Profile
     fetch('/api/profile', { credentials: 'include' })
       .then(function(r) { return r.ok ? r.json() : null; })
       .then(function(d) {
@@ -671,7 +545,6 @@
         document.getElementById('hdr-initial').textContent = name.slice(0,2).toUpperCase();
       }).catch(function() {});
 
-    // Activity
     fetch('/api/messages', { credentials: 'include' })
       .then(function(r) { return r.ok ? r.json() : null; })
       .then(function(d) {
@@ -685,12 +558,12 @@
           var t = (m.content || '').replace(/[<>]/g, '');
           if (t.length > 72) t = t.slice(0, 70) + '…';
           var day = new Date(m.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-          return '<div class="act-row" onclick="switchTab(\'marcus\')">' +
+          return '<a class="act-row" href="/workspace.html">' +
             '<span class="act-dot"></span>' +
             '<span class="act-body">' +
               '<span class="act-title">' + (t || 'A message from your mentor.') + '</span>' +
               '<span class="act-meta">' + (m.mentor || 'marcus').toUpperCase() + ' · ' + day + '</span>' +
-            '</span></div>';
+            '</span></a>';
         }).join('');
       }).catch(function() {
         document.getElementById('activity').innerHTML = '<div class="act-empty">Activity appears when connected.</div>';
