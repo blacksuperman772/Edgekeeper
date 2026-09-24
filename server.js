@@ -256,6 +256,7 @@ function serveInjectedHtml(filePath) {
           + 'html.ek-app,html.ek-app body{touch-action:pan-x pan-y;overscroll-behavior:none}';
 
         if (isImmersive) {
+          const hdrH = 'calc(48px + env(safe-area-inset-top,0px))';
           css += '.ek-back{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 4px;background:#050505;border-bottom:1px solid rgba(232,228,220,.08);z-index:9999;font-family:"Inter",-apple-system,sans-serif}'
             + '.ek-back a{display:flex;align-items:center;gap:6px;color:#bfbab2;text-decoration:none;font:400 .84rem "Inter",-apple-system,sans-serif;padding:10px 12px;border-radius:8px;-webkit-tap-highlight-color:transparent}'
             + '.ek-back a:active{opacity:.6}'
@@ -264,22 +265,24 @@ function serveInjectedHtml(filePath) {
             + '.ek-menu:active{opacity:.6}'
             + '.ek-menu svg{width:20px;height:20px}'
             + 'html.ek-app{height:100%!important;overflow:hidden!important}'
-            + 'html.ek-app body{position:fixed!important;top:calc(48px + env(safe-area-inset-top,0px))!important;left:0!important;right:0!important;bottom:0!important;height:auto!important;overflow:hidden!important;padding:0!important;margin:0!important}'
+            + 'html.ek-app body{height:100%!important;overflow:hidden!important;margin:0!important;padding:' + hdrH + ' 0 0 0!important;box-sizing:border-box!important}'
             + 'html.ek-app .workspace{grid-template-rows:0 1fr!important;height:100%!important;overflow:hidden!important}'
+            + 'html.ek-app .workspace>.main{height:100%!important}'
             + 'html.ek-app #office-skeleton{display:none!important}'
             + 'html.ek-app .shell{grid-template-rows:0 1fr!important;height:100%!important;overflow:hidden!important}'
             + 'html.ek-app #split{flex:1!important;min-height:0!important;overflow:hidden!important}'
-            + 'html.ek-app #companion-panel{overflow:hidden!important;flex:1!important;height:auto!important}'
+            + 'html.ek-app #companion-panel{overflow:hidden!important;flex:1!important;height:auto!important;display:flex!important;flex-direction:column!important}'
             + 'html.ek-app #thread{overflow-y:auto!important;flex:1!important;min-height:0!important}'
-            + 'html.ek-app .sidebar{top:calc(48px + env(safe-area-inset-top,0px))!important}'
-            + 'html.ek-app .side{top:calc(48px + env(safe-area-inset-top,0px))!important}'
-            + 'html.ek-app #module-panel{top:calc(48px + env(safe-area-inset-top,0px))!important}'
-            + 'html.ek-app #mod-backdrop{top:calc(48px + env(safe-area-inset-top,0px))!important}'
-            + 'html.ek-app #sb-backdrop{top:calc(48px + env(safe-area-inset-top,0px))!important}'
-            + 'html.ek-app #office-backdrop{top:calc(48px + env(safe-area-inset-top,0px))!important}'
-            + 'html.ek-app .panel-col.open{top:calc(48px + env(safe-area-inset-top,0px))!important}'
+            + 'html.ek-app .sidebar{top:' + hdrH + '!important}'
+            + 'html.ek-app .side{top:' + hdrH + '!important}'
+            + 'html.ek-app #module-panel{top:' + hdrH + '!important}'
+            + 'html.ek-app #mod-backdrop{top:' + hdrH + '!important}'
+            + 'html.ek-app #sb-backdrop{top:' + hdrH + '!important}'
+            + 'html.ek-app #office-backdrop{top:' + hdrH + '!important}'
+            + 'html.ek-app .scrim{top:' + hdrH + '!important}'
+            + 'html.ek-app .panel-col.open{top:' + hdrH + '!important}'
             + 'html.ek-app .panel-body{height:calc(100% - 56px)!important}'
-            + 'html.ek-app #intake-room{top:calc(48px + env(safe-area-inset-top,0px))!important}'
+            + 'html.ek-app #intake-room{top:' + hdrH + '!important;bottom:0!important}'
             + 'html.ek-app .ambient{display:none!important}';
 
           let backUrl = '/app', title = '', menuBtn = '';
