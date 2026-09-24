@@ -3,33 +3,35 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
-  <meta name="theme-color" content="#070707">
+  <meta name="theme-color" content="#050505">
   <title>EdgeKeeper</title>
   <link rel="stylesheet" href="/assets/shared.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=DM+Mono:wght@300;400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --app-bg: #070707;
-      --app-surface: #0e0e0c;
-      --app-surface-2: #141412;
-      --app-surface-3: #1a1a17;
-      --app-line: rgba(232,228,220,.08);
-      --app-line-strong: rgba(232,228,220,.14);
-      --app-text: #e8e4dc;
-      --app-text-2: #c4bfb5;
-      --app-muted: #6b6762;
-      --app-gold: #b8a06a;
-      --app-gold-dim: #7a6a45;
-      --app-green: #6b8c6b;
-      --app-red: #9d6c58;
-      --app-iris: #6b8c8c;
+      --bg: #050505;
+      --surface: #0a0a09;
+      --surface-2: #0f0e0c;
+      --line: rgba(232,228,220,.06);
+      --line-2: rgba(232,228,220,.1);
+      --line-3: rgba(232,228,220,.16);
+      --text: #e8e4dc;
+      --text-2: #bfbab2;
+      --muted: #5e5a55;
+      --faint: #3a3835;
+      --gold: #b8a06a;
+      --gold-dim: #7a6a45;
+      --gold-glow: rgba(184,160,106,.08);
+      --green: #6b8c6b;
+      --green-dim: #3d5a3d;
+      --teal: #6b8c8c;
+      --teal-dim: #3d5a5a;
+      --red: #9d6c58;
       --serif: 'Cormorant Garamond', Georgia, serif;
       --sans: 'Inter', -apple-system, sans-serif;
       --mono: 'DM Mono', monospace;
-      --nav-h: 58px;
-      --header-h: 52px;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -37,8 +39,8 @@
     html, body {
       height: 100%;
       overflow: hidden;
-      background: var(--app-bg);
-      color: var(--app-text);
+      background: var(--bg);
+      color: var(--text);
       font-family: var(--sans);
       font-weight: 300;
       -webkit-font-smoothing: antialiased;
@@ -47,7 +49,6 @@
       overscroll-behavior: none;
     }
 
-    /* ── Shell ── */
     .shell {
       display: flex;
       flex-direction: column;
@@ -58,305 +59,295 @@
     /* ── Header ── */
     .hdr {
       flex-shrink: 0;
-      height: var(--header-h);
+      height: 48px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 16px;
-      border-bottom: 1px solid var(--app-line);
-      background: rgba(7,7,7,.88);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
+      padding: 0 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(5,5,5,.85);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
       z-index: 10;
     }
-    .hdr-left { display: flex; align-items: center; gap: 10px; }
+    .hdr-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
     .hdr-back {
       display: none;
+      width: 28px; height: 28px;
       align-items: center;
       justify-content: center;
-      width: 32px; height: 32px;
-      color: var(--app-gold);
+      color: var(--gold);
       background: none; border: none;
-      cursor: pointer;
+      cursor: pointer; flex-shrink: 0;
     }
-    .hdr-back svg { width: 18px; height: 18px; }
+    .hdr-back svg { width: 16px; height: 16px; }
     .hdr-back.show { display: flex; }
-    .hdr-title {
-      font: 400 .88rem var(--serif);
-      letter-spacing: .18em;
+    .hdr-mark {
+      font: 400 .72rem var(--serif);
+      letter-spacing: .28em;
       text-transform: uppercase;
-      color: var(--app-text);
+      color: var(--muted);
     }
-    .hdr-title b { font-weight: 400; color: var(--app-gold); }
-    .hdr-sub {
+    .hdr-mark em { font-style: normal; color: var(--gold-dim); }
+    .hdr-page {
       display: none;
-      font: 300 .7rem var(--mono);
-      letter-spacing: .06em;
-      color: var(--app-muted);
+      font: 300 .78rem var(--sans);
+      color: var(--text-2);
+      letter-spacing: .02em;
     }
-    .hdr-sub.show { display: block; }
-    .hdr-right { display: flex; align-items: center; gap: 10px; }
-    .hdr-status {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font: 300 .52rem var(--mono);
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      color: var(--app-muted);
-    }
+    .hdr-page.show { display: block; }
+    .hdr-right { display: flex; align-items: center; gap: 14px; }
     .hdr-dot {
-      width: 5px; height: 5px;
+      width: 4px; height: 4px;
       border-radius: 50%;
-      background: var(--app-green);
-      box-shadow: 0 0 6px rgba(107,140,107,.6);
+      background: var(--green);
+      box-shadow: 0 0 8px rgba(107,140,107,.5);
+      transition: background .3s, box-shadow .3s;
     }
-    .hdr-dot.off { background: var(--app-red); box-shadow: none; }
-    .hdr-avatar {
-      width: 32px; height: 32px;
-      display: grid; place-items: center;
-      border: 1px solid rgba(184,160,106,.35);
-      border-radius: 50%;
-      color: var(--app-gold);
-      font: 400 .56rem var(--mono);
-      text-decoration: none;
-      background: rgba(184,160,106,.04);
+    .hdr-dot.off { background: var(--red); box-shadow: 0 0 6px rgba(157,108,88,.4); }
+    .hdr-initial {
+      font: 400 .58rem var(--mono);
+      color: var(--gold-dim);
+      letter-spacing: .04em;
+      cursor: pointer;
     }
 
     /* ── Body ── */
-    .body {
-      flex: 1;
-      position: relative;
-      overflow: hidden;
-    }
+    .body { flex: 1; position: relative; overflow: hidden; }
 
-    /* ── Home view ── */
+    /* ── Home ── */
     .home {
-      position: absolute;
-      inset: 0;
-      overflow-y: auto;
-      overflow-x: hidden;
+      position: absolute; inset: 0;
+      overflow-y: auto; overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
     }
     .home.off { display: none; }
-    .home::before {
-      content: "";
-      display: block;
-      height: 200px;
-      background: radial-gradient(ellipse 90% 200px at 50% 0, rgba(184,160,106,.07), transparent);
-      margin-bottom: -200px;
-      pointer-events: none;
-    }
-    .home-inner {
-      padding: 20px 16px calc(20px + env(safe-area-inset-bottom, 0px));
-      max-width: 520px;
+    .hi {
+      padding: 32px 20px 0;
+      max-width: 480px;
       margin: 0 auto;
     }
 
-    /* greeting */
-    .greet {
-      margin-bottom: 28px;
+    /* ambient glow behind greeting */
+    .hi::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 360px; height: 300px;
+      background: radial-gradient(ellipse at 50% 20%, rgba(184,160,106,.06), transparent 70%);
+      pointer-events: none;
+      z-index: 0;
     }
-    .greet-label {
-      font: 300 .56rem var(--mono);
-      letter-spacing: .2em;
+    .hi > * { position: relative; z-index: 1; }
+
+    .hi-time {
+      font: 300 .5rem var(--mono);
+      letter-spacing: .22em;
       text-transform: uppercase;
-      color: var(--app-gold-dim);
-      margin-bottom: 8px;
+      color: var(--faint);
+      margin-bottom: 20px;
     }
-    .greet h1 {
-      font: 300 clamp(1.8rem, 8vw, 2.8rem)/.94 var(--serif);
-      letter-spacing: -.01em;
-      color: var(--app-text);
-      margin-bottom: 8px;
+    .hi-name {
+      font: 300 clamp(2rem, 9vw, 3rem)/1 var(--serif);
+      color: var(--text);
+      margin-bottom: 6px;
     }
-    .greet-sub {
-      font-size: .82rem;
-      line-height: 1.6;
-      color: var(--app-muted);
+    .hi-line {
+      font: 300 italic clamp(.95rem, 3.5vw, 1.1rem)/1.5 var(--serif);
+      color: var(--muted);
+      margin-bottom: 40px;
     }
 
-    /* Spaces grid */
+    /* ── Spaces ── */
     .spaces {
-      border: 1px solid var(--app-line);
-      margin-bottom: 2px;
-    }
-    .spaces-label {
-      font: 300 .52rem var(--mono);
-      letter-spacing: .16em;
-      text-transform: uppercase;
-      color: var(--app-muted);
-      padding: 10px 14px 8px;
-      border-bottom: 1px solid var(--app-line);
-    }
-    .spaces-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      padding: 0 20px;
+      max-width: 480px;
+      margin: 0 auto 32px;
     }
     .sp {
       display: flex;
-      flex-direction: column;
-      gap: 12px;
-      padding: 18px 14px;
-      border-right: 1px solid var(--app-line);
-      background: transparent;
-      color: var(--app-text);
-      text-decoration: none;
-      cursor: pointer;
-      border: none;
-      text-align: left;
-      font-family: inherit;
-      transition: background .12s;
-      min-height: 100px;
-    }
-    .sp:last-child { border-right: none; }
-    .sp:active { background: rgba(255,255,255,.03); }
-    .sp-icon {
-      width: 36px; height: 36px;
-      display: grid; place-items: center;
-      border: 1px solid var(--app-line-strong);
-      font: 400 1rem var(--serif);
-      line-height: 1;
-    }
-    .sp.marcus .sp-icon { color: var(--app-gold); border-color: rgba(184,160,106,.25); }
-    .sp.theo .sp-icon { color: var(--app-green); border-color: rgba(107,140,107,.25); }
-    .sp.iris .sp-icon { color: var(--app-iris); border-color: rgba(107,140,140,.25); }
-    .sp-name {
-      font: 400 .62rem var(--mono);
-      letter-spacing: .08em;
-      text-transform: uppercase;
-    }
-    .sp-desc {
-      font-size: .7rem;
-      color: var(--app-muted);
-      line-height: 1.35;
-    }
-
-    /* quick actions */
-    .quick {
-      border: 1px solid var(--app-line);
-      border-top: none;
-      margin-bottom: 24px;
-    }
-    .qa {
-      display: flex;
       align-items: center;
-      gap: 14px;
-      padding: 14px;
-      border-bottom: 1px solid var(--app-line);
-      color: var(--app-text-2);
-      text-decoration: none;
-      font-size: .8rem;
-      transition: background .12s;
+      gap: 16px;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line);
       cursor: pointer;
-      background: none;
-      border-left: none; border-right: none;
+      background: none; border-left: none; border-right: none; border-top: none;
       width: 100%;
       text-align: left;
       font-family: inherit;
+      color: inherit;
+      transition: opacity .12s;
     }
-    .qa:last-child { border-bottom: none; }
-    .qa:active { background: rgba(255,255,255,.03); }
-    .qa svg { width: 16px; height: 16px; color: var(--app-muted); flex-shrink: 0; }
-    .qa-label { flex: 1; }
-    .qa-arrow { color: var(--app-muted); font-size: .8rem; }
+    .sp:first-child { border-top: 1px solid var(--line); }
+    .sp:active { opacity: .65; }
+    .sp-glyph {
+      width: 44px; height: 44px;
+      display: grid; place-items: center;
+      font: 400 1.3rem var(--serif);
+      line-height: 1;
+      border: 1px solid var(--line-2);
+      flex-shrink: 0;
+      transition: border-color .2s;
+    }
+    .sp:active .sp-glyph { border-color: var(--line-3); }
+    .sp.marcus .sp-glyph { color: var(--gold); border-color: rgba(184,160,106,.18); }
+    .sp.theo .sp-glyph   { color: var(--green); border-color: rgba(107,140,107,.18); }
+    .sp.iris .sp-glyph   { color: var(--teal); border-color: rgba(107,140,140,.18); }
+    .sp-text { flex: 1; min-width: 0; }
+    .sp-name {
+      font: 400 .86rem var(--sans);
+      letter-spacing: .01em;
+      margin-bottom: 2px;
+    }
+    .sp-role {
+      font: 300 .68rem var(--mono);
+      color: var(--muted);
+      letter-spacing: .04em;
+    }
+    .sp-arrow {
+      color: var(--faint);
+      font-size: .7rem;
+      flex-shrink: 0;
+      transition: color .15s;
+    }
+    .sp:active .sp-arrow { color: var(--muted); }
 
-    /* activity */
+    /* ── Divider ── */
+    .sep {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    .sep-line {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--line-2) 30%, var(--line-2) 70%, transparent);
+    }
+
+    /* ── Quick row ── */
+    .quick-row {
+      display: flex;
+      gap: 1px;
+      padding: 0 20px;
+      max-width: 480px;
+      margin: 20px auto 28px;
+    }
+    .qr {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 14px 4px;
+      background: var(--surface);
+      cursor: pointer;
+      border: none;
+      color: var(--text-2);
+      font-family: inherit;
+      transition: background .12s;
+    }
+    .qr:first-child { border-radius: 2px 0 0 2px; }
+    .qr:last-child { border-radius: 0 2px 2px 0; }
+    .qr:active { background: var(--surface-2); }
+    .qr svg { width: 16px; height: 16px; color: var(--muted); }
+    .qr-label {
+      font: 300 .5rem var(--mono);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ── Activity ── */
+    .act {
+      padding: 0 20px;
+      max-width: 480px;
+      margin: 0 auto;
+      padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    }
     .act-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 0 8px;
-      border-bottom: 1px solid var(--app-line);
+      margin-bottom: 0;
+      padding-bottom: 10px;
     }
     .act-label {
-      font: 300 .52rem var(--mono);
+      font: 300 .5rem var(--mono);
       letter-spacing: .16em;
       text-transform: uppercase;
-      color: var(--app-muted);
-    }
-    .act-link {
-      font: 300 .52rem var(--mono);
-      letter-spacing: .04em;
-      color: var(--app-gold-dim);
-      text-decoration: none;
+      color: var(--faint);
     }
     .act-row {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 14px 0;
-      border-bottom: 1px solid var(--app-line);
+      gap: 14px;
+      padding: 13px 0;
+      border-top: 1px solid var(--line);
       cursor: pointer;
     }
-    .act-row:active { opacity: .7; }
+    .act-row:active { opacity: .6; }
     .act-dot {
-      width: 5px; height: 5px;
+      width: 4px; height: 4px;
       border-radius: 50%;
-      background: var(--app-gold);
+      background: var(--gold-dim);
       flex-shrink: 0;
     }
     .act-body { flex: 1; min-width: 0; }
     .act-title {
-      font-size: .82rem;
+      font: 300 .8rem var(--sans);
       line-height: 1.4;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      color: var(--text-2);
     }
     .act-meta {
       margin-top: 2px;
-      font: 300 .52rem var(--mono);
+      font: 300 .48rem var(--mono);
       letter-spacing: .04em;
-      color: var(--app-muted);
+      color: var(--faint);
     }
-    .act-chevron { color: var(--app-muted); font-size: .8rem; }
     .act-empty {
-      padding: 20px 0;
-      font: 300 .68rem var(--mono);
-      color: var(--app-muted);
+      padding: 18px 0;
+      font: 300 .64rem var(--mono);
+      color: var(--faint);
     }
 
-    /* ── Page frame ── */
+    /* ── Frame ── */
     .frame {
-      position: absolute;
-      inset: 0;
-      border: 0;
-      width: 100%;
-      height: 100%;
-      background: var(--app-bg);
+      position: absolute; inset: 0;
+      border: 0; width: 100%; height: 100%;
+      background: var(--bg);
     }
     .frame.off { display: none; }
-
-    /* Loading overlay for iframe */
-    .frame-loading {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--app-bg);
+    .frame-load {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg);
       z-index: 5;
-      transition: opacity .3s;
+      transition: opacity .35s ease;
     }
-    .frame-loading.done { opacity: 0; pointer-events: none; }
-    .frame-loading .pulse {
-      width: 8px; height: 8px;
+    .frame-load.done { opacity: 0; pointer-events: none; }
+    .frame-load .dot {
+      width: 6px; height: 6px;
       border-radius: 50%;
-      background: var(--app-gold-dim);
-      animation: pulse 1.4s ease-in-out infinite;
+      background: var(--gold-dim);
+      animation: breathe 1.6s ease-in-out infinite;
     }
-    @keyframes pulse { 0%,100% { opacity: .3; transform: scale(.8); } 50% { opacity: 1; transform: scale(1); } }
+    @keyframes breathe {
+      0%, 100% { opacity: .2; transform: scale(.7); }
+      50% { opacity: .8; transform: scale(1); }
+    }
 
-    /* ── Bottom nav ── */
+    /* ── Nav ── */
     .nav {
       flex-shrink: 0;
       display: grid;
       grid-template-columns: repeat(5, 1fr);
-      border-top: 1px solid var(--app-line-strong);
-      background: rgba(5,5,5,.94);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
+      border-top: 1px solid var(--line-2);
+      background: rgba(4,4,4,.92);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
       padding-bottom: env(safe-area-inset-bottom, 0px);
       z-index: 20;
     }
@@ -366,69 +357,56 @@
       align-items: center;
       justify-content: center;
       gap: 3px;
-      min-height: var(--nav-h);
-      color: var(--app-muted);
-      background: none;
-      border: none;
-      cursor: pointer;
-      font: 300 .48rem var(--mono);
-      letter-spacing: .05em;
+      min-height: 54px;
+      color: var(--faint);
+      background: none; border: none; cursor: pointer;
+      font: 300 .44rem var(--mono);
+      letter-spacing: .04em;
       text-transform: uppercase;
       -webkit-tap-highlight-color: transparent;
       transition: color .15s;
     }
-    .tab svg { width: 20px; height: 20px; }
-    .tab.on { color: var(--app-gold); }
-    .tab:active { opacity: .7; }
+    .tab svg { width: 19px; height: 19px; }
+    .tab.on { color: var(--gold); }
+    .tab:active { opacity: .6; }
 
-    /* ── More sheet ── */
+    /* ── Sheet ── */
     .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.6);
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.55);
       z-index: 30;
-      opacity: 0;
-      pointer-events: none;
+      opacity: 0; pointer-events: none;
       transition: opacity .2s;
     }
     .overlay.show { opacity: 1; pointer-events: auto; }
     .sheet {
-      position: fixed;
-      left: 0; right: 0;
-      bottom: 0;
-      background: var(--app-surface);
-      border-top: 1px solid var(--app-line-strong);
+      position: fixed; left: 0; right: 0; bottom: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--line-2);
+      border-radius: 14px 14px 0 0;
       z-index: 31;
       transform: translateY(100%);
-      transition: transform .28s cubic-bezier(.32,.72,0,1);
-      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--nav-h));
+      transition: transform .3s cubic-bezier(.32,.72,0,1);
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 60px);
     }
     .sheet.show { transform: translateY(0); }
-    .sheet-handle {
-      display: flex;
-      justify-content: center;
-      padding: 10px 0 6px;
+    .sheet-grip {
+      display: flex; justify-content: center;
+      padding: 10px 0 4px;
     }
-    .sheet-handle::after {
+    .sheet-grip::after {
       content: "";
-      width: 36px; height: 3px;
+      width: 32px; height: 3px;
       border-radius: 2px;
-      background: rgba(255,255,255,.12);
-    }
-    .sheet-title {
-      padding: 4px 18px 14px;
-      font: 300 .56rem var(--mono);
-      letter-spacing: .14em;
-      text-transform: uppercase;
-      color: var(--app-muted);
+      background: rgba(255,255,255,.08);
     }
     .sheet-item {
       display: flex;
       align-items: center;
-      gap: 14px;
-      padding: 16px 18px;
-      border-top: 1px solid var(--app-line);
-      color: var(--app-text-2);
+      gap: 16px;
+      padding: 16px 20px;
+      border-top: 1px solid var(--line);
+      color: var(--text-2);
       background: none;
       border-left: none; border-right: none; border-bottom: none;
       width: 100%;
@@ -437,117 +415,101 @@
       cursor: pointer;
       transition: background .12s;
     }
-    .sheet-item:active { background: rgba(255,255,255,.03); }
-    .sheet-item svg { width: 18px; height: 18px; color: var(--app-muted); flex-shrink: 0; }
-    .sheet-item.danger { color: var(--app-red); }
-    .sheet-item.danger svg { color: var(--app-red); }
-    .sheet-divider {
-      height: 1px;
-      background: var(--app-line-strong);
-      margin: 4px 18px;
-    }
+    .sheet-item:first-of-type { border-top: none; margin-top: 6px; }
+    .sheet-item:active { background: rgba(255,255,255,.02); }
+    .sheet-item svg { width: 17px; height: 17px; color: var(--muted); flex-shrink: 0; }
+    .sheet-item.out { color: var(--red); margin-top: 8px; border-top: 1px solid var(--line-2); }
+    .sheet-item.out svg { color: var(--red); }
   </style>
 </head>
 <body>
   <div class="shell">
 
-    <!-- Header -->
     <header class="hdr">
       <div class="hdr-left">
         <button class="hdr-back" id="back-btn" onclick="goBack()" aria-label="Back">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 19l-7-7 7-7"/></svg>
         </button>
-        <div>
-          <div class="hdr-title" id="hdr-title">Edge<b>K</b>eeper</div>
-          <div class="hdr-sub" id="hdr-sub"></div>
-        </div>
+        <span class="hdr-mark" id="hdr-mark">edge<em>k</em>eeper</span>
+        <span class="hdr-page" id="hdr-page"></span>
       </div>
       <div class="hdr-right">
-        <div class="hdr-status">
-          <span class="hdr-dot" id="hdr-dot"></span>
-          <span id="hdr-status-text">Live</span>
-        </div>
-        <a class="hdr-avatar" id="avatar" aria-label="Profile">EK</a>
+        <span class="hdr-dot" id="hdr-dot"></span>
+        <span class="hdr-initial" id="hdr-initial" onclick="openPage('/profile.html','Profile')"></span>
       </div>
     </header>
 
-    <!-- Body -->
     <div class="body">
-      <!-- Home dashboard -->
       <div class="home" id="home-view">
-        <div class="home-inner">
 
-          <div class="greet">
-            <div class="greet-label" id="greet-label">Your practice, continued.</div>
-            <h1 id="greet-headline">The work<br>is waiting.</h1>
-            <p class="greet-sub" id="greet-sub">Your mentor, your rules, and the record of who you are becoming.</p>
-          </div>
-
-          <div class="spaces">
-            <div class="spaces-label">Your spaces</div>
-            <div class="spaces-grid">
-              <button class="sp marcus" onclick="switchTab('marcus')">
-                <span class="sp-icon">M</span>
-                <span>
-                  <span class="sp-name">Marcus</span>
-                  <span class="sp-desc">Mentor office</span>
-                </span>
-              </button>
-              <button class="sp theo" onclick="switchTab('theo')">
-                <span class="sp-icon">T</span>
-                <span>
-                  <span class="sp-name">Theo</span>
-                  <span class="sp-desc">Academy</span>
-                </span>
-              </button>
-              <button class="sp iris" onclick="switchTab('iris')">
-                <span class="sp-icon">I</span>
-                <span>
-                  <span class="sp-name">Iris</span>
-                  <span class="sp-desc">Guardian</span>
-                </span>
-              </button>
-            </div>
-          </div>
-
-          <div class="quick">
-            <button class="qa" onclick="openPage('/reports.html', 'Reports')">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16v16H4z"/><path d="M8 16V12M12 16V8M16 16v-2"/></svg>
-              <span class="qa-label">Trading reports</span>
-              <span class="qa-arrow">></span>
-            </button>
-            <button class="qa" onclick="openPage('/reviews.html', 'Reviews')">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z"/><path d="M9 12h6M9 16h3"/></svg>
-              <span class="qa-label">Trade reviews</span>
-              <span class="qa-arrow">></span>
-            </button>
-            <button class="qa" onclick="openPage('/integrations.html', 'Integrations')">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.6 13.5 15.4 17M8.6 10.5l6.8-3.5"/></svg>
-              <span class="qa-label">Broker integrations</span>
-              <span class="qa-arrow">></span>
-            </button>
-          </div>
-
-          <div>
-            <div class="act-head">
-              <span class="act-label">Recent activity</span>
-              <button class="act-link" onclick="switchTab('marcus')" style="background:none;border:none;cursor:pointer;font:inherit;color:inherit">View all</button>
-            </div>
-            <div id="activity">
-              <div class="act-empty">Restoring your record...</div>
-            </div>
-          </div>
-
+        <div class="hi">
+          <div class="hi-time" id="hi-time"></div>
+          <h1 class="hi-name" id="hi-name">EdgeKeeper</h1>
+          <p class="hi-line" id="hi-line">Your practice, continued.</p>
         </div>
+
+        <div class="spaces">
+          <button class="sp marcus" onclick="switchTab('marcus')">
+            <span class="sp-glyph">M</span>
+            <span class="sp-text">
+              <div class="sp-name">Marcus</div>
+              <div class="sp-role">Your mentor</div>
+            </span>
+            <span class="sp-arrow">&#x203A;</span>
+          </button>
+          <button class="sp theo" onclick="switchTab('theo')">
+            <span class="sp-glyph">T</span>
+            <span class="sp-text">
+              <div class="sp-name">Theo</div>
+              <div class="sp-role">The academy</div>
+            </span>
+            <span class="sp-arrow">&#x203A;</span>
+          </button>
+          <button class="sp iris" onclick="switchTab('iris')">
+            <span class="sp-glyph">I</span>
+            <span class="sp-text">
+              <div class="sp-name">Iris</div>
+              <div class="sp-role">Risk guardian</div>
+            </span>
+            <span class="sp-arrow">&#x203A;</span>
+          </button>
+        </div>
+
+        <div class="sep"><div class="sep-line"></div></div>
+
+        <div class="quick-row">
+          <button class="qr" onclick="openPage('/reports.html','Reports')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16v16H4z"/><path d="M8 16V12M12 16V8M16 16v-2"/></svg>
+            <span class="qr-label">Reports</span>
+          </button>
+          <button class="qr" onclick="openPage('/reviews.html','Reviews')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M9 12h6M9 16h3"/></svg>
+            <span class="qr-label">Reviews</span>
+          </button>
+          <button class="qr" onclick="openPage('/integrations.html','Integrations')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.6 13.5 15.4 17M8.6 10.5l6.8-3.5"/></svg>
+            <span class="qr-label">Brokers</span>
+          </button>
+          <button class="qr" onclick="openPage('/settings.html','Settings')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+            <span class="qr-label">Settings</span>
+          </button>
+        </div>
+
+        <div class="act">
+          <div class="act-head">
+            <span class="act-label">Recent</span>
+          </div>
+          <div id="activity"><div class="act-empty">Restoring your record...</div></div>
+        </div>
+
       </div>
 
-      <!-- Page iframe -->
       <iframe class="frame off" id="page-frame" src="about:blank" title="Page content"></iframe>
-      <div class="frame-loading done" id="frame-loader"><div class="pulse"></div></div>
+      <div class="frame-load done" id="frame-loader"><div class="dot"></div></div>
     </div>
 
-    <!-- Bottom nav -->
-    <nav class="nav" id="app-nav">
+    <nav class="nav">
       <button class="tab on" data-tab="home" onclick="switchTab('home')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 10.5 12 3l9 7.5v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 20v-6h6v6"/></svg>
         Home
@@ -570,33 +532,30 @@
       </button>
     </nav>
 
-    <!-- More sheet -->
     <div class="overlay" id="overlay" onclick="closeMore()"></div>
     <div class="sheet" id="sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-title">More</div>
-      <button class="sheet-item" onclick="openPage('/profile.html', 'Profile')">
+      <div class="sheet-grip"></div>
+      <button class="sheet-item" onclick="openPage('/profile.html','Profile')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M5 20c0-3 3-6 7-6s7 3 7 6"/></svg>
         Trader profile
       </button>
-      <button class="sheet-item" onclick="openPage('/reports.html', 'Reports')">
+      <button class="sheet-item" onclick="openPage('/reports.html','Reports')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16v16H4z"/><path d="M8 16V12M12 16V8M16 16v-2"/></svg>
         Reports
       </button>
-      <button class="sheet-item" onclick="openPage('/reviews.html', 'Reviews')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z"/><path d="M9 12h6M9 16h3"/></svg>
+      <button class="sheet-item" onclick="openPage('/reviews.html','Reviews')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M9 12h6M9 16h3"/></svg>
         Trade reviews
       </button>
-      <button class="sheet-item" onclick="openPage('/integrations.html', 'Integrations')">
+      <button class="sheet-item" onclick="openPage('/integrations.html','Integrations')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.6 13.5 15.4 17M8.6 10.5l6.8-3.5"/></svg>
         Broker integrations
       </button>
-      <button class="sheet-item" onclick="openPage('/settings.html', 'Settings')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      <button class="sheet-item" onclick="openPage('/settings.html','Settings')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
         Settings
       </button>
-      <div class="sheet-divider"></div>
-      <button class="sheet-item danger" onclick="signOut()">
+      <button class="sheet-item out" onclick="signOut()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Sign out
       </button>
@@ -610,151 +569,133 @@
       theo:   '/my-academy?app=1',
       iris:   '/chamber?app=1'
     };
-    var TAB_NAMES = {
-      home: 'EdgeKeeper',
-      marcus: 'Marcus',
-      theo: 'Academy',
-      iris: 'Guardian'
-    };
+    var TAB_LABELS = { marcus: 'Marcus', theo: 'Academy', iris: 'Guardian' };
 
-    var activeTab = 'home';
-    var subPage = null; // {url, title} when navigated from More menu
-
-    var frame     = document.getElementById('page-frame');
-    var homeView  = document.getElementById('home-view');
-    var loader    = document.getElementById('frame-loader');
-    var hdrTitle  = document.getElementById('hdr-title');
-    var hdrSub    = document.getElementById('hdr-sub');
-    var backBtn   = document.getElementById('back-btn');
-    var overlay   = document.getElementById('overlay');
-    var sheet     = document.getElementById('sheet');
-    var tabs      = document.querySelectorAll('.tab');
+    var active = 'home';
+    var sub = null;
+    var frame   = document.getElementById('page-frame');
+    var home    = document.getElementById('home-view');
+    var loader  = document.getElementById('frame-loader');
+    var mark    = document.getElementById('hdr-mark');
+    var pageLbl = document.getElementById('hdr-page');
+    var backBtn = document.getElementById('back-btn');
+    var tabs    = document.querySelectorAll('.tab');
 
     function switchTab(id) {
-      if (id === activeTab && !subPage) return;
+      if (id === active && !sub) return;
       closeMore();
-      subPage = null;
+      sub = null;
 
-      activeTab = id;
-      updateTabHighlight();
-
+      active = id;
+      hilite();
       backBtn.classList.remove('show');
-      hdrSub.classList.remove('show');
+      pageLbl.classList.remove('show');
+      mark.style.display = '';
 
       if (id === 'home') {
-        hdrTitle.innerHTML = 'Edge<b>K</b>eeper';
-        homeView.classList.remove('off');
+        home.classList.remove('off');
         frame.classList.add('off');
         loader.classList.add('done');
       } else {
-        hdrTitle.textContent = TAB_NAMES[id] || id;
-        homeView.classList.add('off');
+        home.classList.add('off');
         frame.classList.remove('off');
-        showLoader();
+        loader.classList.remove('done');
         frame.src = TAB_URLS[id];
+        mark.style.display = 'none';
+        pageLbl.textContent = TAB_LABELS[id] || id;
+        pageLbl.classList.add('show');
       }
     }
 
     function openPage(url, title) {
       closeMore();
-      subPage = { url: url, title: title };
-      activeTab = 'more';
-      updateTabHighlight();
+      sub = { url: url, title: title };
+      active = 'more';
+      hilite();
 
-      hdrTitle.textContent = title;
+      mark.style.display = 'none';
+      pageLbl.textContent = title;
+      pageLbl.classList.add('show');
       backBtn.classList.add('show');
-      hdrSub.classList.remove('show');
 
-      homeView.classList.add('off');
+      home.classList.add('off');
       frame.classList.remove('off');
-      showLoader();
+      loader.classList.remove('done');
       frame.src = url + (url.indexOf('?') > -1 ? '&' : '?') + 'app=1';
     }
 
-    function goBack() {
-      subPage = null;
-      switchTab('home');
-    }
+    function goBack() { sub = null; switchTab('home'); }
 
-    function showLoader() {
-      loader.classList.remove('done');
-    }
     frame.addEventListener('load', function() {
-      setTimeout(function() { loader.classList.add('done'); }, 150);
+      setTimeout(function() { loader.classList.add('done'); }, 120);
     });
 
-    function updateTabHighlight() {
-      tabs.forEach(function(t) {
-        t.classList.toggle('on', t.getAttribute('data-tab') === activeTab);
-      });
+    function hilite() {
+      tabs.forEach(function(t) { t.classList.toggle('on', t.dataset.tab === active); });
     }
 
     function toggleMore() {
-      if (sheet.classList.contains('show')) {
-        closeMore();
-      } else {
-        overlay.classList.add('show');
-        sheet.classList.add('show');
-      }
+      var s = document.getElementById('sheet');
+      var o = document.getElementById('overlay');
+      if (s.classList.contains('show')) { closeMore(); }
+      else { o.classList.add('show'); s.classList.add('show'); }
     }
     function closeMore() {
-      overlay.classList.remove('show');
-      sheet.classList.remove('show');
+      document.getElementById('overlay').classList.remove('show');
+      document.getElementById('sheet').classList.remove('show');
     }
 
-    // Connection status
-    function syncStatus() {
-      var on = navigator.onLine;
-      document.getElementById('hdr-dot').classList.toggle('off', !on);
-      document.getElementById('hdr-status-text').textContent = on ? 'Live' : 'Offline';
+    // Status
+    function sync() {
+      document.getElementById('hdr-dot').classList.toggle('off', !navigator.onLine);
     }
-    addEventListener('online', syncStatus);
-    addEventListener('offline', syncStatus);
-    syncStatus();
+    addEventListener('online', sync); addEventListener('offline', sync); sync();
 
-    // Profile + activity
+    // Time greeting
+    (function() {
+      var h = new Date().getHours();
+      var g = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+      document.getElementById('hi-time').textContent = g;
+    })();
+
+    // Profile
     fetch('/api/profile', { credentials: 'include' })
       .then(function(r) { return r.ok ? r.json() : null; })
-      .then(function(data) {
-        var p = data && data.profile; if (!p) return;
+      .then(function(d) {
+        var p = d && d.profile; if (!p) return;
         var name = p.display_name || (p.email || '').split('@')[0] || '';
-        if (name) {
-          document.getElementById('greet-label').textContent = 'Welcome back, ' + name + '.';
-          document.getElementById('greet-headline').innerHTML = 'Return to<br>the work.';
-          document.getElementById('avatar').textContent = name.slice(0, 2).toUpperCase();
-          document.getElementById('avatar').href = 'javascript:void(0)';
-          document.getElementById('avatar').onclick = function() { openPage('/profile.html', 'Profile'); };
-        }
+        if (!name) return;
+        var first = name.split(' ')[0];
+        document.getElementById('hi-name').textContent = first + '.';
+        document.getElementById('hi-line').textContent = 'The work is where you left it.';
+        document.getElementById('hdr-initial').textContent = name.slice(0,2).toUpperCase();
       }).catch(function() {});
 
+    // Activity
     fetch('/api/messages', { credentials: 'include' })
       .then(function(r) { return r.ok ? r.json() : null; })
-      .then(function(data) {
-        var msgs = (data && data.messages) || [];
+      .then(function(d) {
+        var msgs = (d && d.messages) || [];
         var el = document.getElementById('activity');
         if (!msgs.length) {
-          el.innerHTML = '<div class="act-empty">No activity yet. Your record is quiet.</div>';
+          el.innerHTML = '<div class="act-empty">Your record is quiet.</div>';
           return;
         }
         el.innerHTML = msgs.slice(0, 4).map(function(m) {
-          var text = (m.content || '').replace(/[<>]/g, '');
-          if (text.length > 80) text = text.slice(0, 77) + '...';
-          var d = new Date(m.created_at);
-          var day = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+          var t = (m.content || '').replace(/[<>]/g, '');
+          if (t.length > 72) t = t.slice(0, 70) + '…';
+          var day = new Date(m.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
           return '<div class="act-row" onclick="switchTab(\'marcus\')">' +
             '<span class="act-dot"></span>' +
             '<span class="act-body">' +
-              '<span class="act-title">' + (text || 'A message from your mentor.') + '</span>' +
-              '<span class="act-meta">' + (m.mentor || 'MARCUS').toUpperCase() + ' · ' + day + '</span>' +
-            '</span>' +
-            '<span class="act-chevron">›</span>' +
-          '</div>';
+              '<span class="act-title">' + (t || 'A message from your mentor.') + '</span>' +
+              '<span class="act-meta">' + (m.mentor || 'marcus').toUpperCase() + ' · ' + day + '</span>' +
+            '</span></div>';
         }).join('');
       }).catch(function() {
         document.getElementById('activity').innerHTML = '<div class="act-empty">Activity appears when connected.</div>';
       });
 
-    // Sign out
     function signOut() {
       closeMore();
       fetch('/api/auth/session', { method: 'DELETE', credentials: 'include' })

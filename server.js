@@ -64,7 +64,7 @@ app.disable('x-powered-by');
 // ── Security headers ─────────────────────────────────────────────────────────
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'no-referrer');
   res.setHeader('X-XSS-Protection', '0');
   res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains');
@@ -87,7 +87,7 @@ app.use((req, res, next) => {
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com https://api.polar.sh https://api.elevenlabs.io wss://api.elevenlabs.io wss://livekit.rtc.elevenlabs.io https://livekit.rtc.elevenlabs.io",
       "img-src 'self' data:",
       "media-src 'self' blob:",
-      "frame-ancestors 'none'",
+      "frame-ancestors 'self'",
     ].join('; ')
   );
   next();
