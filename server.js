@@ -195,6 +195,34 @@ function serveInjectedHtml(filePath) {
       // App mode — WhatsApp-style navigation injection.
       // Immersive pages (workspace, chamber, study) get a back header; no bottom nav.
       // Hub pages (everything else) get the bottom tab bar + more sheet.
+      // App-mode auth page — strip website chrome, show clean app login
+      const isAppAuth = req.cookies?.ek_app === '1' && filePath.endsWith('auth.html');
+      if (isAppAuth) {
+        if (/<html[^>]*class="/.test(html)) {
+          html = html.replace(/<html([^>]*?)class="([^"]*)"/, '<html$1class="$2 ek-app"');
+        } else {
+          html = html.replace(/<html(\s|>)/i, '<html class="ek-app"$1');
+        }
+        html = html.replace(
+          /(<meta\s+name="viewport"\s+content=")[^"]*(")/i,
+          '$1width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover$2'
+        );
+        const appAuthCss = 'html.ek-app nav{display:none!important}'
+          + 'html.ek-app .ambient{display:none!important}'
+          + 'html.ek-app footer{display:none!important}'
+          + 'html.ek-app #new-here-p{display:none!important}'
+          + 'html.ek-app #cursor,html.ek-app #cursor-ring{display:none!important}'
+          + 'html.ek-app body{cursor:auto!important;min-height:100dvh;justify-content:center;padding:24px 16px}'
+          + 'html.ek-app main{width:100%;max-width:400px;margin:0 auto}'
+          + 'html.ek-app .auth-card{border:none;padding:0}'
+          + 'html.ek-app .auth-card::before{content:"";display:block;width:28px;height:28px;margin:0 auto 32px;border:1.5px solid rgba(184,160,106,.5);border-radius:6px;background:rgba(184,160,106,.06)}'
+          + 'html.ek-app .auth-eyebrow{display:none}'
+          + 'html.ek-app .auth-headline{text-align:center;font-size:1.35rem}'
+          + 'html.ek-app .auth-subline{text-align:center}'
+          + 'html.ek-app .privacy-note{text-align:center;font-size:.65rem}';
+        html = html.replace(/<\/head>/i, '<style>' + appAuthCss + '</style></head>');
+      }
+
       const isAppMode = req.cookies?.ek_app === '1' && req.user && !filePath.endsWith('app.html');
       if (isAppMode) {
         if (/<html[^>]*class="/.test(html)) {
@@ -274,7 +302,7 @@ function serveInjectedHtml(filePath) {
             + '<a href="/reviews.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M9 12h6M9 16h3"/></svg>Trade reviews</a>'
             + '<a href="/integrations.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.6 13.5 15.4 17M8.6 10.5l6.8-3.5"/></svg>Broker integrations</a>'
             + '<a href="/settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>Settings</a>'
-            + '<button class="ek-out" onclick="fetch(\'/api/auth/session\',{method:\'DELETE\',credentials:\'include\'}).then(function(){location.href=\'/edgekeeper.html\'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign out</button>'
+            + '<button class="ek-out" onclick="fetch(\'/api/auth/session\',{method:\'DELETE\',credentials:\'include\'}).then(function(){location.href=\'/auth.html\'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign out</button>'
             + '</div>'
             + '<script>(function(){var p=location.pathname,t="";if(p==="/app"||p==="/app.html")t="home";else if(p==="/workspace.html")t="marcus";else if(p==="/my-academy"||p==="/study.html"||p==="/study"||p==="/academy.html")t="theo";else if(p==="/chamber"||p==="/chamber.html")t="iris";else t="more";var e=document.querySelector(".ek-nav-"+t);if(e)e.classList.add("ek-on")})()</script>';
 
@@ -342,10 +370,10 @@ async function verifySession(req, res, next) {
 // ── Auth-required guard (HTML pages) — redirects to /auth.html ───────────────
 function requireAuthPage(req, res, next) {
   if (req.user) return next();
-  // Preserve destination so auth.html can redirect back after login/signup
   const dest = req.originalUrl;
   const safe = dest && dest !== '/' && !dest.startsWith('/auth') ? `?next=${encodeURIComponent(dest)}` : '';
-  res.redirect('/auth.html' + safe);
+  const appFlag = req.cookies?.ek_app === '1' ? (safe ? '&app=1' : '?app=1') : '';
+  res.redirect('/auth.html' + safe + appFlag);
 }
 
 // ── Auth-required guard (API routes) — returns 401 JSON ──────────────────────
@@ -655,7 +683,6 @@ app.delete('/api/auth/session', (req, res) => {
   const opts = { path: '/', sameSite: 'strict', httpOnly: true };
   res.clearCookie('ek_session', opts);
   res.clearCookie('ek_refresh',  opts);
-  res.clearCookie('ek_app', { path: '/', sameSite: 'strict' });
   res.json({ ok: true });
 });
 
@@ -710,7 +737,7 @@ app.get('/edgekeeper.html', serveInjectedHtml(path.join(__dirname, 'edgekeeper.h
 // the billing initiation logic a second time.
 app.get('/auth.html', async (req, res, next) => {
   if (!req.user) return next();
-  // Route already-authed users to the right dashboard
+  if (req.cookies?.ek_app === '1') return res.redirect('/app');
   try {
     const { data } = await supabaseAdmin
       .from('user_profiles')

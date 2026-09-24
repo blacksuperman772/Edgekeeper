@@ -610,8 +610,8 @@
     function signOut() {
       closeMore();
       fetch('/api/auth/session', { method: 'DELETE', credentials: 'include' })
-        .then(function() { location.href = '/edgekeeper.html'; })
-        .catch(function() { location.href = '/edgekeeper.html'; });
+        .then(function() { location.href = '/auth.html'; })
+        .catch(function() { location.href = '/auth.html'; });
     }
   </script>
 </body>

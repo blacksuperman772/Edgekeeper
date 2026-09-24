@@ -624,6 +624,7 @@
   if (_isAcademy) sessionStorage.setItem('ek_auth_intent', 'academy');
 
   const _isPurchaseMode = !!(_plan && _plan !== 'free');
+  const _isAppMode = _params.get('app') === '1' || /(?:^|;\s*)ek_app=1/.test(document.cookie);
 
   window.addEventListener('DOMContentLoaded', () => {
     if (_isAcademy) {
@@ -777,7 +778,7 @@
       const academyTrack = profile?.academy_track;
 
       if (academyTrack && !onboarded && !isPaidPlan) {
-        window.location.href = '/my-academy';
+        window.location.href = _isAppMode ? '/app' : '/my-academy';
         return;
       }
 
@@ -791,17 +792,16 @@
         if (needsUpgrade) {
           try { if (await attemptBilling()) return; } catch (_) {}
         }
-        window.location.href = onboarded ? '/workspace.html' : '/onboarding.html';
+        window.location.href = _isAppMode ? '/app' : (onboarded ? '/workspace.html' : '/onboarding.html');
         return;
       }
 
-      window.location.href = onboarded ? '/workspace.html' : '/onboarding.html';
+      window.location.href = _isAppMode ? '/app' : (onboarded ? '/workspace.html' : '/onboarding.html');
     } catch (_) {
-      // No profile yet (brand-new sign-up) — still try billing if a paid plan is pending
       if (isPaidPlan) {
         try { if (await attemptBilling()) return; } catch (_2) {}
       }
-      window.location.href = '/onboarding.html';
+      window.location.href = _isAppMode ? '/app' : '/onboarding.html';
     }
   }
 
