@@ -210,7 +210,6 @@ function serveInjectedHtml(filePath) {
         const appAuthCss = 'html.ek-app nav{display:none!important}'
           + 'html.ek-app .ambient{display:none!important}'
           + 'html.ek-app footer{display:none!important}'
-          + 'html.ek-app #new-here-p{display:none!important}'
           + 'html.ek-app #cursor,html.ek-app #cursor-ring{display:none!important}'
           + 'html.ek-app body{cursor:auto!important;min-height:100dvh;justify-content:center;padding:24px 16px}'
           + 'html.ek-app main{width:100%;max-width:400px;margin:0 auto}'
