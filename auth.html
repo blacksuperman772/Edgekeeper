@@ -241,49 +241,6 @@
     }
     .btn-primary:disabled { opacity: 0.4; cursor: none; }
 
-    /* ── OR DIVIDER ──────────────────────────────────────────────────── */
-    .or-divider {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin: 24px 0 8px;
-    }
-    .or-divider::before,
-    .or-divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
-    .or-divider span {
-      font-family: var(--mono);
-      font-size: 0.58rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--dim);
-    }
-
-    /* ── MAGIC LINK BUTTON ───────────────────────────────────────────── */
-    .btn-magic {
-      width: 100%;
-      padding: 12px 24px;
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-family: var(--mono);
-      font-size: 0.65rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--muted);
-      cursor: none;
-      transition: border-color .2s, color .2s;
-    }
-    .btn-magic:hover:not(:disabled) {
-      border-color: var(--dim);
-      color: var(--faint);
-    }
-    .btn-magic:disabled { opacity: 0.4; }
-
     /* ── PRIVACY NOTICE ──────────────────────────────────────────────── */
     .privacy-note {
       margin-top: 32px;
@@ -422,8 +379,7 @@
         min-height: 44px;
       }
 
-      .btn-primary,
-      .btn-magic {
+      .btn-primary {
         min-height: 48px;
         font-size: 0.78rem;
       }
@@ -494,11 +450,6 @@
         </button>
       </div>
 
-      <div class="or-divider"><span>or</span></div>
-
-      <button class="btn-magic" id="magic-btn" onclick="handleMagicLink()">
-        Sign in with magic link
-      </button>
     </div>
 
     <!-- RESET PASSWORD STATE -->
@@ -547,7 +498,7 @@
           <label for="su-password">Password</label>
           <input type="password" id="su-password" autocomplete="new-password" placeholder="8 characters minimum" required />
         </div>
-        <button class="btn-primary" id="su-btn" onclick="handleSignUp()">Create account &amp; continue to payment</button>
+        <button class="btn-primary" id="su-btn" onclick="handleSignUp()">Create account</button>
       </div>
       <p style="text-align:center;margin-top:20px;font-size:0.75rem;color:var(--muted);">
         Already have an account?
@@ -557,23 +508,13 @@
       </p>
     </div>
 
-    <!-- NEW HERE — two entry paths -->
-    <div id="new-here-p" style="margin-top:32px;padding-top:28px;border-top:1px solid var(--border);">
-      <p style="text-align:center;font-family:var(--mono);font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--dim);margin-bottom:14px;">New to EdgeKeeper?</p>
-      <div style="display:flex;gap:10px;">
-        <a href="/onboarding.html" id="new-here-link"
-           style="flex:1;text-align:center;padding:12px 8px;border:1px solid var(--border);font-family:var(--mono);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold-dim);text-decoration:none;transition:border-color .2s,color .2s;"
-           onmouseover="this.style.borderColor='var(--gold-dim)';this.style.color='var(--gold)'"
-           onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--gold-dim)'">
-          Begin with Marcus →
-        </a>
-        <a href="/academy-onboarding"
-           style="flex:1;text-align:center;padding:12px 8px;border:1px solid var(--border);font-family:var(--mono);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:border-color .2s,color .2s;"
-           onmouseover="this.style.borderColor='var(--dim)';this.style.color='var(--faint)'"
-           onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
-          Learn with Theo →
-        </a>
-      </div>
+    <div id="new-here-p" style="margin-top:28px;text-align:center;">
+      <p style="font-size:0.75rem;color:var(--muted);">
+        Don't have an account?
+        <a href="#" style="color:var(--gold-dim);text-decoration:none;transition:color .2s;"
+           onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--gold-dim)'"
+           onclick="showSignUp();return false;">Create one →</a>
+      </p>
     </div>
 
     <!-- PRIVACY NOTICE -->
@@ -710,7 +651,6 @@
   function setLoading(loading) {
     isLoading = loading;
     document.getElementById('submit-btn').disabled = loading;
-    document.getElementById('magic-btn').disabled  = loading;
     document.getElementById('submit-btn').textContent = loading ? 'Please wait…' : 'Continue';
   }
 
@@ -812,7 +752,12 @@
     document.getElementById('new-here-p').style.display    = 'none';
     document.querySelector('.auth-eyebrow').textContent    = 'New membership';
     document.querySelector('.auth-headline').textContent   = 'Create your account.';
-    document.querySelector('.auth-subline').textContent    = 'One step from your membership. Takes 30 seconds.';
+    document.querySelector('.auth-subline').textContent    = _isPurchaseMode
+      ? 'One step from your membership. Takes 30 seconds.'
+      : 'Start your private mentorship.';
+    document.getElementById('su-btn').textContent = _isPurchaseMode
+      ? 'Create account & continue to payment'
+      : 'Create account';
     document.getElementById('su-email')?.focus();
   }
 
@@ -914,32 +859,7 @@
     }
   }
 
-  // ── Magic link handler ────────────────────────────────────────────────────────
-  async function handleMagicLink() {
-    if (isLoading) return;
-    clearError();
-
-    const email = document.getElementById('email').value.trim();
-    if (!email) { showError('Please enter your email address first.'); return; }
-
-    setLoading(true);
-    try {
-      // Preserve the destination (e.g. /academy-onboarding) through the magic-link
-      // round-trip so the Academy path doesn't fall back to the Marcus intake.
-      const redirectUrl = window.location.origin + '/auth.html' + (_next ? ('?next=' + encodeURIComponent(_next)) : '');
-      const { error } = await sb.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: false, emailRedirectTo: redirectUrl },
-      });
-      if (error) throw error;
-      showConfirm(email);
-    } catch (err) {
-      showError(err?.message || 'Could not send magic link. Please try again.');
-    }
-    setLoading(false);
-  }
-
-  // ── Handle magic-link / OAuth callback only ──────────────────────────────────
+  // ── Handle OAuth callback only ─────────────────────────────────────────────
   // Only auto-redirect when Supabase appends #access_token=... to the URL.
   // Intentional visits to auth.html (e.g. signing in as a different account)
   // should never trigger a silent redirect.

@@ -245,21 +245,20 @@ function serveInjectedHtml(filePath) {
           + 'html.ek-app html,html.ek-app body{touch-action:pan-x pan-y;overscroll-behavior:none}';
 
         if (isImmersive) {
-          css += '.ek-back{position:fixed;top:0;left:0;right:0;height:48px;display:flex;align-items:center;padding:0 4px;background:#050505;border-bottom:1px solid rgba(232,228,220,.08);z-index:9999;font-family:"Inter",-apple-system,sans-serif}'
+          css += '.ek-back{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;height:48px;display:flex;align-items:center;padding:0 4px;background:#050505;border-bottom:1px solid rgba(232,228,220,.08);z-index:9999;font-family:"Inter",-apple-system,sans-serif}'
             + '.ek-back a{display:flex;align-items:center;gap:6px;color:#bfbab2;text-decoration:none;font:400 .84rem "Inter",-apple-system,sans-serif;padding:10px 12px;border-radius:8px;-webkit-tap-highlight-color:transparent}'
             + '.ek-back a:active{opacity:.6}'
             + '.ek-back svg{width:22px;height:22px}'
-            + 'html.ek-app html{height:100%!important;overflow:hidden!important}'
-            + 'html.ek-app body{padding-top:48px!important;padding-bottom:0!important;overflow:hidden!important;height:100%!important;max-height:100%!important}'
-            + 'html.ek-app .workspace{grid-template-rows:0 1fr!important;height:100%!important;max-height:100%!important;overflow:hidden!important}'
-            + 'html.ek-app #office-skeleton{top:48px!important;bottom:0!important;grid-template-rows:0 1fr!important}'
-            + 'html.ek-app #office-skeleton .os-top{display:none!important}'
-            + 'html.ek-app .shell{grid-template-rows:0 1fr!important;height:100%!important;max-height:100%!important;overflow:hidden!important}'
+            + 'html.ek-app body{position:fixed!important;top:calc(48px + env(safe-area-inset-top,0px))!important;left:0!important;right:0!important;bottom:0!important;overflow:hidden!important;padding:0!important;margin:0!important}'
+            + 'html.ek-app .workspace{grid-template-rows:0 1fr!important;height:100%!important;overflow:hidden!important}'
+            + 'html.ek-app #office-skeleton{display:none!important}'
+            + 'html.ek-app .shell{grid-template-rows:0 1fr!important;height:100%!important;overflow:hidden!important}'
             + 'html.ek-app #split{flex:1!important;min-height:0!important;overflow:hidden!important}'
-            + 'html.ek-app .sidebar{top:48px!important}'
-            + 'html.ek-app .side{top:48px!important}'
-            + 'html.ek-app #module-panel{top:48px!important}'
-            + 'html.ek-app #mod-backdrop{top:48px!important}';
+            + 'html.ek-app .sidebar{top:calc(48px + env(safe-area-inset-top,0px))!important}'
+            + 'html.ek-app .side{top:calc(48px + env(safe-area-inset-top,0px))!important}'
+            + 'html.ek-app #module-panel{top:calc(48px + env(safe-area-inset-top,0px))!important}'
+            + 'html.ek-app #mod-backdrop{top:calc(48px + env(safe-area-inset-top,0px))!important}'
+            + 'html.ek-app .panel-body{height:calc(100% - 64px)!important}';
 
           let backUrl = '/app', title = '';
           if (filePath.endsWith('workspace.html')) title = 'Marcus';
