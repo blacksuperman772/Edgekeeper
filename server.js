@@ -195,14 +195,16 @@ function serveInjectedHtml(filePath) {
       // Persistent bottom nav for installed PWA (standalone mode).
       // Hidden on desktop and browser tabs; only shows when html.ek-standalone is set by pwa.js.
       // Injected on every authenticated page so nav survives navigation within the installed app.
-      if (req.user) {
+      // Skip injecting nav on /app — that page has its own bounded shell with a nav already.
+      const isAppShell = req.path === '/app' || req.path === '/app.html';
+      if (req.user && !isAppShell) {
         const appNav = `<style>
 .ek-app-nav{display:none;position:fixed;z-index:20;right:0;bottom:0;left:0;grid-template-columns:repeat(5,1fr);padding:8px calc(12px + var(--ek-safe-right,0px)) calc(8px + var(--ek-safe-bottom,0px)) calc(12px + var(--ek-safe-left,0px));border-top:1px solid rgba(232,228,220,.11);background:rgba(7,7,7,.94);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);}
 html.ek-standalone .ek-app-nav{display:grid;}
 .ek-app-nav a{display:flex;min-height:52px;align-items:center;justify-content:center;flex-direction:column;gap:5px;color:#8d8980;text-decoration:none;font:.55rem 'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;}
 .ek-app-nav a.active,.ek-app-nav a[aria-current]{color:#b8a06a;}
 .ek-app-nav svg{width:18px;height:18px;flex-shrink:0;}
-html.ek-standalone body{padding-bottom:calc(68px + var(--ek-safe-bottom,0px))!important;}
+html.ek-standalone body:not(.app-page){padding-bottom:calc(68px + var(--ek-safe-bottom,0px))!important;}
 html.ek-standalone .workspace{padding-bottom:0!important;}
 </style>
 <nav class="ek-app-nav" aria-label="App navigation">
