@@ -192,6 +192,17 @@ function serveInjectedHtml(filePath) {
       // [data-auth-only] rules.
       if (req.user) html = html.replace(/<html(\s|>)/i, '<html class="ek-authed"$1');
 
+      // App embed mode — hide page-level navigation when loaded inside the app shell iframe
+      if (req.query && req.query.app === '1') {
+        if (/<html[^>]*class="/.test(html)) {
+          html = html.replace(/<html([^>]*?)class="([^"]*)"/, '<html$1class="$2 ek-app-embed"');
+        } else {
+          html = html.replace(/<html(\s|>)/i, '<html class="ek-app-embed"$1');
+        }
+        html = html.replace(/<\/head>/i,
+          '<style>.ek-app-embed .topbar,.ek-app-embed #main-nav,.ek-app-embed #nav,.ek-app-embed #top-bar,.ek-app-embed>body>nav,.ek-app-embed .page-header,.ek-app-embed .ek-pillars{display:none!important}.ek-app-embed body{padding-top:0!important}</style></head>');
+      }
+
       // The global CSP (set in the security middleware above) already allows the
       // inline scripts and event handlers this page relies on. No per-page CSP
       // override or nonce injection — that approach breaks inline event handlers.
