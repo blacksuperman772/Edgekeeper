@@ -175,10 +175,16 @@ function serveInjectedHtml(filePath) {
         '<meta name="apple-mobile-web-app-capable" content="yes">',
         '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">',
         '<meta name="apple-mobile-web-app-title" content="EdgeKeeper">',
-        '<link rel="apple-touch-icon" sizes="180x180" href="/assets/app-icon-180.svg">',
+        '<link rel="apple-touch-icon" sizes="180x180" href="/assets/app-icon-180.png">',
         '<script defer src="/assets/pwa.js"></script></head>',
       ].join(''));
 
+      // Vercel Web Analytics — same-origin, cookieless beacon (/_vercel/insights),
+      // so it's CSP-safe (script-src/connect-src 'self'). Injected once here so
+      // every served page is counted. Inert until Analytics is switched on in the
+      // Vercel dashboard (Project → Analytics). Complements our first-party
+      // ek_events (which keeps the custom signup/onboarding funnel).
+      html = html.replace(/<\/head>/i, '<script defer src="/_vercel/insights/script.js"></script></head>');
 
       // Server-render the auth state onto <html> so public pages show the correct
       // nav (guest vs signed-in) on first paint — no flash of "Sign In / Apply"
@@ -332,16 +338,16 @@ async function bumpSharedCounter(bucket, key, windowSeconds, amount = 1) {
       p_bucket: bucket, p_key: String(key), p_window_seconds: windowSeconds, p_amount: amount,
     });
     if (error) {
+      // Fail-open by design: the in-memory limiter still applies. A transient
+      // counter-RPC blip (fetch failed / gateway timeout, Vercel→Supabase) is
+      // operationally benign, so it stays in the Vercel logs but does NOT raise a
+      // founder alert — that was firing an email on every user message.
       console.error('[shared-limit] rpc error:', error.message);
-      // Surface the failure where it can be seen (server_errors), but never for
-      // the errlog bucket itself — that would recurse.
-      if (bucket !== 'errlog') logServerError('shared-limit-rpc', new Error(error.message), { bucket, code: error.code });
       return null;
     }
     return typeof data === 'number' ? data : Number(data);
   } catch (e) {
     console.error('[shared-limit] rpc threw:', e.message);
-    if (bucket !== 'errlog') logServerError('shared-limit-rpc', e, { bucket });
     return null;
   }
 }
@@ -599,10 +605,11 @@ app.get('/', async (req, res) => {
   }
 });
 
-// ── Public HTML pages (no auth required) ─────────────────────────────────────
-app.get('/edgekeeper.html', serveInjectedHtml(path.join(__dirname, 'edgekeeper.html')));
 app.get('/app', requireAuthPage, serveInjectedHtml(path.join(__dirname, 'app.html')));
 app.get('/app.html', requireAuthPage, serveInjectedHtml(path.join(__dirname, 'app.html')));
+
+// ── Public HTML pages (no auth required) ─────────────────────────────────────
+app.get('/edgekeeper.html', serveInjectedHtml(path.join(__dirname, 'edgekeeper.html')));
 
 // Auth page — redirect already-authenticated users straight to workspace.
 // Without this, a logged-in user hitting /auth.html would see the form
@@ -665,16 +672,62 @@ app.get('/pricing.html',    (req, res) => {
 // completed onboarding straight to /workspace.html.
 app.get('/onboarding.html', requireIncompleteOnboarding, serveInjectedHtml(path.join(__dirname, 'onboarding.html')));
 
+// ── Jurisdiction gate ────────────────────────────────────────────────────────
+// EdgeKeeper is behavioural coaching, and — with consent — can now act on a
+// funded account. Some jurisdictions may require licensing we don't hold, so the
+// business must be able to decline signups from a region.
+//
+// IMPORTANT: which regions are restricted is a LEGAL decision, not a technical
+// one. This ships EMPTY (serves everyone) and is driven entirely by the
+// RESTRICTED_COUNTRIES env var (comma-separated ISO-3166 alpha-2, e.g. "US,CA"),
+// so the founder + their lawyer set the list with zero code change.
+function restrictedCountries() {
+  return String(process.env.RESTRICTED_COUNTRIES || '')
+    .split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+}
+
+// Country of the request. Vercel injects x-vercel-ip-country for free on every
+// request — no third-party geo service, no extra latency.
+function detectCountry(req) {
+  const c = req.headers['x-vercel-ip-country'] || req.headers['cf-ipcountry'] || '';
+  return String(c).toUpperCase().slice(0, 2) || null;
+}
+
+function jurisdictionAllowed(country) {
+  if (!country) return true; // unknown location never hard-blocks; self-attestation catches it
+  return !restrictedCountries().includes(country.toUpperCase());
+}
+
+const REGION_BLOCK_MSG = 'EdgeKeeper isn\'t available in your region yet. We can only take members where we\'re able to operate responsibly. Leave your email and we\'ll reach out the moment that changes.';
+
+// GET /api/geo — detected country + whether we can serve it. The signup page
+// calls this to warn BEFORE the user fills anything in.
+app.get('/api/geo', (req, res) => {
+  const country = detectCountry(req);
+  const allowed = jurisdictionAllowed(country);
+  res.json({ country, allowed, message: allowed ? '' : REGION_BLOCK_MSG });
+});
+
 // ── Onboarding registration — creates account at the END of intake ────────────
 // Called from onboarding.html after the intake completes. No auth required.
 app.post('/api/onboarding/register', apiLimiter, async (req, res) => {
-  const { email, password, mentor, plan, guardianLevel, privateNotes, northStar, livingId } = req.body || {};
+  const { email, password, mentor, plan, guardianLevel, privateNotes, northStar, livingId, displayName, country } = req.body || {};
+  const safeName = (typeof displayName === 'string' ? displayName.trim().slice(0, 60) : '') || null;
 
   if (!email || typeof email !== 'string' || !/\S+@\S+\.\S+/.test(email)) {
     return res.status(400).json({ error: 'A valid email address is required.' });
   }
   if (!password || typeof password !== 'string' || password.length < 8) {
     return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+  }
+
+  // Jurisdiction gate. Block on EITHER the detected IP country OR the self-attested
+  // country being restricted — a VPN can hide one, but the attested answer is the
+  // record we hold. Server-side re-check so a client that skips /api/geo can't slip through.
+  const ipCountry = detectCountry(req);
+  const attested  = (typeof country === 'string' ? country.trim().toUpperCase().slice(0, 2) : '') || null;
+  if (!jurisdictionAllowed(ipCountry) || (attested && !jurisdictionAllowed(attested))) {
+    return res.status(451).json({ error: REGION_BLOCK_MSG, region_blocked: true });
   }
 
   const safePlan = ['free', 'starter', 'pro', 'professional', 'institutional'].includes(plan) ? plan : 'free';
@@ -698,10 +751,19 @@ app.post('/api/onboarding/register', apiLimiter, async (req, res) => {
 
   // Create user_profiles row with onboarding data.
   // The trigger (migration 005) may have already created a bare row — upsert handles both cases.
+  // If they chose the aggressive contract at intake, timestamp it and store the
+  // exact wording — that record is what authorises the Guardian to close trades.
+  const chosenGuardian = guardianLevel || 'warn';
   await supabaseAdmin.from('user_profiles').upsert({
     id:                  userData.user.id,
     mentor:              safeMentor,
-    guardian_level:      guardianLevel || 'warn',
+    display_name:        safeName,
+    country:             attested,
+    signup_ip_country:   ipCountry,
+    guardian_level:      chosenGuardian,
+    ...(chosenGuardian === 'protect'
+      ? { guardian_consent_at: new Date().toISOString(), guardian_consent_text: GUARDIAN_CONSENT_TEXT }
+      : {}),
     onboarding_complete: true,
     subscription_status: safePlan,
     private_notes:       (privateNotes || '').slice(0, 4000),
@@ -710,6 +772,11 @@ app.post('/api/onboarding/register', apiLimiter, async (req, res) => {
   }, { onConflict: 'id' });
 
   res.json({ success: true, user_id: userData.user.id, plan: safePlan });
+
+  // Funnel events — these were never fired, so the admin funnel showed 0 signups
+  // and 0 onboarded forever. The intake flow completes both at registration.
+  logEkEvent('signup_success', userData.user.id);
+  logEkEvent('onboarding_complete', userData.user.id);
 
   // Welcome email — fire-and-forget, never blocks the response
   const mentorDisplay = canonicalMentor(safeMentor) === 'iris' ? 'Iris' : 'Marcus';
@@ -724,13 +791,18 @@ app.post('/api/onboarding/register', apiLimiter, async (req, res) => {
 // an account with academy_track set and onboarding_complete=false so these users
 // are routed to /my-academy on login rather than /workspace.html.
 app.post('/api/academy/register', apiLimiter, async (req, res) => {
-  const { email, password, track } = req.body || {};
+  const { email, password, track, country } = req.body || {};
 
   if (!email || typeof email !== 'string' || !/\S+@\S+\.\S+/.test(email)) {
     return res.status(400).json({ error: 'A valid email address is required.' });
   }
   if (!password || typeof password !== 'string' || password.length < 8) {
     return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+  }
+  const acIpCountry = detectCountry(req);
+  const acAttested  = (typeof country === 'string' ? country.trim().toUpperCase().slice(0, 2) : '') || null;
+  if (!jurisdictionAllowed(acIpCountry) || (acAttested && !jurisdictionAllowed(acAttested))) {
+    return res.status(451).json({ error: REGION_BLOCK_MSG, region_blocked: true });
   }
   const VALID_TRACKS = ['1', '2', '3', '4', '5', '6', 1, 2, 3, 4, 5, 6];
   const safeTrack = VALID_TRACKS.includes(track) ? String(track) : '1';
@@ -755,11 +827,15 @@ app.post('/api/academy/register', apiLimiter, async (req, res) => {
     id:                  userData.user.id,
     mentor:              'theo',
     academy_track:       safeTrack,
+    country:             acAttested,
+    signup_ip_country:   acIpCountry,
     onboarding_complete: false,
     subscription_status: 'free',
   }, { onConflict: 'id' });
 
   res.json({ success: true, user_id: userData.user.id });
+  // Academy signups onboard later (after assessment), so only signup fires here.
+  logEkEvent('signup_success', userData.user.id);
 });
 
 app.get('/profile.html',     requireAuthPage, serveInjectedHtml(path.join(__dirname, 'profile.html')));
@@ -1561,6 +1637,89 @@ function buildServerNotebookContext(nb, role) {
   return `\n${header}\n${parts.join('\n')}`;
 }
 
+// Live, personal context shared by Marcus and Iris: the trader's own rules, their
+// recent journal, and their live account. This is what makes the mentors actually
+// KNOW the person in front of them — hold them to rules they wrote, reference what
+// they journaled, react to real drawdown — instead of talking in the abstract.
+async function buildMentorLiveContext(userId) {
+  if (!userId) return '';
+  const [rulesRes, journalRes, guardianRes, historyRes, violationsRes] = await Promise.all([
+    supabaseAdmin.from('trading_rules')
+      .select('id, rule_text, category').eq('user_id', userId).eq('is_active', true)
+      .order('sort_order', { ascending: true }).limit(20),
+    supabaseAdmin.from('journal_entries')
+      .select('content, entry_type, created_at').eq('user_id', userId)
+      .order('created_at', { ascending: false }).limit(3),
+    supabaseAdmin.from('guardian_data')
+      .select('*').eq('user_id', userId).maybeSingle(),
+    supabaseAdmin.from('guardian_history')
+      .select('day_key, daily_pnl_pct, max_drawdown_pct, consecutive_losses, peak_lock_level')
+      .eq('user_id', userId).order('day_key', { ascending: false }).limit(10),
+    supabaseAdmin.from('rule_violations')
+      .select('rule_id, source, mentor_note, created_at')
+      .eq('user_id', userId).gte('created_at', new Date(Date.now() - 14 * 864e5).toISOString())
+      .order('created_at', { ascending: false }).limit(8),
+  ]);
+
+  const parts = [];
+  const rules = rulesRes.data || [];
+  if (rules.length) {
+    parts.push('THEIR TRADING RULES (their own words — hold them to these and name the exact rule when they break it; never invent a rule they didn\'t write):\n'
+      + rules.map(r => `• ${r.rule_text}${r.category && r.category !== 'General' ? ` [${r.category}]` : ''}`).join('\n'));
+  }
+
+  // Recently broken rules — from their journal AND their actual trades. This is
+  // real evidence: reference it directly, don't soften it into a generality.
+  const ruleById = Object.fromEntries(rules.map(r => [r.id, r.rule_text]));
+  const violations = (violationsRes.data || []).filter(v => v.mentor_note);
+  if (violations.length) {
+    parts.push('RULES THEY RECENTLY BROKE (last 14 days — evidence, not a hunch; bring it up when it fits):\n'
+      + violations.slice(0, 5).map(v => {
+          const rt = ruleById[v.rule_id];
+          const src = v.source === 'trades' ? 'their trades' : 'their journal';
+          return `• ${rt ? `"${rt}" — ` : ''}${v.mentor_note} (from ${src})`;
+        }).join('\n'));
+  }
+
+  const journal = journalRes.data || [];
+  if (journal.length) {
+    parts.push('THEIR RECENT JOURNAL (most recent first — reference specifics, don\'t summarise it back to them):\n'
+      + journal.map(j => {
+          const when = j.created_at ? new Date(j.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+          const body = String(j.content || '').replace(/\s+/g, ' ').slice(0, 240);
+          return `• ${when}${j.entry_type ? ` (${j.entry_type})` : ''}: ${body}`;
+        }).join('\n'));
+  }
+
+  const g = guardianRes.data;
+  if (g && g.is_connected) {
+    const floating = (g.equity != null && g.balance != null) ? (g.equity - g.balance) : null;
+    const money = v => v == null ? '—' : (v < 0 ? '-$' : '$') + Math.abs(Number(v)).toFixed(2);
+    parts.push('THEIR LIVE ACCOUNT (the Guardian is watching real numbers — use them when relevant, don\'t read them out like a report):\n'
+      + `• Balance ${money(g.balance)} · Equity ${money(g.equity)}`
+      + (floating != null ? ` · Open P&L ${floating >= 0 ? '+' : ''}${money(floating)}` : '')
+      + ` · Open lots ${Number(g.open_lots || 0).toFixed(2)}`
+      + ` · Drawdown ${g.max_drawdown_pct || 0}% · Losing streak ${g.consecutive_losses || 0}`
+      + (g.lock_level ? ` · Guardian level ${g.lock_level}` : ''));
+  }
+
+  // Recent history — Iris's memory. Lets a mentor say "third red day this week"
+  // instead of reacting to today in isolation.
+  const hist = (historyRes.data || []).filter(h => h.day_key);
+  if (hist.length >= 2) {
+    const redDays = hist.filter(h => (h.daily_pnl_pct || 0) < 0).length;
+    const worstDd = Math.max(0, ...hist.map(h => h.max_drawdown_pct || 0));
+    const interventions = hist.filter(h => (h.peak_lock_level || 1) >= 3).length;
+    const recent = hist.slice(0, 5).map(h => `${h.day_key.slice(5)} ${(h.daily_pnl_pct || 0) >= 0 ? '+' : ''}${h.daily_pnl_pct || 0}%`).join(', ');
+    parts.push('THEIR RECENT DAYS (your memory — reference the pattern, don\'t recite the numbers):\n'
+      + `• Last ${hist.length} trading days: ${redDays} red, worst drawdown ${worstDd}%`
+      + (interventions ? `, ${interventions} day(s) you had to step in` : '')
+      + `.\n• Day P&L trend (newest first): ${recent}`);
+  }
+
+  return parts.length ? '\n\n--- WHAT YOU KNOW ABOUT THEM RIGHT NOW ---\n' + parts.join('\n\n') : '';
+}
+
 // Assemble full system prompt server-side. Clients cannot supply systemPrompt.
 async function buildChatSystemPrompt({ mentor, module_key, session_context, userId }) {
   const hour = new Date().getHours();
@@ -1617,7 +1776,7 @@ ${spec.check}` : '';
   // ── Marcus and Iris — fetch shared DB context ─────────────────────────────────
   const [profileRes, marcusNbRes] = await Promise.all([
     supabaseAdmin.from('user_profiles')
-      .select('trader_stage, private_notes, north_star, living_identity, academy_track, academy_progress')
+      .select('trader_stage, private_notes, north_star, living_identity, academy_track, academy_progress, display_name')
       .eq('id', userId).maybeSingle(),
     supabaseAdmin.from('notebooks')
       .select('running_narrative, current_theory, commitments, open_questions, concerns, breakthroughs, patterns')
@@ -1627,6 +1786,9 @@ ${spec.check}` : '';
   const profile = profileRes.data || {};
   const marcusNb = marcusNbRes.data || null;
 
+  // Rules + journal + live account — the same for whichever mentor is speaking.
+  const liveCtx = await buildMentorLiveContext(userId);
+
   // ── Iris (Guardian) ───────────────────────────────────────────────────────────
   const safeMentor = canonicalMentor(mentor);
   if (safeMentor === 'iris') {
@@ -1635,6 +1797,7 @@ ${spec.check}` : '';
       IRIS_GUARDIAN_CHAT_PERSONA,
       `\nIt is ${timeCtx}.`,
       marcusContext,
+      liveCtx,
       session_context ? `\n\n---\nSESSION CONTEXT:\n${session_context.slice(0, 3000)}` : '',
     ].filter(Boolean).join('\n');
   }
@@ -1654,6 +1817,7 @@ ${spec.check}` : '';
     : '';
 
   const memCtx = [
+    profile.display_name    && `Their name is ${profile.display_name}. Use it naturally when it fits — a greeting, a hard truth — not in every message.`,
     profile.private_notes   && `Your private notes on this person (never expose; let them shape how you read the conversation):\n${profile.private_notes}`,
     profile.north_star      && `Their stated north star: "${profile.north_star}"`,
     profile.living_identity && `Living identity: "${profile.living_identity}"`,
@@ -1676,6 +1840,7 @@ ${spec.check}` : '';
     memCtx,
     nbContext,
     academyRecord,
+    liveCtx,
     `\nIt is ${timeCtx}. Notice the time when it means something — someone here late at night, an early morning session.`,
     MARCUS_RESPONSE_FORMAT_TAIL,
     session_context ? `\n\n---\nSESSION CONTEXT (read this; do not repeat it back to the user):\n${session_context.slice(0, 3000)}` : '',
@@ -2161,6 +2326,7 @@ app.get('/api/me', requireAuthApi, apiLimiter, async (req, res) => {
     academy_paid: can(p, 'academy_paid'),
     journal:      can(p, 'journal'),
     rules:        can(p, 'rules'),
+    guardian_connect: can(p, 'guardian_connect'),
     guardian:     can(p, 'guardian'),
     analytics:    can(p, 'analytics'),
     vault:        can(p, 'vault'),
@@ -2382,6 +2548,113 @@ Never hallucinate rule IDs — only use IDs from the list provided.`;
   }
 }
 
+// Check active rules against ACTUAL trade behaviour (not just the journal). Reads
+// recent closed trades from the linked account + live session stats, asks the model
+// to judge each rule conservatively (only "broke" on clear factual evidence), and
+// logs broken rules into rule_violations (source 'trades', one per rule per day).
+// Returns the per-rule assessment. This is what connects the coach's rules to the
+// account the Guardian watches. Fellow+ (needs a linked account).
+async function checkRulesAgainstTrades(userId) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey || apiKey === 'your-openai-key-here') return { error: 'ai_unavailable' };
+  if (await aiBudgetExceeded()) return { error: 'ai_budget' };
+
+  const { data: rules } = await supabaseAdmin
+    .from('trading_rules').select('id, rule_text, category')
+    .eq('user_id', userId).eq('is_active', true).limit(30);
+  if (!rules || rules.length === 0) return { assessment: [], note: 'No active rules to check yet.' };
+
+  const { data: link } = await supabaseAdmin
+    .from('broker_connections').select('metaapi_account_id, region').eq('user_id', userId).maybeSingle();
+  if (!link?.metaapi_account_id || !metaapi.isEnabled()) {
+    return { error: 'no_account', note: 'Connect a trading account and your rules get checked against real trades.' };
+  }
+
+  const sinceISO = new Date(Date.now() - 5 * 864e5).toISOString();
+  const deals = await metaapi.getDeals(link.metaapi_account_id, link.region, sinceISO).catch(() => []);
+  const trades = deals
+    .filter(d => (d.entryType === 'DEAL_ENTRY_OUT' || d.entryType === 'DEAL_ENTRY_OUT_BY') && d.time)
+    .map(d => ({
+      t: new Date(d.time).toISOString().slice(0, 16).replace('T', ' '),
+      symbol: d.symbol || '?',
+      side: String(d.type || '').includes('SELL') ? 'sell' : 'buy',
+      lots: Number(d.volume) || 0,
+      pnl: Math.round(((Number(d.profit) || 0) + (Number(d.swap) || 0) + (Number(d.commission) || 0)) * 100) / 100,
+    }))
+    .sort((a, b) => (a.t < b.t ? -1 : 1));
+  if (trades.length === 0) return { assessment: [], note: 'No closed trades in the last few days to check.' };
+
+  const { data: g } = await supabaseAdmin.from('guardian_data')
+    .select('daily_pnl_pct, consecutive_losses, open_lots, max_drawdown_pct').eq('user_id', userId).maybeSingle();
+
+  const today = new Date().toISOString().slice(0, 10);
+  const facts = {
+    today,
+    trades_today: trades.filter(t => t.t.startsWith(today)).length,
+    trades_last_5d: trades.length,
+    biggest_lot: Math.max(0, ...trades.map(t => t.lots)),
+    current_losing_streak: g?.consecutive_losses ?? null,
+    day_pnl_pct: g?.daily_pnl_pct ?? null,
+    max_drawdown_pct: g?.max_drawdown_pct ?? null,
+    open_lots: g?.open_lots ?? null,
+  };
+  const rulesList = rules.map((r, i) => `${i + 1}. [${r.id}] (${r.category}) ${r.rule_text}`).join('\n');
+  const tradeList = trades.slice(-40).map(t => `${t.t}  ${t.side} ${t.lots} ${t.symbol}  P&L ${t.pnl >= 0 ? '+' : ''}${t.pnl}`).join('\n');
+
+  const systemPrompt = `You are a trading-discipline analyst. Judge whether a trader followed their OWN rules, using ONLY the facts provided (recent closed trades + session stats). Be conservative and evidence-based.
+Respond ONLY with valid JSON, no prose, no markdown.
+Format: { "assessment": [ { "rule_id": "<uuid>", "verdict": "held" | "broke" | "unclear", "note": "one short sentence, calm mentor voice", "evidence": "the specific fact or trade that supports it, or empty" } ] }
+Rules:
+- Include EVERY rule from the list exactly once.
+- "broke" ONLY when the facts clearly show it (a lot above a stated max, more trades than allowed, trading past a stated loss count). If a rule is behavioural and the facts cannot confirm it, use "unclear" — never guess.
+- Never invent trades, numbers, or rule IDs. Use only IDs from the list.`;
+  const userMsg = `Rules:\n${rulesList}\n\nSession facts:\n${JSON.stringify(facts)}\n\nRecent closed trades (oldest→newest):\n${tradeList}`;
+
+  try {
+    const upstream = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+        messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userMsg }],
+        max_completion_tokens: 900,
+        response_format: { type: 'json_object' },
+      }),
+    });
+    const gptData = await upstream.json();
+    let parsed; try { parsed = JSON.parse(gptData.choices?.[0]?.message?.content || '{}'); } catch (_) { parsed = {}; }
+    const raw = Array.isArray(parsed.assessment) ? parsed.assessment : [];
+
+    const validIds = new Set(rules.map(r => r.id));
+    const ruleText = Object.fromEntries(rules.map(r => [r.id, r.rule_text]));
+    const clean = raw
+      .filter(a => a.rule_id && validIds.has(a.rule_id) && ['held', 'broke', 'unclear'].includes(a.verdict))
+      .map(a => ({ rule_id: a.rule_id, rule_text: ruleText[a.rule_id], verdict: a.verdict,
+                   note: String(a.note || '').slice(0, 300), evidence: String(a.evidence || '').slice(0, 300) }));
+
+    // Log broken rules — one per rule per day (query-first dedup; the partial
+    // unique index is the backstop against a rare concurrent double-check).
+    const broke = clean.filter(a => a.verdict === 'broke' && a.note.length >= 10);
+    if (broke.length) {
+      const { data: existing } = await supabaseAdmin.from('rule_violations')
+        .select('rule_id').eq('user_id', userId).eq('source', 'trades').eq('trade_day', today);
+      const already = new Set((existing || []).map(e => e.rule_id));
+      const toInsert = broke.filter(a => !already.has(a.rule_id));
+      if (toInsert.length) {
+        await supabaseAdmin.from('rule_violations').insert(toInsert.map(a => ({
+          user_id: userId, rule_id: a.rule_id, journal_entry_id: null,
+          source: 'trades', trade_day: today, confidence: 0.9,
+          mentor_note: a.note, evidence_quote: a.evidence || null,
+        }))).then(() => {}, () => {});
+      }
+    }
+    return { assessment: clean, checked_trades: trades.length };
+  } catch (err) {
+    console.error('Rule-vs-trades check error:', err.message);
+    return { error: 'check_failed' };
+  }
+}
+
 // ── Voice agent brain ─────────────────────────────────────────────────────────
 const MIKE_VOICE_PERSONA = `You are Marcus — 52, former prop trader, 28 years on the desk. Now a trading psychology mentor. You are in a live voice call with a trader you have been working with in text sessions. You already know them.
 
@@ -2440,6 +2713,33 @@ function buildTheoOpener(timeOfDay) {
   ];
   const lead = leads[Math.floor(Math.random() * leads.length)];
   return (timeNod ? timeNod + ' ' : '') + lead;
+}
+
+// Dynamic, in-character voice openers for Marcus and Iris — replace the agents'
+// stock "What's on your mind?" greeting. Varied so no two calls open the same.
+// (Requires "First message" override enabled on each agent in ElevenLabs.)
+function _pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function buildMarcusOpener(timeOfDay) {
+  const nod = { 'late night': 'Trading late, or just can\'t sleep.', 'morning': 'Early.', 'afternoon': '', 'evening': '', 'late evening': 'Late one.' }[timeOfDay] || '';
+  const leads = [
+    "You're here. Good. Talk to me — the real thing, not the summary.",
+    "Alright. What actually happened since we last spoke.",
+    "Sit down. Tell me one true thing about your week.",
+    "Good, you called. Let's not circle — what's the trade or the moment that's still bothering you.",
+    "I've got time. Start wherever it's heaviest.",
+  ];
+  return (nod ? nod + ' ' : '') + _pick(leads);
+}
+function buildIrisOpener(timeOfDay) {
+  const nod = { 'late night': 'Up late.', 'morning': 'Morning.', 'afternoon': '', 'evening': '', 'late evening': 'Late one tonight.' }[timeOfDay] || '';
+  const leads = [
+    "There you are. Take a breath — then tell me what's going on.",
+    "I'm listening. Start with what's loudest right now.",
+    "Good that you called. What's pulling at you?",
+    "Sit with me a second. What happened.",
+    "You came to me — that usually means something. Tell me.",
+  ];
+  return (nod ? nod + ' ' : '') + _pick(leads);
 }
 
 function buildVoiceContext(nb) {
@@ -2570,6 +2870,9 @@ app.post('/api/voice/session', requireAuthApi, apiLimiter, async (req, res) => {
   // Temporal awareness for the voice call — so the mentor sounds present, not stateless.
   let voicePrompt = voicePersona + `\n\nRIGHT NOW it is ${timeOfDay} where the student is. Let that colour how you greet them, but only mention it if it genuinely means something.` + brainContext;
 
+  // Anti-bot: the single biggest tell is canned, repeated phrasing.
+  voicePrompt += `\n\nSOUND LIKE A PERSON, NOT A BOT. Never open or fill space with a canned line like "What's on your mind?", "How can I help", "I'm here", or "How are you today". Vary your wording every single time — if you would normally phrase something a certain way, find a different way now. No repeated phrases, no verbal tics across the call. You have continuous life and memory; talk like it.`;
+
   // Theo teaches a specific module — feed his voice the same lesson spec his text
   // sessions get, so the call is a real lesson rather than a generic chat.
   let firstMessage = null;
@@ -2583,6 +2886,10 @@ A WAY TO SHOW IT (demonstrate, do not just assert): ${spec.example}
 A CHECK QUESTION TO WORK TOWARD (adapt it): ${spec.check}`;
     }
     firstMessage = buildTheoOpener(timeOfDay);
+  } else if (safeMentor === 'marcus') {
+    firstMessage = buildMarcusOpener(timeOfDay);
+  } else if (safeMentor === 'iris') {
+    firstMessage = buildIrisOpener(timeOfDay);
   }
 
   // Abort if ElevenLabs does not respond within 8 seconds
@@ -2640,16 +2947,51 @@ A CHECK QUESTION TO WORK TOWARD (adapt it): ${spec.check}`;
 
 // ── Guardian Layer ────────────────────────────────────────────────────────────
 
-// Calculate lock level from account state
-function calcLockLevel(data) {
+// Intervention ladder labels (server mirror of the client's INTERVENTION_LADDER).
+const INTERVENTION_LADDER = {
+  1: { label: 'Observation' },
+  2: { label: 'Warning' },
+  3: { label: 'Conversation' },
+  4: { label: 'Cooldown' },
+  5: { label: 'Lockout' },
+  6: { label: 'Mandatory Review' },
+};
+
+// Calculate lock level from account state. When the trader has set their own
+// limits, the ladder scales to them (at/over limit = level 5, then 80/60/40%
+// step down); any unset limit falls back to the default fixed scale.
+function calcLockLevel(data, limits = null) {
   const losses = data.consecutive_losses || 0;
-  const pnlPct = data.daily_pnl_pct || 0;
+  const pnlPct = data.daily_pnl_pct || 0;      // negative = loss
   const drawdown = data.max_drawdown_pct || 0;
-  if (losses >= 5 || pnlPct <= -5 || drawdown >= 5)  return 5;
-  if (losses >= 4 || pnlPct <= -3 || drawdown >= 4)  return 4;
-  if (losses >= 3 || pnlPct <= -2 || drawdown >= 3)  return 3;
-  if (losses >= 2 || pnlPct <= -1 || drawdown >= 2)  return 2;
-  return 1;
+  const L = limits || {};
+
+  const byLimit = (val, limit) => {
+    // Round to kill FP boundary artefacts (2.4/3 = 0.7999… would slip a tier).
+    const r = limit > 0 ? Math.round((val / limit) * 1e6) / 1e6 : 0;
+    return r >= 1 ? 5 : r >= 0.8 ? 4 : r >= 0.6 ? 3 : r >= 0.4 ? 2 : 1;
+  };
+  const lossLvl = L.risk_max_loss_streak > 0
+    ? byLimit(losses, L.risk_max_loss_streak)
+    : (losses >= 5 ? 5 : losses >= 4 ? 4 : losses >= 3 ? 3 : losses >= 2 ? 2 : 1);
+  const ddLvl = L.risk_max_drawdown_pct > 0
+    ? byLimit(drawdown, L.risk_max_drawdown_pct)
+    : (drawdown >= 5 ? 5 : drawdown >= 4 ? 4 : drawdown >= 3 ? 3 : drawdown >= 2 ? 2 : 1);
+  const lossMag = Math.max(0, -pnlPct);
+  const pnlLvl = L.risk_max_daily_loss_pct > 0
+    ? byLimit(lossMag, L.risk_max_daily_loss_pct)
+    : (pnlPct <= -5 ? 5 : pnlPct <= -3 ? 4 : pnlPct <= -2 ? 3 : pnlPct <= -1 ? 2 : 1);
+
+  return Math.max(lossLvl, ddLvl, pnlLvl);
+}
+
+// The trader's custom risk limits (nulls = use defaults). Small, cached-free read.
+async function getRiskLimits(userId) {
+  const { data } = await supabaseAdmin
+    .from('user_profiles')
+    .select('risk_max_daily_loss_pct, risk_max_drawdown_pct, risk_max_loss_streak, risk_max_lots')
+    .eq('id', userId).maybeSingle();
+  return data || {};
 }
 
 // GET /api/guardian — current account state (Resident+ only)
@@ -2662,14 +3004,123 @@ app.get('/api/guardian', requireAuthApi, apiLimiter, async (req, res) => {
   if (!can(profile, 'guardian')) {
     return res.status(403).json({ error: 'Guardian Layer is available on the Fellow plan and above.' });
   }
+  // Reconcile against MetaApi's live state first — this syncs while connected and
+  // flips off + notifies on disconnect/deletion, so the panel, chamber and the
+  // integrations page all read one truth instead of a stale stored flag.
+  await reconcileGuardianLink(req.user.id).catch(() => {});
+
   const { data, error } = await supabaseAdmin
     .from('guardian_data')
     .select('*')
     .eq('user_id', req.user.id)
     .maybeSingle();
-
   if (error) return res.status(500).json({ error: 'Database error' });
+
   res.json({ guardian: data || null });
+});
+
+// The exact wording the trader agrees to. Stored verbatim with the consent so
+// there is never a question of what they were told the lock would do.
+const GUARDIAN_CONSENT_TEXT = 'Protect me aggressively — I consent to the lock. '
+  + 'When my account breaches Cooldown or worse, EdgeKeeper may close my open positions '
+  + 'and cancel my pending orders on my connected trading account. I can withdraw this '
+  + 'consent at any time, and withdrawal takes effect immediately.';
+
+// GET /api/guardian/consent — what the trader agreed to, and when (Fellow+).
+app.get('/api/guardian/consent', requireAuthApi, apiLimiter, async (req, res) => {
+  const { data: p } = await supabaseAdmin.from('user_profiles')
+    .select('guardian_level, guardian_consent_at, guardian_consent_text, guardian_revoked_at, subscription_status, bypass_subscription')
+    .eq('id', req.user.id).maybeSingle();
+  res.json({
+    level:        p?.guardian_level || 'warn',
+    enforcing:    shouldEnforceLock(p, 4),   // would a Cooldown breach act right now?
+    consent_at:   p?.guardian_consent_at || null,
+    consent_text: p?.guardian_consent_text || null,
+    revoked_at:   p?.guardian_revoked_at || null,
+    current_text: GUARDIAN_CONSENT_TEXT,
+    eligible:     can(p, 'guardian'),
+  });
+});
+
+// PUT /api/guardian/consent — grant or withdraw the hard lock.
+// Withdrawal is always permitted, takes effect on the very next check, and is
+// never gated on plan or anything else. Granting records the exact wording + time.
+app.put('/api/guardian/consent', requireAuthApi, apiLimiter, async (req, res) => {
+  const level = String(req.body?.level || '').toLowerCase();
+  if (!['observe', 'warn', 'slow', 'protect'].includes(level)) {
+    return res.status(400).json({ error: 'level must be observe, warn, slow or protect' });
+  }
+  const now = new Date().toISOString();
+  const patch = { guardian_level: level };
+  if (level === 'protect') {
+    patch.guardian_consent_at   = now;
+    patch.guardian_consent_text = GUARDIAN_CONSENT_TEXT;
+    patch.guardian_revoked_at   = null;
+  } else {
+    // Anything other than 'protect' is a withdrawal of the lock authority.
+    patch.guardian_revoked_at = now;
+  }
+  const { error } = await supabaseAdmin.from('user_profiles').update(patch).eq('id', req.user.id);
+  if (error) return res.status(500).json({ error: 'Database error' });
+
+  logGuardianAction(req.user.id, level === 'protect' ? 'consent_granted' : 'consent_withdrawn', {
+    reason: level === 'protect' ? GUARDIAN_CONSENT_TEXT : 'Trader set protection to ' + level,
+    result: { level },
+  });
+  res.json({ ok: true, level, consent_at: patch.guardian_consent_at || null });
+});
+
+// GET /api/guardian/limits — the trader's custom risk limits (Fellow+).
+app.get('/api/guardian/limits', requireAuthApi, apiLimiter, async (req, res) => {
+  const { data: profile } = await supabaseAdmin.from('user_profiles')
+    .select('subscription_status, bypass_subscription, risk_max_daily_loss_pct, risk_max_drawdown_pct, risk_max_loss_streak, risk_max_lots')
+    .eq('id', req.user.id).maybeSingle();
+  if (!can(profile, 'guardian')) return res.status(403).json({ error: 'Custom limits are available on the Fellow plan and above.' });
+  res.json({ limits: {
+    risk_max_daily_loss_pct: profile.risk_max_daily_loss_pct ?? null,
+    risk_max_drawdown_pct:   profile.risk_max_drawdown_pct ?? null,
+    risk_max_loss_streak:    profile.risk_max_loss_streak ?? null,
+    risk_max_lots:           profile.risk_max_lots ?? null,
+  } });
+});
+
+// PUT /api/guardian/limits — set custom risk limits (Fellow+). Empty/null clears a limit.
+app.put('/api/guardian/limits', requireAuthApi, apiLimiter, async (req, res) => {
+  const { data: profile } = await supabaseAdmin.from('user_profiles')
+    .select('subscription_status, bypass_subscription').eq('id', req.user.id).maybeSingle();
+  if (!can(profile, 'guardian')) return res.status(403).json({ error: 'Custom limits are available on the Fellow plan and above.' });
+
+  // Returns a number, null (cleared), or undefined (invalid → reject).
+  const clamp = (v, min, max) => {
+    if (v === null || v === undefined || v === '') return null;
+    const n = Number(v);
+    return (!Number.isFinite(n) || n < min || n > max) ? undefined : n;
+  };
+  const dl   = clamp(req.body?.risk_max_daily_loss_pct, 0.1, 100);
+  const dd   = clamp(req.body?.risk_max_drawdown_pct,   0.1, 100);
+  const ls   = clamp(req.body?.risk_max_loss_streak,    1,   50);
+  const lots = clamp(req.body?.risk_max_lots,           0.01, 1000);
+  if ([dl, dd, ls, lots].some(v => v === undefined)) return res.status(400).json({ error: 'A limit is out of range.' });
+
+  const { error } = await supabaseAdmin.from('user_profiles').update({
+    risk_max_daily_loss_pct: dl,
+    risk_max_drawdown_pct:   dd,
+    risk_max_loss_streak:    ls == null ? null : Math.round(ls),
+    risk_max_lots:           lots,
+  }).eq('id', req.user.id);
+  if (error) return res.status(500).json({ error: 'Database error' });
+  res.json({ ok: true });
+});
+
+// GET /api/guardian/history — recent daily snapshots for the chamber trend (Fellow+).
+app.get('/api/guardian/history', requireAuthApi, apiLimiter, async (req, res) => {
+  const { data: profile } = await supabaseAdmin.from('user_profiles')
+    .select('subscription_status, bypass_subscription').eq('id', req.user.id).maybeSingle();
+  if (!can(profile, 'guardian')) return res.status(403).json({ error: 'Guardian is available on the Fellow plan and above.' });
+  const { data } = await supabaseAdmin.from('guardian_history')
+    .select('day_key, daily_pnl_pct, max_drawdown_pct, consecutive_losses, peak_lock_level')
+    .eq('user_id', req.user.id).order('day_key', { ascending: false }).limit(14);
+  res.json({ history: (data || []).reverse() }); // oldest → newest for charting
 });
 
 // POST /api/guardian/update — upsert account data (manual entry or EA webhook)
@@ -2697,18 +3148,23 @@ app.post('/api/guardian/update', apiLimiter, async (req, res) => {
 
   if (!userId) return res.status(401).json({ error: 'Authentication required' });
 
-  // Enforce plan gate — Guardian is Resident+ only
+  // Enforce plan gate — connecting/pushing account data is Resident+.
+  // guardian_level carries the Guardian Contract the trader signed at onboarding;
+  // 'protect' is the only value that authorises the hard lock.
   const { data: profile } = await supabaseAdmin
     .from('user_profiles')
-    .select('subscription_status, bypass_subscription')
+    .select('subscription_status, bypass_subscription, guardian_level, guardian_revoked_at')
     .eq('id', userId)
     .maybeSingle();
 
-  const plan   = profile?.subscription_status || 'free';
-  const bypass = profile?.bypass_subscription || false;
-  if (!bypass && !['professional', 'institutional'].includes(plan)) {
-    return res.status(403).json({ error: 'Guardian Layer is available on the Fellow plan and above.' });
+  if (!can(profile, 'guardian_connect')) {
+    return res.status(403).json({ error: 'Connecting an account is available on the Resident plan and above.' });
   }
+
+  // Previous lock state — so we log engage/release transitions, not every push.
+  const { data: prevGuardian } = await supabaseAdmin
+    .from('guardian_data').select('lock_level').eq('user_id', userId).maybeSingle();
+  const wasEnforcing = shouldEnforceLock(profile, prevGuardian?.lock_level || 0);
 
   const {
     balance, equity, daily_pnl, daily_pnl_pct,
@@ -2728,7 +3184,8 @@ app.post('/api/guardian/update', apiLimiter, async (req, res) => {
     return res.status(400).json({ error: 'invalid platform value' });
   }
 
-  const lockLevel = calcLockLevel({ consecutive_losses, daily_pnl_pct, max_drawdown_pct });
+  const updateLimits = await getRiskLimits(userId);
+  const lockLevel = calcLockLevel({ consecutive_losses, daily_pnl_pct, max_drawdown_pct }, updateLimits);
 
   const { data: upserted, error: upsertErr } = await supabaseAdmin
     .from('guardian_data')
@@ -2750,7 +3207,35 @@ app.post('/api/guardian/update', apiLimiter, async (req, res) => {
     .single();
 
   if (upsertErr) return res.status(500).json({ error: 'Database error' });
-  res.json({ guardian: upserted, lock_level: lockLevel });
+  await recordGuardianHistory(userId, new Date().toISOString().slice(0, 10), {
+    balance: balance ?? null, equity: equity ?? null,
+    daily_pnl: daily_pnl ?? null, daily_pnl_pct: daily_pnl_pct ?? 0,
+    max_drawdown_pct: max_drawdown_pct ?? 0, consecutive_losses: consecutive_losses ?? 0,
+    lock_level: lockLevel,
+  }).catch(() => {});
+  await maybeAlertGuardianBreach(userId, lockLevel, {
+    drawdown: max_drawdown_pct || 0, dailyPct: daily_pnl_pct || 0, losses: consecutive_losses || 0,
+  }).catch(() => {});
+
+  // ── HARD LOCK DECISION ──────────────────────────────────────────────────────
+  // The EA reads `enforce` off this response and acts on it. Policy is the shared
+  // shouldEnforceLock() — identical to the MetaApi path — so consent, revocation,
+  // entitlement and the global kill switch all apply to both channels equally.
+  const enforce = shouldEnforceLock(profile, lockLevel);
+  if (enforce && !wasEnforcing) {
+    logGuardianAction(userId, 'lock_engaged', {
+      channel: 'ea', lock_level: lockLevel, reason: lockReasonFor(lockLevel),
+      snapshot: { balance, equity, daily_pnl_pct, max_drawdown_pct, consecutive_losses },
+    });
+  } else if (!enforce && wasEnforcing) {
+    logGuardianAction(userId, 'lock_released', { channel: 'ea', lock_level: lockLevel });
+  }
+  res.json({
+    guardian: upserted,
+    lock_level: lockLevel,
+    enforce,
+    enforce_reason: enforce ? lockReasonFor(lockLevel) : '',
+  });
 });
 
 // ── One-tap broker linking via MetaApi ──────────────────────────────────────
@@ -2767,49 +3252,358 @@ async function guardianGate(req, res) {
     .select('subscription_status, bypass_subscription')
     .eq('id', userId)
     .maybeSingle();
-  const plan   = profile?.subscription_status || 'free';
-  const bypass = profile?.bypass_subscription || false;
-  if (!bypass && !['professional', 'institutional'].includes(plan)) {
-    res.status(403).json({ error: 'Guardian Layer is available on the Fellow plan and above.' });
+  const plan = profile?.subscription_status || 'free';
+  // Linking an account (read-only) is a RESIDENT+ capability ("See yourself").
+  // Iris + active intervention is Fellow+ and gated separately with 'guardian'.
+  // (Previously this required Private Office+, which even locked Fellow out.)
+  if (!can(profile, 'guardian_connect')) {
+    res.status(403).json({ error: 'Connecting an account is available on the Resident plan and above.' });
     return null;
   }
   return { userId, plan };
 }
 
 // Map a MetaApi terminal snapshot into the guardian_data shape + rule engine.
-async function syncGuardianFromMetaApi(userId, accountId, region) {
-  const [info, positions] = await Promise.all([
+async function syncGuardianFromMetaApi(userId, accountId, region, platform) {
+  // guardian_data.platform has a CHECK constraint (metatrader4/5, ctrader,
+  // tradingview, manual) — NOT the 'mt4'/'mt5' vocabulary broker_connections uses.
+  // Writing 'mt5' here silently violates the constraint and the whole sync throws,
+  // leaving is_connected stuck false. Map to the allowed value.
+  const gdPlatform = platform === 'mt4' ? 'metatrader4' : 'metatrader5';
+
+  // Trading day boundary. ponytail: UTC day; if traders in far timezones report
+  // an off-by-one daily reset, swap for the broker-server day.
+  const now = new Date();
+  const dayKey = now.toISOString().slice(0, 10);
+  const dayStartMs = new Date(dayKey + 'T00:00:00.000Z').getTime();
+  // Pull ~10 days of deals so a losing streak spanning days is still visible.
+  const streakSinceISO = new Date(now.getTime() - 10 * 864e5).toISOString();
+
+  const [info, positions, deals] = await Promise.all([
     metaapi.getAccountInformation(accountId, region),
     metaapi.getPositions(accountId, region).catch(() => []),
+    metaapi.getDeals(accountId, region, streakSinceISO).catch(() => []),
   ]);
+
   const balance   = Number(info?.balance) || 0;
   const equity    = Number(info?.equity)  || balance;
   const openLots  = positions.reduce((s, p) => s + (Number(p.volume) || 0), 0);
-  // Floating P&L across open positions (protects against live open drawdown).
   const floating  = positions.reduce((s, p) => s + (Number(p.profit ?? p.unrealizedProfit) || 0), 0);
-  const dailyPnl  = Math.round(floating * 100) / 100;
-  const dailyPct  = balance > 0 ? Math.round((floating / balance) * 10000) / 100 : 0;
-  const drawdown  = equity < balance && balance > 0
-    ? Math.round(((balance - equity) / balance) * 10000) / 100
+
+  // Closed trades: a position-closing deal carries realized profit (+ swap + comm).
+  // ponytail: partial closes count as separate trades — acceptable approximation.
+  const closes = deals
+    .filter(d => (d.entryType === 'DEAL_ENTRY_OUT' || d.entryType === 'DEAL_ENTRY_OUT_BY') && d.time)
+    .map(d => ({ time: new Date(d.time).getTime(),
+                 pnl: (Number(d.profit) || 0) + (Number(d.swap) || 0) + (Number(d.commission) || 0) }))
+    .sort((a, b) => a.time - b.time);
+
+  // Consecutive losing closed trades, newest backward.
+  let streak = 0;
+  for (let i = closes.length - 1; i >= 0; i--) { if (closes[i].pnl < 0) streak++; else break; }
+
+  const realizedToday = closes.filter(c => c.time >= dayStartMs).reduce((s, c) => s + c.pnl, 0);
+
+  // Daily baseline: reset at rollover, else carry the anchor and track peak equity.
+  const { data: prev } = await supabaseAdmin.from('guardian_data')
+    .select('day_key, day_start_balance, day_peak_equity').eq('user_id', userId).maybeSingle();
+  let dayStartBalance, dayPeakEquity;
+  if (!prev || prev.day_key !== dayKey || prev.day_start_balance == null) {
+    // First sync of the day: reconstruct the day-open balance (current balance
+    // already banked today's realized P&L), so mid-day linking still reads right.
+    dayStartBalance = balance - realizedToday;
+    dayPeakEquity   = equity;
+  } else {
+    dayStartBalance = Number(prev.day_start_balance);
+    dayPeakEquity   = Math.max(Number(prev.day_peak_equity) || equity, equity);
+  }
+
+  const dayPnl   = realizedToday + floating;
+  const dailyPnl = Math.round(dayPnl * 100) / 100;
+  const dailyPct = dayStartBalance > 0 ? Math.round((dayPnl / dayStartBalance) * 10000) / 100 : 0;
+  const drawdown = dayPeakEquity > 0
+    ? Math.max(0, Math.round(((dayPeakEquity - equity) / dayPeakEquity) * 10000) / 100)
     : 0;
 
-  const lockLevel = calcLockLevel({ consecutive_losses: 0, daily_pnl_pct: dailyPct, max_drawdown_pct: drawdown });
+  const limits = await getRiskLimits(userId);
+  const snap = { consecutive_losses: streak, daily_pnl_pct: dailyPct, max_drawdown_pct: drawdown };
+  const lockLevel = calcLockLevel(snap, limits);
 
   await supabaseAdmin.from('guardian_data').upsert({
-    user_id:          userId,
+    user_id:            userId,
     balance,
     equity,
-    daily_pnl:        dailyPnl,
-    daily_pnl_pct:    dailyPct,
-    open_lots:        Math.round(openLots * 100) / 100,
-    max_drawdown_pct: drawdown,
-    platform:         'mt5',
-    lock_level:       lockLevel,
-    is_connected:     true,
-    last_updated:     new Date().toISOString(),
+    daily_pnl:          dailyPnl,
+    daily_pnl_pct:      dailyPct,
+    consecutive_losses: streak,
+    open_lots:          Math.round(openLots * 100) / 100,
+    max_drawdown_pct:   drawdown,
+    platform:           gdPlatform,
+    lock_level:         lockLevel,
+    is_connected:       true,
+    day_key:            dayKey,
+    day_start_balance:  dayStartBalance,
+    day_peak_equity:    dayPeakEquity,
+    day_realized_pnl:   Math.round(realizedToday * 100) / 100,
+    last_updated:       new Date().toISOString(),
   }, { onConflict: 'user_id' });
 
-  return { balance, equity, daily_pnl: dailyPnl, daily_pnl_pct: dailyPct, open_lots: openLots, lock_level: lockLevel };
+  await recordGuardianHistory(userId, dayKey, {
+    balance, equity, daily_pnl: dailyPnl, daily_pnl_pct: dailyPct,
+    max_drawdown_pct: drawdown, consecutive_losses: streak, lock_level: lockLevel,
+  }).catch(() => {});
+  await maybeAlertGuardianBreach(userId, lockLevel, { drawdown, dailyPct, losses: streak }).catch(() => {});
+
+  // Hard lock on a MetaApi-linked account. Gated on recorded 'protect' consent —
+  // shouldEnforceLock() decides; this path only carries it out. Never allowed to
+  // throw: a failure here must not break the sync that the whole panel depends on.
+  if (lockLevel >= 4) {
+    const { data: lockProfile } = await supabaseAdmin
+      .from('user_profiles')
+      .select('subscription_status, bypass_subscription, guardian_level, guardian_revoked_at')
+      .eq('id', userId).maybeSingle();
+    if (shouldEnforceLock(lockProfile, lockLevel)) {
+      await enforceLockViaMetaApi(userId, accountId, region, lockLevel, lockProfile, {
+        balance, equity, daily_pnl_pct: dailyPct, max_drawdown_pct: drawdown, consecutive_losses: streak,
+      }).catch(e => console.error('MetaApi lock enforcement error:', e && e.message));
+    }
+  }
+
+  return { balance, equity, daily_pnl: dailyPnl, daily_pnl_pct: dailyPct,
+           consecutive_losses: streak, open_lots: openLots, lock_level: lockLevel };
+}
+
+// Roll the day's Guardian snapshot into history (Iris's memory + the trend line).
+// Upserted per (user, day); peak_lock_level and drawdown keep the worst of the day.
+async function recordGuardianHistory(userId, dayKey, snap) {
+  const { data: prev } = await supabaseAdmin.from('guardian_history')
+    .select('peak_lock_level, max_drawdown_pct')
+    .eq('user_id', userId).eq('day_key', dayKey).maybeSingle();
+  await supabaseAdmin.from('guardian_history').upsert({
+    user_id:            userId,
+    day_key:            dayKey,
+    balance:            snap.balance,
+    equity:             snap.equity,
+    daily_pnl:          snap.daily_pnl,
+    daily_pnl_pct:      snap.daily_pnl_pct,
+    max_drawdown_pct:   Math.max(Number(prev?.max_drawdown_pct) || 0, snap.max_drawdown_pct || 0),
+    consecutive_losses: snap.consecutive_losses,
+    peak_lock_level:    Math.max(prev?.peak_lock_level || 1, snap.lock_level || 1),
+    updated_at:         new Date().toISOString(),
+  }, { onConflict: 'user_id,day_key' });
+}
+
+// Alert the trader when the Guardian escalates into intervention territory
+// (level >= 3), once per escalation; resets when they return to calm (level 1),
+// so the next real breach re-alerts. Dedup persists in guardian_data.last_alert_level.
+async function maybeAlertGuardianBreach(userId, level, snap) {
+  const { data: gd } = await supabaseAdmin
+    .from('guardian_data').select('last_alert_level').eq('user_id', userId).maybeSingle();
+  const prev = gd?.last_alert_level || 0;
+
+  if (level <= 1 && prev !== 0) {
+    await supabaseAdmin.from('guardian_data').update({ last_alert_level: 0 }).eq('user_id', userId);
+    return;
+  }
+  if (level >= 3 && level > prev) {
+    await supabaseAdmin.from('guardian_data').update({ last_alert_level: level }).eq('user_id', userId);
+    const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId);
+    const email = authUser?.user?.email;
+    const label = (INTERVENTION_LADDER[level] && INTERVENTION_LADDER[level].label) || `Level ${level}`;
+    if (email) await sendEmail(email, `Iris flagged your account — ${label}`, guardianBreachEmailHtml(level, snap));
+  }
+}
+
+// ── GUARDIAN HARD LOCK ───────────────────────────────────────────────────────
+// The Guardian may close positions on a funded account. Policy lives HERE and
+// nowhere else — the EA and the MetaApi path both ask this one function — so a
+// single edit revokes enforcement everywhere, instantly.
+//
+// Every condition below is deliberate and legally load-bearing:
+//   1. GUARDIAN_ENFORCEMENT_ENABLED — global kill switch. Set to 'false' in the
+//      environment and all enforcement stops without a deploy.
+//   2. guardian_level === 'protect' — the trader signed the aggressive Guardian
+//      Contract ("I consent to the lock"). Their calm self binding their present
+//      self. No consent, no action, ever.
+//   3. guardian_revoked_at — consent withdrawn. Revocation always wins.
+//   4. Fellow+ entitlement.
+//   5. lock_level >= 4 (Cooldown or worse). Never on a warning.
+function guardianEnforcementOn() {
+  return String(process.env.GUARDIAN_ENFORCEMENT_ENABLED || 'true').toLowerCase() !== 'false';
+}
+
+function shouldEnforceLock(profile, lockLevel) {
+  if (!guardianEnforcementOn()) return false;
+  if (!profile) return false;
+  if (profile.guardian_level !== 'protect') return false;
+  if (profile.guardian_revoked_at) return false;
+  if (!can(profile, 'guardian')) return false;
+  return (lockLevel || 0) >= 4;
+}
+
+function lockReasonFor(lockLevel) {
+  return lockLevel >= 5 ? 'Stand down — risk threshold exceeded.' : 'Cooldown — trading is paused.';
+}
+
+// Append-only audit write. Fire-and-forget: an audit failure must never block or
+// crash the protective action, but it must also never be silently swallowed in
+// a way that leaves no trace — failures go to the server error log.
+function logGuardianAction(userId, action, fields = {}) {
+  supabaseAdmin.from('guardian_actions').insert({
+    user_id: userId,
+    action,
+    channel:    fields.channel    || null,
+    lock_level: fields.lock_level ?? null,
+    reason:     fields.reason     || null,
+    ref_id:     fields.ref_id     ? String(fields.ref_id) : null,
+    symbol:     fields.symbol     || null,
+    volume:     fields.volume     ?? null,
+    snapshot:   fields.snapshot   || null,
+    result:     fields.result     || null,
+  }).then(() => {}, (e) => console.error('guardian_actions write failed:', e?.message));
+}
+
+// Enforce the lock on a MetaApi-linked account: close every open position and
+// cancel every pending order. Runs server-side (the EA path enforces in-terminal).
+// Latency is a cloud round-trip — seconds, not milliseconds — so this bounds the
+// damage rather than preventing the fill. Callers MUST have already passed
+// shouldEnforceLock(); this function re-checks anyway as a belt-and-braces guard.
+async function enforceLockViaMetaApi(userId, accountId, region, lockLevel, profile, snapshot) {
+  if (!shouldEnforceLock(profile, lockLevel)) return { enforced: false };
+  if (!metaapi.isEnabled() || !accountId) return { enforced: false };
+
+  const reason = lockReasonFor(lockLevel);
+  const [positions, orders] = await Promise.all([
+    metaapi.getPositions(accountId, region).catch(() => []),
+    metaapi.getOrders(accountId, region).catch(() => []),
+  ]);
+  if (!positions.length && !orders.length) return { enforced: true, closed: 0, cancelled: 0 };
+
+  logGuardianAction(userId, 'lock_engaged', {
+    channel: 'metaapi', lock_level: lockLevel, reason, snapshot,
+    result: { positions: positions.length, pending_orders: orders.length },
+  });
+
+  let closed = 0, cancelled = 0;
+  for (const p of positions) {
+    try {
+      const r = await metaapi.closePosition(accountId, region, p.id);
+      const ok = r && r.stringCode === 'TRADE_RETCODE_DONE';
+      if (ok) closed++;
+      logGuardianAction(userId, ok ? 'position_closed' : 'enforcement_failed', {
+        channel: 'metaapi', lock_level: lockLevel, reason,
+        ref_id: p.id, symbol: p.symbol, volume: p.volume, snapshot, result: r,
+      });
+    } catch (e) {
+      logGuardianAction(userId, 'enforcement_failed', {
+        channel: 'metaapi', lock_level: lockLevel, reason,
+        ref_id: p.id, symbol: p.symbol, volume: p.volume,
+        result: { error: String(e && e.message).slice(0, 300) },
+      });
+    }
+  }
+  for (const o of orders) {
+    try {
+      const r = await metaapi.cancelOrder(accountId, region, o.id);
+      const ok = r && r.stringCode === 'TRADE_RETCODE_DONE';
+      if (ok) cancelled++;
+      logGuardianAction(userId, ok ? 'order_cancelled' : 'enforcement_failed', {
+        channel: 'metaapi', lock_level: lockLevel, reason,
+        ref_id: o.id, symbol: o.symbol, volume: o.volume, result: r,
+      });
+    } catch (e) {
+      logGuardianAction(userId, 'enforcement_failed', {
+        channel: 'metaapi', lock_level: lockLevel, reason,
+        ref_id: o.id, symbol: o.symbol, result: { error: String(e && e.message).slice(0, 300) },
+      });
+    }
+  }
+  return { enforced: true, closed, cancelled };
+}
+
+// Email the user once when their Guardian loses sight of an account.
+async function notifyGuardianDisconnected(userId, row, reason) {
+  const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId);
+  const email = authUser?.user?.email;
+  if (!email) return;
+  const label = row.account_name || row.server || 'your trading account';
+  await sendEmail(email, `Your Guardian stopped watching ${label}`,
+    guardianDisconnectedEmailHtml(label, reason));
+}
+
+// Reconcile a user's Guardian link against MetaApi's LIVE state — the single
+// source of truth every surface (panel, chamber, integrations, cron) reads through.
+// Side effects: syncs guardian_data while CONNECTED; on a connected→down or deleted
+// transition flips is_connected off, marks the link disconnected, and emails once.
+// ponytail: calls getAccount on every invocation (fine at this user count; the
+// provisioning API isn't per-call billed). Add a short TTL cache if it ever bites.
+async function reconcileGuardianLink(userId) {
+  const { data: row } = await supabaseAdmin
+    .from('broker_connections').select('*').eq('user_id', userId).maybeSingle();
+
+  if (!row) return { linked: false, connected: false, status: 'none' };
+  const base = { linked: true, platform: row.platform, server: row.server, account_name: row.account_name };
+  if (!row.metaapi_account_id || !metaapi.isEnabled()) {
+    return { ...base, connected: row.status === 'connected', status: row.status, detail: row.status_detail };
+  }
+
+  // Throttle: the chamber, the workspace watch, and the cron all reconcile. If a
+  // fresh snapshot landed in the last 20s, skip the MetaApi round-trip and serve
+  // the cached state — dedupes rapid multi-poller load, avoids MetaApi rate limits.
+  const { data: gd } = await supabaseAdmin.from('guardian_data')
+    .select('last_updated, is_connected').eq('user_id', userId).maybeSingle();
+  if (row.status === 'connected' && gd?.is_connected && gd.last_updated &&
+      (Date.now() - new Date(gd.last_updated).getTime()) < 20000) {
+    return { ...base, connected: true, status: 'connected' };
+  }
+
+  const wasConnected = row.status === 'connected';
+  let acct = null, gone = false;
+  try {
+    acct = await metaapi.getAccount(row.metaapi_account_id);
+  } catch (e) {
+    if (e.status === 404) gone = true;               // deleted on MetaApi's side
+    else return { ...base, connected: wasConnected, status: row.status, detail: 'MetaApi unreachable' };
+  }
+  const connState = gone ? 'DELETED' : (acct?.connectionStatus || acct?.state || 'UNKNOWN');
+
+  if (connState === 'CONNECTED') {
+    const region = acct?.region || row.region;
+    const guardian = await syncGuardianFromMetaApi(userId, row.metaapi_account_id, region, row.platform).catch(() => null);
+    if (guardian) {
+      await supabaseAdmin.from('broker_connections').update({
+        status: 'connected', status_detail: null, region,
+        last_sync_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+      }).eq('user_id', userId);
+      return { ...base, connected: true, status: 'connected', guardian };
+    }
+    // Live but the first snapshot hasn't landed — keep the client polling.
+    await supabaseAdmin.from('broker_connections').update({
+      status: 'connecting', status_detail: 'Account connected — syncing your first snapshot…',
+      updated_at: new Date().toISOString(),
+    }).eq('user_id', userId);
+    return { ...base, connected: false, status: 'syncing' };
+  }
+
+  // Not CONNECTED. Only treat as a real disconnect when the account is gone or was
+  // previously connected — otherwise it's a fresh link still provisioning, and we
+  // must not mark that "disconnected" (it would flip the connect prompt on mid-setup).
+  if (gone || wasConnected) {
+    await supabaseAdmin.from('guardian_data')
+      .update({ is_connected: false, last_updated: new Date().toISOString() })
+      .eq('user_id', userId);
+    await supabaseAdmin.from('broker_connections').update({
+      status: 'disconnected',
+      status_detail: gone ? 'Account removed on MetaApi. Reconnect to resume watching.'
+                          : `Broker reports ${connState}. Reconnect to resume watching.`,
+      updated_at: new Date().toISOString(),
+    }).eq('user_id', userId);
+    if (wasConnected) await notifyGuardianDisconnected(userId, row, gone ? 'removed' : 'dropped').catch(() => {});
+    return { ...base, connected: false, status: 'disconnected', detail: gone ? 'removed' : connState };
+  }
+
+  // Still provisioning (CONNECTING/DEPLOYING/…) — leave state, keep polling.
+  return { ...base, connected: false, status: row.status || 'connecting', detail: connState };
 }
 
 // POST /api/guardian/link/start — provision a MetaApi account (no credentials)
@@ -2872,44 +3666,17 @@ app.get('/api/guardian/link/status', requireAuthApi, apiLimiter, async (req, res
   if (!gate) return;
   const { userId } = gate;
 
-  const { data: row } = await supabaseAdmin
-    .from('broker_connections')
-    .select('*')
-    .eq('user_id', userId)
-    .maybeSingle();
-
-  if (!row) return res.json({ status: 'none' });
-  if (!row.metaapi_account_id) {
-    return res.json({ status: row.status, detail: row.status_detail, platform: row.platform, server: row.server });
-  }
-
-  try {
-    const account = await metaapi.getAccount(row.metaapi_account_id);
-    const connState = account?.connectionStatus || account?.state || 'UNKNOWN';
-    const region = account?.region || row.region;
-    if (region && region !== row.region) {
-      await supabaseAdmin.from('broker_connections').update({ region }).eq('user_id', userId);
-    }
-
-    let guardian = null;
-    let status = row.status;
-    if (connState === 'CONNECTED') {
-      guardian = await syncGuardianFromMetaApi(userId, row.metaapi_account_id, region).catch(() => null);
-      status = 'connected';
-      await supabaseAdmin.from('broker_connections').update({
-        status: 'connected', status_detail: null,
-        last_sync_at: new Date().toISOString(), updated_at: new Date().toISOString(),
-      }).eq('user_id', userId);
-    }
-
-    return res.json({
-      status, connectionStatus: connState,
-      platform: row.platform, server: row.server,
-      account_name: row.account_name, guardian,
-    });
-  } catch (e) {
-    return res.json({ status: row.status, connectionStatus: 'UNKNOWN', detail: (e.message || '').slice(0, 200) });
-  }
+  // Same reconcile the panel uses — one source of truth. Handles connect, the
+  // still-syncing window, disconnects and MetaApi-side deletion (no stale
+  // "connected" on error anymore).
+  const r = await reconcileGuardianLink(userId);
+  return res.json({
+    status: r.status,
+    connectionStatus: r.detail || null,
+    platform: r.platform, server: r.server, account_name: r.account_name,
+    guardian: r.guardian || null,
+    metaapi_account_id: r.linked || undefined,
+  });
 });
 
 // DELETE /api/guardian/link — unlink broker; remove the MetaApi cloud account.
@@ -2942,10 +3709,8 @@ app.get('/api/guardian/token', requireAuthApi, tokenLimiter, sharedLimit('guardi
     .select('guardian_webhook_token, subscription_status, bypass_subscription')
     .eq('id', req.user.id)
     .maybeSingle();
-  const plan   = profile?.subscription_status || 'free';
-  const bypass = profile?.bypass_subscription || false;
-  if (!bypass && !['professional', 'institutional'].includes(plan)) {
-    return res.status(403).json({ error: 'Guardian Layer is available on the Fellow plan and above.' });
+  if (!can(profile, 'guardian_connect')) {
+    return res.status(403).json({ error: 'Connecting an account is available on the Resident plan and above.' });
   }
 
   let token = profile?.guardian_webhook_token;
@@ -2973,10 +3738,8 @@ app.get('/api/guardian/ea/:platform', requireAuthApi, apiLimiter, async (req, re
     .select('guardian_webhook_token, subscription_status, bypass_subscription')
     .eq('id', req.user.id)
     .maybeSingle();
-  const eaPlan   = profile?.subscription_status || 'free';
-  const eaBypass = profile?.bypass_subscription || false;
-  if (!eaBypass && !['pro', 'professional', 'institutional'].includes(eaPlan)) {
-    return res.status(403).json({ error: 'Guardian Layer is available on the Fellow plan and above.' });
+  if (!can(profile, 'guardian_connect')) {
+    return res.status(403).json({ error: 'Connecting an account is available on the Resident plan and above.' });
   }
 
   let token = profile?.guardian_webhook_token;
@@ -3025,6 +3788,15 @@ double   peakBalance    = 0;
 int      lastTradeCount = 0;
 bool     initialized    = false;
 
+// ── Guardian lock ───────────────────────────────────────────────────
+// Set ONLY by the server ("enforce":true), which requires the trader to have
+// signed the aggressive Guardian Contract. While on, any position that appears
+// is closed immediately and pending orders are removed. MQL gives no way to
+// veto a manual order before it is sent, so the exposure is removed the instant
+// it appears instead.
+bool   lockActive = false;
+string lockReason = "";
+
 //+------------------------------------------------------------------+
 int OnInit() {
   dayOpenBalance = AccountBalance();
@@ -3038,13 +3810,57 @@ void OnDeinit(const int reason) { EventKillTimer(); }
 
 void OnTimer() { SendAccountData(); }
 
+// Fast path — every incoming tick re-checks while the lock is engaged.
+void OnTick() { if (lockActive) EnforceLock(); }
+
 void OnTrade() {
+  if (lockActive) EnforceLock();
   // Recalculate consecutive losses when a trade closes
   int total = OrdersHistoryTotal();
   if (total != lastTradeCount) {
     lastTradeCount = total;
     RecalcConsecLosses();
     SendAccountData();
+  }
+}
+
+// Close every open trade and delete every pending order.
+void EnforceLock() {
+  for (int i = OrdersTotal() - 1; i >= 0; i--) {
+    if (!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;
+    int    t   = OrderType();
+    int    tk  = OrderTicket();
+    string sym = OrderSymbol();
+    if (t == OP_BUY || t == OP_SELL) {
+      double px = (t == OP_BUY) ? MarketInfo(sym, MODE_BID) : MarketInfo(sym, MODE_ASK);
+      if (OrderClose(tk, OrderLots(), px, 20, clrNONE))
+           Print("EdgeKeeper: closed ", sym, " — ", lockReason);
+      else Print("EdgeKeeper: close failed ", sym, " err ", GetLastError());
+    } else {
+      if (OrderDelete(tk)) Print("EdgeKeeper: pending order removed — ", lockReason);
+    }
+  }
+}
+
+// Read the server's verdict. The terminal never decides policy.
+void ApplyServerVerdict(string response) {
+  bool wasLocked = lockActive;
+  lockActive = (StringFind(response, "\\"enforce\\":true") >= 0);
+
+  lockReason = "";
+  int rp = StringFind(response, "\\"enforce_reason\\":\\"");
+  if (rp >= 0) {
+    int s = rp + 18;
+    int e = StringFind(response, "\\"", s);
+    if (e > s) lockReason = StringSubstr(response, s, e - s);
+  }
+
+  if (lockActive && !wasLocked) {
+    Print("EdgeKeeper: GUARDIAN LOCK ENGAGED — ", lockReason);
+    Alert("EdgeKeeper Guardian: ", lockReason);
+    EnforceLock();
+  } else if (!lockActive && wasLocked) {
+    Print("EdgeKeeper: guardian lock released.");
   }
 }
 
@@ -3084,8 +3900,14 @@ void SendAccountData() {
   int    timeout = 5000;
 
   int code = WebRequest("POST", WebhookURL, headers, timeout, post, result, resultHeaders);
-  if (code < 0) Print("EdgeKeeper: WebRequest failed — ensure URL is whitelisted in MT4 settings.");
-  else          Print("EdgeKeeper: sent. HTTP " + IntegerToString(code));
+  if (code < 0) {
+    // Never act on a failed call — a dropped connection must not lock the trader
+    // out, and must not silently release an existing lock either.
+    Print("EdgeKeeper: WebRequest failed — ensure URL is whitelisted in MT4 settings.");
+  } else {
+    Print("EdgeKeeper: sent. HTTP " + IntegerToString(code));
+    if (code == 200) ApplyServerVerdict(CharArrayToString(result));
+  }
 }
 `;
 }
@@ -3112,6 +3934,15 @@ int    consecLosses   = 0;
 double peakEquity     = 0;
 int    lastDealCount  = 0;
 
+// ── Guardian lock ───────────────────────────────────────────────────
+// lockActive is set ONLY by the server ("enforce":true), which requires the
+// trader to have signed the aggressive Guardian Contract. While it is on, any
+// position that appears is closed immediately and pending orders are removed.
+// EdgeKeeper cannot stop the terminal from SENDING an order — no such hook
+// exists in MQL — so it removes the exposure the instant it appears instead.
+bool   lockActive = false;
+string lockReason = "";
+
 int OnInit() {
   dayOpenBalance = AccountInfoDouble(ACCOUNT_BALANCE);
   peakEquity     = AccountInfoDouble(ACCOUNT_EQUITY);
@@ -3124,12 +3955,78 @@ void OnDeinit(const int reason) { EventKillTimer(); }
 
 void OnTimer() { SendAccountData(); }
 
+// Fires on every deal. This is the fast path — a position opened during a lock
+// is closed here, typically within a fraction of a second of appearing.
 void OnTradeTransaction(const MqlTradeTransaction &trans,
                         const MqlTradeRequest &request,
                         const MqlTradeResult &result) {
+  if (lockActive) EnforceLock();
   if (trans.type == TRADE_TRANSACTION_DEAL_ADD) {
     RecalcConsecLosses();
     SendAccountData();
+  }
+}
+
+// Second safety net: if a position slips in without a transaction event (or the
+// EA reloads mid-lock), the next tick still catches it.
+void OnTick() { if (lockActive) EnforceLock(); }
+
+// Close every open position and delete every pending order. Pending orders
+// matter as much as open ones — an untouched stop order can fire hours later.
+void EnforceLock() {
+  for (int i = PositionsTotal() - 1; i >= 0; i--) {
+    ulong ticket = PositionGetTicket(i);
+    if (ticket <= 0) continue;
+    string sym    = PositionGetString(POSITION_SYMBOL);
+    double vol    = PositionGetDouble(POSITION_VOLUME);
+    long   ptype  = PositionGetInteger(POSITION_TYPE);
+
+    MqlTradeRequest  req;  MqlTradeResult  resq;
+    ZeroMemory(req); ZeroMemory(resq);
+    req.action       = TRADE_ACTION_DEAL;
+    req.position     = ticket;
+    req.symbol       = sym;
+    req.volume       = vol;
+    req.deviation    = 20;
+    req.type         = (ptype == POSITION_TYPE_BUY) ? ORDER_TYPE_SELL : ORDER_TYPE_BUY;
+    req.price        = (ptype == POSITION_TYPE_BUY) ? SymbolInfoDouble(sym, SYMBOL_BID)
+                                                    : SymbolInfoDouble(sym, SYMBOL_ASK);
+    req.type_filling = ORDER_FILLING_IOC;
+    req.comment      = "EdgeKeeper Guardian lock";
+    if (OrderSend(req, resq)) Print("EdgeKeeper: closed ", sym, " ", vol, " — ", lockReason);
+    else                      Print("EdgeKeeper: close failed ", sym, " retcode ", resq.retcode);
+  }
+  for (int j = OrdersTotal() - 1; j >= 0; j--) {
+    ulong oticket = OrderGetTicket(j);
+    if (oticket <= 0) continue;
+    MqlTradeRequest  oreq;  MqlTradeResult  ores;
+    ZeroMemory(oreq); ZeroMemory(ores);
+    oreq.action = TRADE_ACTION_REMOVE;
+    oreq.order  = oticket;
+    if (OrderSend(oreq, ores)) Print("EdgeKeeper: pending order removed — ", lockReason);
+  }
+}
+
+// Read the server's verdict out of the webhook response. The terminal never
+// decides policy; it only carries it out.
+void ApplyServerVerdict(string response) {
+  bool wasLocked = lockActive;
+  lockActive = (StringFind(response, "\\"enforce\\":true") >= 0);
+
+  lockReason = "";
+  int rp = StringFind(response, "\\"enforce_reason\\":\\"");
+  if (rp >= 0) {
+    int s = rp + 18;
+    int e = StringFind(response, "\\"", s);
+    if (e > s) lockReason = StringSubstr(response, s, e - s);
+  }
+
+  if (lockActive && !wasLocked) {
+    Print("EdgeKeeper: GUARDIAN LOCK ENGAGED — ", lockReason);
+    Alert("EdgeKeeper Guardian: ", lockReason);
+    EnforceLock();
+  } else if (!lockActive && wasLocked) {
+    Print("EdgeKeeper: guardian lock released.");
   }
 }
 
@@ -3176,8 +4073,14 @@ void SendAccountData() {
   uchar   res[];   string resHeaders;
 
   int code = WebRequest("POST", WebhookURL, headers, 5000, post, res, resHeaders);
-  if (code < 0) Print("EdgeKeeper: WebRequest failed — ensure URL is whitelisted in MT5 settings.");
-  else          Print("EdgeKeeper: sent. HTTP " + IntegerToString(code));
+  if (code < 0) {
+    // Never act on a failed call — a dropped connection must not lock the trader
+    // out, and must not silently release an existing lock either.
+    Print("EdgeKeeper: WebRequest failed — ensure URL is whitelisted in MT5 settings.");
+  } else {
+    Print("EdgeKeeper: sent. HTTP " + IntegerToString(code));
+    if (code == 200) ApplyServerVerdict(CharArrayToString(res));
+  }
 }
 `;
 }
@@ -3376,6 +4279,18 @@ app.delete('/api/rules/:id', requireAuthApi, apiLimiter, async (req, res) => {
     .eq('user_id', req.user.id);
   if (error) return res.status(500).json({ error: 'Database error' });
   res.json({ ok: true });
+});
+
+// POST /api/rules/check — judge active rules against real recent trades (Fellow+).
+// AI-backed, so rate-limited: ~6 checks per 5 minutes per user.
+app.post('/api/rules/check', requireAuthApi, apiLimiter, sharedLimit('rules_check', 300, 6), async (req, res) => {
+  const { data: profile } = await supabaseAdmin
+    .from('user_profiles').select('subscription_status, bypass_subscription').eq('id', req.user.id).maybeSingle();
+  if (!can(profile, 'guardian_connect')) {
+    return res.status(403).json({ error: 'Checking rules against live trades needs a connected account (Resident plan and above).' });
+  }
+  const result = await checkRulesAgainstTrades(req.user.id);
+  res.json(result);
 });
 
 // ── Trader Identity & Readiness ───────────────────────────────────────────────
@@ -3682,6 +4597,34 @@ function cancellationEmailHtml(mentorName, planLabel) {
     _cta('Manage membership', APP_URL + '/settings.html', color));
 }
 
+function guardianBreachEmailHtml(level, snap) {
+  const color = level >= 5 ? '#a8524a' : '#c08a3e';
+  const label = (INTERVENTION_LADDER[level] && INTERVENTION_LADDER[level].label) || `Level ${level}`;
+  const bits = [];
+  if (snap && snap.drawdown)  bits.push(`Drawdown ${snap.drawdown}%`);
+  if (snap && snap.dailyPct != null && snap.dailyPct < 0) bits.push(`Day P&L ${snap.dailyPct}%`);
+  if (snap && snap.losses)    bits.push(`Losing streak ${snap.losses}`);
+  return _emailShell(color,
+    _eyebrow('EdgeKeeper · Guardian', color) +
+    _headline('Iris stepped in — ' + label + '.') +
+    _p('Your account crossed a limit' + (bits.length ? ' — ' + bits.join(' · ') + '.' : '.') + ' This is the point where a bad day usually becomes a worse one.') +
+    _p('Come talk to me before the next decision.') +
+    _cta('Open the Guardian', APP_URL + '/chamber', color));
+}
+
+function guardianDisconnectedEmailHtml(accountLabel, reason) {
+  const color = '#c08a3e'; // amber — action needed, not alarming
+  const why = reason === 'removed'
+    ? 'The connection was removed on MetaApi’s side, so your Guardian can no longer see this account.'
+    : 'Your broker connection dropped, so your Guardian can no longer see this account.';
+  return _emailShell(color,
+    _eyebrow('EdgeKeeper · Guardian', color) +
+    _headline('Your Guardian stopped watching ' + accountLabel + '.') +
+    _p(why + ' While it’s disconnected, nothing is watching your drawdown or losing streaks.') +
+    _p('Reconnect and your Guardian picks up right where it left off.') +
+    _cta('Reconnect account', APP_URL + '/integrations.html', color));
+}
+
 // ── Decision Passport ─────────────────────────────────────────────────────────
 
 // GET /api/passport — fetch recent passport entries + discipline score (Fellow+)
@@ -3777,16 +4720,14 @@ app.get('/api/analytics', requireAuthApi, apiLimiter, async (req, res) => {
     .select('subscription_status, bypass_subscription')
     .eq('id', req.user.id)
     .maybeSingle();
-  const anaPlan   = anaProfile?.subscription_status || 'free';
-  const anaBypass = anaProfile?.bypass_subscription || false;
-  if (!anaBypass && !['pro', 'professional', 'institutional'].includes(anaPlan)) {
-    return res.status(403).json({ error: 'Behavior Analytics requires the Fellow plan or above.' });
+  if (!can(anaProfile, 'analytics')) {
+    return res.status(403).json({ error: 'Behavior Analytics requires the Resident plan or above.' });
   }
   const userId  = req.user.id;
   const monthKey = new Date().toISOString().slice(0, 7);
   const weekAgo  = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-  const [usageResult, violationsResult, scoresResult, journalResult, notebookResult] = await Promise.all([
+  const [usageResult, violationsResult, scoresResult, journalResult, notebookResult, guardianResult] = await Promise.all([
     supabaseAdmin
       .from('message_usage')
       .select('message_count, mentor')
@@ -3811,6 +4752,11 @@ app.get('/api/analytics', requireAuthApi, apiLimiter, async (req, res) => {
     supabaseAdmin
       .from('notebooks')
       .select('emotional_map, patterns, strengths')
+      .eq('user_id', userId)
+      .maybeSingle(),
+    supabaseAdmin
+      .from('guardian_data')
+      .select('is_connected, balance, equity, daily_pnl, daily_pnl_pct, max_drawdown_pct, consecutive_losses, open_lots, platform, last_updated')
       .eq('user_id', userId)
       .maybeSingle(),
   ]);
@@ -3859,6 +4805,19 @@ app.get('/api/analytics', requireAuthApi, apiLimiter, async (req, res) => {
     badgeCounts,
     scoreHistory:      scores.slice(0, 7).reverse(),
     notebook:          notebook ? { patterns: notebook.patterns, strengths: notebook.strengths } : null,
+    // Read-only account visibility (Resident "drawdown visibility"). Present only
+    // when they've connected an account; the active Guardian is a separate Fellow gate.
+    account:           (guardianResult.data && guardianResult.data.is_connected) ? {
+      balance:            guardianResult.data.balance,
+      equity:             guardianResult.data.equity,
+      daily_pnl:          guardianResult.data.daily_pnl,
+      daily_pnl_pct:      guardianResult.data.daily_pnl_pct,
+      max_drawdown_pct:   guardianResult.data.max_drawdown_pct,
+      consecutive_losses: guardianResult.data.consecutive_losses,
+      open_lots:          guardianResult.data.open_lots,
+      platform:           guardianResult.data.platform,
+      last_updated:       guardianResult.data.last_updated,
+    } : null,
   });
 });
 
@@ -4647,7 +5606,7 @@ app.get('/api/billing/portal', requireAuthApi, async (req, res) => {
 });
 
 // ── Director AI — admin-only orchestration endpoint ───────────────────────────
-const DIRECTOR_SYSTEM_PROMPT = `You are the Director of EdgeKeeper's internal AI team. EdgeKeeper is a trading psychology AI mentorship platform for retail and prop traders. Features: AI mentors Marcus (analytical) and Iris (empathetic), voice sessions, trading journal, rules engine, Guardian Layer (live account monitoring), The Vault (intervention archive), and proactive mentor outreach. Stack: Node.js/Express, Supabase, OpenAI GPT-4o-mini, ElevenLabs voice, Polar.sh billing, Resend email.
+const DIRECTOR_SYSTEM_PROMPT = `You are the Director of EdgeKeeper's internal AI team. EdgeKeeper is a trading psychology AI mentorship platform for retail and prop traders. Features: AI mentors Marcus (analytical) and Iris (empathetic), voice sessions, trading journal, rules engine, Guardian Layer (live account monitoring), The Vault (intervention archive), and proactive mentor outreach. Stack: Node.js/Express, Supabase, OpenAI GPT-4o-mini, ElevenLabs voice, Stripe billing, Resend email, MetaApi (live account linking for the Guardian).
 
 Your team:
 — Claude: Chief Architect & Lead Engineer. Full-stack ownership, auth, AI proxy, security, payments, migrations.
@@ -4658,7 +5617,7 @@ Your team:
 — Kai: AI & Voice Integration Lead. Prompt engineering, ElevenLabs, voice quality.
 — Milo: Growth & Marketing Lead. Landing page conversion, prop firm outreach, content.
 — Sage: Head of Customer Experience. Onboarding flow, user retention, support frameworks.
-— Phoenix: Revenue & Partnerships Lead. Polar.sh billing, prop firm deals, pricing strategy.
+— Phoenix: Revenue & Partnerships Lead. Stripe billing, prop firm deals, pricing strategy.
 — Leo: Data & Analytics Lead. Session instrumentation, behaviour scoring, PostHog/Plausible.
 — Maya: Content & Community Lead. Blog, LinkedIn, trading community presence.
 
@@ -5184,7 +6143,7 @@ app.post('/api/review', requireAuthApi, apiLimiter, async (req, res) => {
       user_id:       req.user.id,
       overall_score: row.discipline_score,
       source:        'session_review',
-    }).catch(() => {});
+    }).then(() => {}, () => {});
   }
 
   res.status(201).json({ review: data });
@@ -5389,6 +6348,16 @@ const EK_EVENT_NAMES = new Set([
   'module_complete', 'checkout_click', 'voice_started', 'academy_enrolled',
 ]);
 
+// Server-side funnel event write (fire-and-forget). Used for events the client
+// beacon can't reliably catch — signup + onboarding completion — so the admin
+// funnel reflects reality instead of always showing zero.
+function logEkEvent(event, userId, sid = null) {
+  if (!EK_EVENT_NAMES.has(event)) return;
+  supabaseAdmin.from('ek_events')
+    .insert({ user_id: userId || null, sid, event, path: 'server' })
+    .then(() => {}, () => {});
+}
+
 app.post('/api/event', sharedLimit('events', 60, 120), async (req, res) => {
   const { event, props, path: pagePath, sid } = req.body || {};
   if (!EK_EVENT_NAMES.has(event)) return res.status(204).end(); // silently drop unknown names
@@ -5496,6 +6465,27 @@ app.get('/api/cron/outreach', verifyCronSecret, async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     console.error('Proactive outreach error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Background Guardian health: catch broker disconnects/deletions when no one has
+// the panel open, so users get notified instead of silently going unwatched.
+app.get('/api/cron/guardian-health', verifyCronSecret, async (req, res) => {
+  if (!metaapi.isEnabled()) return res.json({ ok: true, skipped: 'metaapi disabled' });
+  try {
+    const { data: links } = await supabaseAdmin
+      .from('broker_connections')
+      .select('user_id')
+      .not('metaapi_account_id', 'is', null);
+    let checked = 0;
+    for (const l of links || []) {
+      await reconcileGuardianLink(l.user_id).catch(() => {});
+      checked++;
+    }
+    res.json({ ok: true, checked });
+  } catch (err) {
+    console.error('Guardian health cron error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });

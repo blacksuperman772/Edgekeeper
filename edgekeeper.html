@@ -268,8 +268,9 @@
       font-family: var(--mono);
       font-size: 0.6rem;
       letter-spacing: 0.25em;
-      /* No padding-left — left-only padding shifts the optical center rightward
-         while flexbox centers by box edge, making text appear off-axis from the line */
+      /* letter-spacing adds a trailing 0.25em after the last glyph; pad the left
+         the same amount so the glyphs sit centered under the line, not shifted left */
+      padding-left: 0.25em;
       text-transform: uppercase;
       color: var(--dim);
     }
@@ -576,11 +577,13 @@
       cursor: none;
       transition: all .3s;
     }
-    .mike .mentor-cta {
+    .mike .mentor-cta,
+    .theo .mentor-cta {
       color: var(--gold);
       border: 1px solid rgba(184,160,106,0.3);
     }
-    .mike .mentor-cta:hover {
+    .mike .mentor-cta:hover,
+    .theo .mentor-cta:hover {
       background: rgba(184,160,106,0.08);
       border-color: var(--gold);
     }
@@ -1604,7 +1607,7 @@
       Where traders<br>are made.
     </h1>
     <p class="hero-sub">
-      You already know the setup. The problem is who shows up when the position is live. EdgeKeeper is the private institution where that person is rebuilt — a mentor who remembers every session, a Guardian who steps in when discipline breaks, and an institution that never lets you trade alone.
+      Whether you've never placed a trade or you've been at this for a decade, EdgeKeeper is the institution where your development begins and never stops. Foundation. Development. Performance. Every stage, with a mentor who knows the difference.
     </p>
     <div class="hero-ctas">
       <a href="onboarding.html" class="btn-mentor btn-mike">
@@ -2191,7 +2194,7 @@
         <div>
           <div style="font-family:var(--mono);font-size:0.6rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:20px;">Emotional Lock System</div>
           <h3 style="font-family:var(--serif);font-size:1.8rem;font-weight:300;color:var(--white);margin-bottom:16px;line-height:1.2;">Five levels.<br><em style="font-style:italic;color:var(--gold);">One objective.</em></h3>
-          <p style="font-size:0.82rem;color:var(--muted);line-height:1.85;">The lock never touches your broker. It controls EdgeKeeper's execution layer. The conversation never stops. Only the damage does.</p>
+          <p style="font-size:0.82rem;color:var(--muted);line-height:1.85;">By default the lock only controls EdgeKeeper — your broker is untouched. If you explicitly consent, your guardian can also close open positions and cancel pending orders on a connected account when you breach your own limits. She can't stop an order reaching your broker, and you can withdraw that consent at any time. The conversation never stops. Only the damage does.</p>
         </div>
         <div style="display:flex;flex-direction:column;gap:1px;background:var(--border);">
           <div style="display:grid;grid-template-columns:80px 1fr;gap:0;background:var(--border);">
@@ -2340,7 +2343,7 @@
       </a>
     </div>
     <p class="inv-footnote reveal reveal-delay-4">
-      When you're ready to stay, <a href="/apply.html">request admission →</a>
+      Every stage of the journey has a place here. <a href="/pricing.html">See membership →</a>
     </p>
   </div>
 </section>

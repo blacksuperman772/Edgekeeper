@@ -72,6 +72,10 @@
       transform: translate(-50%,-50%);
       transition: left .1s ease, top .1s ease;
     }
+    /* Touch devices never move these, so they'd sit parked at 0,0 as a stray dot/ring. Hide them. */
+    @media (hover: none), (pointer: coarse) {
+      #cursor, #cursor-ring { display: none !important; }
+    }
 
     /* ── MASTER LAYOUT ──────────────────────────────────────────── */
     .workspace {
@@ -93,7 +97,9 @@
       grid-template-rows: 56px 1fr;
     }
     body.ek-office-ready #office-skeleton { display: none; }
-    #office-skeleton .ek-skel { opacity: 0.55; }
+    /* Calm structural shell, not a shimmering skeleton — kill the shimmer so the
+       brief hydration reads as a quiet placeholder that fits the editorial style. */
+    #office-skeleton .ek-skel { opacity: 1; animation: none; background: rgba(255,255,255,0.03); }
     /* top bar: brand + pill switcher (left), status pill (right) */
     #office-skeleton .os-top {
       grid-column: 1 / -1; border-bottom: 1px solid var(--border);
@@ -1143,6 +1149,14 @@
     }
     .guardian-input:focus { border-color: var(--gold-dim); }
     .guardian-input option { background: var(--obsidian); }
+    /* unified dropdown chevron — native OS arrow removed so every select aligns identically */
+    select.guardian-input, #jnl-badge, #new-rule-cat {
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath d='M1 1.5 5 5.5 9 1.5' fill='none' stroke='%239b8f7a' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+    }
+    select.guardian-input { padding-right: 32px; }
 
     /* ── VAULT PANEL ────────────────────────────────────────────── */
     .vault-entry {
@@ -2091,6 +2105,11 @@
          Force full width and reflow the desktop two-column grids to one column. */
       .panel { width: 100%; }
       .panel-body { padding: 22px 16px; }
+      /* Three-across (input + category + Add) overflows a phone; let the input take
+         the full first row and the category + Add button share the row below it. */
+      .rule-add { flex-wrap: wrap; }
+      .rule-add input { flex-basis: 100%; }
+      .rule-add .btn-sm { margin-left: auto; }
       .panel-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
       .panel-tabs::-webkit-scrollbar { display: none; }
       .panel-tabs > * { flex-shrink: 0; white-space: nowrap; }
@@ -2204,7 +2223,6 @@
       <span class="topbar-cmd"><span class="cmd-key">R</span> Rules</span>
       <span class="topbar-cmd"><span class="cmd-key">P</span> Passport</span>
       <span class="topbar-cmd"><span class="cmd-key">A</span> Analytics</span>
-      <span class="topbar-cmd"><span class="cmd-key">G</span> Guardian</span>
     </div>
   </header>
 
@@ -2830,6 +2848,9 @@ function showUpgradeNudge() {
 }
 
 function showPanel(name) {
+  // The Guardian is Iris's office, not a panel inside Marcus's. Any Guardian
+  // trigger here (the G key, /guardian, a command chip) opens her chamber.
+  if (name === 'guardian') { window.location.href = '/chamber'; return; }
   clearInterval(guardianPollTimer);
   guardianPollTimer = null;
   // Tapping a drawer nav item on mobile should reveal the panel underneath.
@@ -2886,13 +2907,13 @@ function showPanel(name) {
       tabs.innerHTML = `
         <button class="panel-tab active">Active Rules</button>
         <button class="panel-tab">Archived</button>`;
-      body.innerHTML = '<div class="ek-skel-wrap"><div class="ek-skel ek-skel-line md"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-line sm"></div></div>';
+      body.innerHTML = '<div class="ek-quietload">Loading</div>';
       loadRulesPanel(body, false);
       tabs.querySelectorAll('.panel-tab').forEach((tab, i) => {
         tab.addEventListener('click', () => {
           tabs.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
           tab.classList.add('active');
-          body.innerHTML = '<div class="ek-skel-wrap"><div class="ek-skel ek-skel-line md"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-line sm"></div></div>';
+          body.innerHTML = '<div class="ek-quietload">Loading</div>';
           loadRulesPanel(body, i === 1);
         });
       });
@@ -2902,7 +2923,7 @@ function showPanel(name) {
       tabs.innerHTML = `
         <button class="panel-tab active">Overview</button>
         <button class="panel-tab">Log</button>`;
-      body.innerHTML = '<div class="ek-skel-wrap"><div class="ek-skel ek-skel-line md"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-line sm"></div></div>';
+      body.innerHTML = '<div class="ek-quietload">Loading</div>';
       loadPassportPanel(body);
       return;
     case 'analytics':
@@ -2919,7 +2940,7 @@ function showPanel(name) {
         <button class="panel-tab active">Account</button>
         <button class="panel-tab">Lock Level</button>
         <button class="panel-tab">Connect</button>`;
-      body.innerHTML = '<div class="ek-skel-wrap"><div class="ek-skel ek-skel-line md"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-line sm"></div></div>';
+      body.innerHTML = '<div class="ek-quietload">Loading</div>';
       loadGuardianPanel(body);
       break;
     case 'vault':
@@ -2927,7 +2948,7 @@ function showPanel(name) {
       tabs.innerHTML = `
         <button class="panel-tab active">Intercepted</button>
         <button class="panel-tab">Overview</button>`;
-      body.innerHTML = '<div class="ek-skel-wrap"><div class="ek-skel ek-skel-line md"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-line sm"></div></div>';
+      body.innerHTML = '<div class="ek-quietload">Loading</div>';
       loadVaultPanel(body);
       break;
     case 'profile':
@@ -2941,13 +2962,13 @@ function showPanel(name) {
     case 'messages':
       title.textContent = 'Messages';
       tabs.innerHTML = `<button class="panel-tab active">Inbox</button>`;
-      body.innerHTML = '<div class="ek-skel-wrap"><div class="ek-skel ek-skel-line md"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-line sm"></div></div>';
+      body.innerHTML = '<div class="ek-quietload">Loading</div>';
       loadMessagesPanel(body);
       return;
     case 'reports':
       title.textContent = 'Monthly Reports';
       tabs.innerHTML = `<button class="panel-tab active">Reports</button>`;
-      body.innerHTML = '<div class="ek-skel-wrap"><div class="ek-skel ek-skel-line md"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-line sm"></div></div>';
+      body.innerHTML = '<div class="ek-quietload">Loading</div>';
       loadReportsPanel(body);
       return;
   }
@@ -3007,7 +3028,7 @@ function buildJournal() {
         <input id="jnl-identity"  class="journal-outcome-input" placeholder="Identity outcome (e.g. +patience, −discipline)" maxlength="200" />
       </div>
       <div class="journal-new-footer">
-        <select id="jnl-badge" style="background:var(--stone);border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:0.6rem;padding:6px 10px;outline:none;cursor:none;">
+        <select id="jnl-badge" style="background-color:var(--stone);border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:0.6rem;padding:6px 32px 6px 10px;outline:none;cursor:none;">
           <option value="">No tag</option>
           <option value="good">Disciplined</option>
           <option value="consistent">Consistent</option>
@@ -3054,10 +3075,15 @@ async function loadRulesPanel(body, showArchived = false) {
 
     body.innerHTML = `
       ${rowsHtml}
+      ${!showArchived && rules.length > 0 ? `
+      <div style="margin-top:16px;">
+        <button class="btn-sm" id="rule-check-btn" onclick="checkRulesVsTrades()" style="width:100%;">Check my rules against my trades</button>
+        <div id="rule-check-results" style="margin-top:10px;"></div>
+      </div>` : ''}
       ${!showArchived ? `
       <div class="rule-add">
         <input type="text" id="new-rule-input" placeholder="Write a personal law..." maxlength="500" style="flex:1;" />
-        <select id="new-rule-cat" style="background:var(--stone);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:0.68rem;padding:6px 8px;outline:none;">
+        <select id="new-rule-cat" style="background-color:var(--stone);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:0.68rem;padding:6px 32px 6px 8px;outline:none;">
           <option>General</option><option>Risk</option><option>Volume</option>
           <option>Timing</option><option>Discipline</option><option>Execution</option><option>Psychology</option>
         </select>
@@ -3065,6 +3091,43 @@ async function loadRulesPanel(body, showArchived = false) {
       </div>` : ''}`;
   } catch (_) {
     body.innerHTML = '<div style="padding:32px;color:var(--muted);font-size:0.7rem;">Could not load personal laws.</div>';
+  }
+}
+
+async function checkRulesVsTrades() {
+  const btn = document.getElementById('rule-check-btn');
+  const out = document.getElementById('rule-check-results');
+  if (!out) return;
+  if (btn) { btn.disabled = true; btn.textContent = 'Checking against your trades…'; }
+  try {
+    const res = await fetch('/api/rules/check', { method: 'POST' });
+    const d = await res.json();
+    if (!res.ok) {
+      out.innerHTML = `<div style="font-size:0.7rem;color:var(--muted);font-family:var(--mono);padding:8px 0;line-height:1.6;">${escHtml(d.error || 'Could not run the check.')}</div>`;
+      return;
+    }
+    if (d.error || (d.note && (!d.assessment || !d.assessment.length))) {
+      const msg = d.note || (d.error === 'no_account' ? 'Connect a trading account first.' : 'Nothing to check yet.');
+      out.innerHTML = `<div style="font-size:0.72rem;color:var(--muted);line-height:1.6;padding:8px 0;">${escHtml(msg)}</div>`;
+      return;
+    }
+    const rows = d.assessment || [];
+    const badge = v => v === 'broke' ? { t: 'BROKE', c: '#EF4444' } : v === 'held' ? { t: 'HELD', c: '#6b8c6b' } : { t: 'NO SIGNAL', c: '#6B7280' };
+    out.innerHTML =
+      `<div style="font-size:0.6rem;font-family:var(--mono);color:var(--muted);letter-spacing:0.08em;margin-bottom:6px;">READ FROM YOUR LAST ${d.checked_trades || 0} CLOSED TRADES</div>`
+      + rows.map(a => {
+        const b = badge(a.verdict);
+        return `<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--border);">
+          <span style="font-family:var(--mono);font-size:0.5rem;letter-spacing:0.06em;color:${b.c};border:1px solid ${b.c}55;padding:2px 6px;border-radius:3px;flex-shrink:0;margin-top:2px;white-space:nowrap;">${b.t}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:0.76rem;color:var(--text);line-height:1.5;">${escHtml(a.rule_text || '')}</div>
+            ${a.note ? `<div style="font-size:0.68rem;color:var(--muted);margin-top:3px;line-height:1.5;">${escHtml(a.note)}</div>` : ''}
+          </div></div>`;
+      }).join('');
+  } catch (_) {
+    out.innerHTML = `<div style="font-size:0.7rem;color:var(--muted);padding:8px 0;">Connection dropped. Try again.</div>`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Check my rules against my trades'; }
   }
 }
 
@@ -3231,6 +3294,21 @@ async function loadAnalyticsPanel(body) {
     <div style="font-family:var(--serif);font-size:0.78rem;font-style:italic;color:var(--muted);margin-top:10px;padding-left:2px;">${escHtml(mentorName)} intervenes before the final step.</div>
   </div>`;
 
+  // Read-only account visibility (drawdown, streak, day P&L) — present once the
+  // trader has connected an account. The active Guardian (Iris) is separate.
+  const acct = data.account;
+  const money = v => v == null ? '—' : (v < 0 ? '-$' : '$') + Math.abs(Number(v)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const accountSection = acct ? `
+    <div class="behavior-chart" style="margin-bottom:18px;">
+      <div class="bc-header">Your Account · read-only</div>
+      <div class="analytics-stat" style="margin-top:12px;">
+        <div class="as-card"><div class="as-label">Balance</div><div class="as-val">${money(acct.balance)}</div><div class="as-sub">${escHtml(String(acct.platform || 'live').replace('metatrader', 'MetaTrader '))}</div></div>
+        <div class="as-card"><div class="as-label">Day P&amp;L</div><div class="as-val" style="${(acct.daily_pnl_pct || 0) < 0 ? 'color:#EF4444' : ''}">${(acct.daily_pnl_pct > 0 ? '+' : '')}${acct.daily_pnl_pct ?? 0}%</div><div class="as-sub">${money(acct.daily_pnl)} today</div></div>
+        <div class="as-card"><div class="as-label">Max Drawdown</div><div class="as-val" style="${(acct.max_drawdown_pct || 0) >= 3 ? 'color:#EF4444' : ''}">${acct.max_drawdown_pct ?? 0}%</div><div class="as-sub">intraday</div></div>
+        <div class="as-card"><div class="as-label">Losing Streak</div><div class="as-val" style="${(acct.consecutive_losses || 0) >= 2 ? 'color:#EF4444' : ''}">${acct.consecutive_losses ?? 0}</div><div class="as-sub">${Number(acct.open_lots || 0).toFixed(2)} lots open</div></div>
+      </div>
+    </div>` : '';
+
   body.innerHTML = `
     <div class="analytics-stat">
       <div class="as-card"><div class="as-label">Messages This Month</div><div class="as-val">${escHtml(String(msgsVal))}</div><div class="as-sub">across all sessions</div></div>
@@ -3238,6 +3316,7 @@ async function loadAnalyticsPanel(body) {
       <div class="as-card"><div class="as-label">Rules Followed</div><div class="as-val">${escHtml(String(adherenceVal))}</div><div class="as-sub">${data.totalRules ?? 0} active rules</div></div>
       <div class="as-card"><div class="as-label">Flags This Week</div><div class="as-val">${escHtml(String(flagsVal))}</div><div class="as-sub">rule violations</div></div>
     </div>
+    ${accountSection}
     <div class="behavior-chart">
       <div class="bc-header">Identity Behavior · This Week</div>
       ${barsHtml}
@@ -3336,6 +3415,13 @@ async function loadGuardianPanel(body) {
     </div>
 
     <div style="font-family:var(--mono);font-size:0.56rem;color:var(--dim);margin-top:16px;">Last update: ${age} ago · <button onclick="manualGuardianUpdate()" style="background:none;border:none;color:var(--gold-dim);font-family:var(--mono);font-size:0.56rem;cursor:pointer;padding:0;text-decoration:underline;">Update manually</button></div>
+
+    <div style="margin-top:28px;padding-top:20px;border-top:1px solid var(--border,#1a201a);">
+      <div style="font-family:var(--mono);font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--dim);margin-bottom:6px;">Your risk limits</div>
+      <div style="font-size:0.78rem;color:var(--muted,#8a8570);line-height:1.6;margin-bottom:14px;">Set the drawdown, daily-loss and streak limits Iris holds you to — she keeps them in her chamber.</div>
+      <a href="/chamber" class="guardian-btn" style="text-decoration:none;display:inline-block;">Open Iris's chamber →</a>
+    </div>
+
     <button class="guardian-btn" style="margin-top:16px;" onclick="triggerBreakRoom(${lvl})">Test Break Room at Lvl ${lvl}</button>
     <button class="guardian-btn danger" onclick="disconnectGuardian()">Disconnect account</button>
   `;
@@ -3449,6 +3535,7 @@ async function disconnectGuardian() {
   const body = document.getElementById('panel-body');
   if (body) { body.innerHTML = buildGuardianConnect(); }
 }
+
 
 async function copyWebhookToken() {
   try {
@@ -4188,43 +4275,32 @@ async function refreshNavCounts() {
   } catch (_) {}
 }
 
-// First-run activation nudge: if a Fellow+ user hasn't connected a trading
-// account yet, Iris/Guardian is dormant — walk them to the connect flow so the
-// thing they paid for actually turns on. /api/guardian returns 403 for non-Fellow
-// plans, so a rejected/errored call simply shows no banner.
-function showGuardianNudge() {
-  if (document.getElementById('guardian-nudge')) return;
-  const bar = document.createElement('div');
-  bar.id = 'guardian-nudge';
-  bar.style.cssText = 'display:flex;align-items:center;gap:16px;padding:12px 24px;background:rgba(184,160,106,0.07);border-bottom:1px solid rgba(184,160,106,0.18);font-family:var(--sans,sans-serif);';
-  bar.innerHTML =
-    '<span style="width:7px;height:7px;border-radius:50%;background:#b8a06a;flex-shrink:0;box-shadow:0 0 8px rgba(184,160,106,0.6);"></span>' +
-    '<span style="flex:1;font-size:0.82rem;color:var(--text,#d4d0c8);line-height:1.5;">Your Guardian is waiting. Connect your trading account so Iris can watch your risk in real time — she stays silent until something needs her.</span>' +
-    '<a href="/integrations.html" style="flex-shrink:0;font-family:var(--mono,monospace);font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:#b8a06a;text-decoration:none;border:1px solid rgba(184,160,106,0.4);padding:8px 16px;border-radius:4px;white-space:nowrap;">Connect account →</a>' +
-    '<button aria-label="Dismiss" style="flex-shrink:0;background:none;border:none;color:var(--muted,#666);font-size:1.15rem;cursor:pointer;line-height:1;padding:2px 6px;">&times;</button>';
-  bar.querySelector('button').onclick = () => { bar.remove(); try { sessionStorage.setItem('ek_guardian_nudge_dismissed', '1'); } catch (_) {} };
-  const topbar = document.querySelector('.topbar');
-  if (topbar) topbar.insertAdjacentElement('afterend', bar);
-  else document.body.insertBefore(bar, document.body.firstChild);
-}
-
-async function checkGuardianActivation() {
-  try { if (sessionStorage.getItem('ek_guardian_nudge_dismissed')) return; } catch (_) {}
+// Iris protects everywhere. Even while you're working with Marcus, she watches
+// the live account and steps in — the escalation banner tracks her level, and a
+// fresh climb into cooldown/lockout (4/5) opens the Break Room right here.
+let _watchGuardianLevel = null;
+async function watchGuardian() {
   try {
     const r = await fetch('/api/guardian');
-    if (!r.ok) return; // 403 = plan without Guardian, or transient error → no nudge
-    const d = await r.json();
-    const g = d.guardian;
-    const connected = g && (g.balance != null || g.equity != null || g.daily_pnl_pct != null ||
-      (g.consecutive_losses || 0) > 0 || (g.max_drawdown_pct || 0) > 0 || (g.open_lots || 0) > 0);
-    if (!connected) showGuardianNudge();
+    if (!r.ok) { _watchGuardianLevel = null; return; } // 403 = no Guardian plan
+    const g = (await r.json()).guardian;
+    if (!g || !g.is_connected) { _watchGuardianLevel = null; return; }
+    const level = g.lock_level || 1;
+    applyGuardianBanner(level);
+    const brShown = document.getElementById('break-room')?.classList.contains('active');
+    if (level >= 4 && _watchGuardianLevel !== null && level > _watchGuardianLevel && !brShown) {
+      triggerBreakRoom(level); // a fresh escalation into cooldown/lockout
+    }
+    _watchGuardianLevel = level;
   } catch (_) {}
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
   const params = new URLSearchParams(window.location.search);
   refreshNavCounts();          // fire-and-forget — never blocks init
-  checkGuardianActivation();   // fire-and-forget — activation nudge for unconnected Fellow+
+  watchGuardian();                       // live risk watch (Iris protects everywhere)
+  setInterval(watchGuardian, 90000);     // gentle cadence; reconcile is throttled server-side
+  // Guardian activation (connect-your-account) lives in Iris's chamber, not here.
 
   // Safety net: never let the loading skeleton stick if init hangs (slow/failed fetch).
   const _officeReady = () => document.body.classList.add('ek-office-ready');
@@ -4364,9 +4440,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       <span class="cmd-chip" onclick="sendCmd('journal')">journal</span>
       <span class="cmd-chip" onclick="sendCmd('rules')">rules</span>
       <span class="cmd-chip" onclick="sendCmd('passport')">passport</span>
-      <span class="cmd-chip" onclick="sendCmd('analytics')">analytics</span>
-      <span class="cmd-chip" onclick="window.location='/chamber'">guardian</span>
-      <span class="cmd-chip" onclick="sendCmd('vault')">vault</span>
+      <span class="cmd-chip" onclick="sendCmd('analytics')">analytics</span>      <span class="cmd-chip" onclick="sendCmd('vault')">vault</span>
       <span class="cmd-chip" onclick="sendCmd('reports')">reports</span>
       <span class="cmd-chip" onclick="window.location='/my-academy?resume=1'">academy</span>
     </div>`;
@@ -4888,11 +4962,26 @@ function buildSessionContext() {
       })()
     : '';
 
+  // Voice-call awareness — the very next text reply after a call should know it
+  // happened and how it ended, then it clears (fires once, like a real person).
+  let voiceCallCtx = '';
+  try {
+    const vc = JSON.parse(sessionStorage.getItem('ek_last_voice_call') || 'null');
+    if (vc && (Date.now() - vc.at) < 30 * 60 * 1000) {
+      const mins = Math.floor(vc.seconds / 60), secs = vc.seconds % 60;
+      const dur = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+      const agoMin = Math.round((Date.now() - vc.at) / 60000);
+      voiceCallCtx = `You and this person were JUST on a voice call (${dur}, ${vc.ended}) ${agoMin === 0 ? 'moments' : agoMin + ' min'} ago. Be aware of it exactly as a person would — you were literally just talking out loud. Do not greet them like you haven't spoken; continue from the call. ${vc.ended.includes('dropped') ? 'It cut off mid-conversation, so you may not have finished your thought.' : ''}`;
+      sessionStorage.removeItem('ek_last_voice_call');
+    }
+  } catch (_) {}
+
   return [
     `Visits: ${visits}. ${maturity}`,
     relationshipAge,
     `Time of day: ${timeCtx}.`,
     daysSince > 7 ? `They have been away for ${daysSince} days. Acknowledge without accusation.` : '',
+    voiceCallCtx,
     guardianCtx,
     reviewCtx,
     topicCtx,
@@ -4954,7 +5043,7 @@ const ACADEMY_ARRIVAL_INTROS = [
   "Theo told me you'd find your way here eventually. That's not a guess — it's how this works. You've covered the ground with him. What I do from here is different: less classroom, more coaching. Tell me where you are with your actual trading right now.",
   "So you've been in the Academy with Theo. Good. You know the theory. What I'm interested in is the gap between what you know and what you actually do when a trade runs against you. That's my territory. Where are you with your trading right now?",
   "Academy graduate. Theo teaches it clean. Now you're here, which means you're ready for the messier version — the part where you know exactly what you should do and still don't do it. Tell me: are you trading live, on paper, or not yet?",
-  "You come from Theo's side of this. That means you've got the foundation. What Marcus does is different — we work on what happens to everything you learned when real money and real pressure are involved. What does your trading situation actually look like right now?",
+  "You come from Theo's side of this. That means you've got the foundation. What I do is different — we work on what happens to everything you learned when real money and real pressure are involved. What does your trading situation actually look like right now?",
 ];
 
 async function callOpenAI(messages) {
@@ -5370,9 +5459,7 @@ async function dismissPromise() {
       <span class="cmd-chip" onclick="sendCmd('journal')">journal</span>
       <span class="cmd-chip" onclick="sendCmd('rules')">rules</span>
       <span class="cmd-chip" onclick="sendCmd('passport')">passport</span>
-      <span class="cmd-chip" onclick="sendCmd('analytics')">analytics</span>
-      <span class="cmd-chip" onclick="window.location='/chamber'">guardian</span>
-      <span class="cmd-chip" onclick="sendCmd('vault')">vault</span>
+      <span class="cmd-chip" onclick="sendCmd('analytics')">analytics</span>      <span class="cmd-chip" onclick="sendCmd('vault')">vault</span>
       <span class="cmd-chip" onclick="sendCmd('reports')">reports</span>
     </div>`;
   msgs.appendChild(hint);
@@ -5549,6 +5636,15 @@ function stopVoiceTimer() {
   voiceTimerInt = null;
 }
 
+// Strip the TTS pacing/stage directions the voice model emits (e.g. [slow],
+// [normal], [pause]) so they never surface as visible text.
+function stripStageTags(s) {
+  return String(s || '')
+    .replace(/\[(?:slow|normal|fast|slower|faster|pause|long pause|short pause|beat|whisper|whispering|sighs?|laughs?|chuckles?|warmly|softly|firmly|quietly|gently|serious|flat|calm|warm)\]/gi, '')
+    .replace(/\s{2,}/g, ' ').trim();
+}
+let _voiceLog = [];
+
 function appendVoiceTranscript(role, text) {
   const box = document.getElementById('voice-transcript');
   if (!box || !text) return;
@@ -5693,7 +5789,7 @@ async function startVoiceSession() {
       voiceState = 'idle'; return;
     }
 
-    const { signedUrl, prompt: serverPrompt } = await res.json();
+    const { signedUrl, prompt: serverPrompt, firstMessage } = await res.json();
 
     // @11labs/client UMD exports as window.client — Conversation is the entry point.
     const ELConv = window.client?.Conversation;
@@ -5725,13 +5821,14 @@ async function startVoiceSession() {
       .filter(Boolean)
       .join('\n\n');
 
-    const sessionOverrides = fullPrompt
-      ? { agent: { prompt: { prompt: fullPrompt } } }
-      : undefined;
+    // Replace the agent's stock greeting with the server's dynamic, in-character
+    // opener (requires "First message" override enabled on the agent in ElevenLabs).
+    const agentOverride = {};
+    if (fullPrompt)   agentOverride.prompt = { prompt: fullPrompt };
+    if (firstMessage) agentOverride.first_message = firstMessage;
+    const sessionOverrides = Object.keys(agentOverride).length ? { agent: agentOverride } : undefined;
 
-    voiceConversation = await ELConv.startSession({
-      signedUrl,
-      overrides: sessionOverrides,
+    const voiceCbs = {
       onConnect: ({ conversationId }) => {
         console.log('Voice session connected:', conversationId);
         window.ek?.('voice_started', { mentor: mentor?.slug || mentor?.name || null });
@@ -5739,9 +5836,12 @@ async function startVoiceSession() {
       onMessage: ({ message, source }) => {
         // SDK Role type is "user" | "ai" — NOT "agent"
         const isMentor = source === 'ai';
-        appendVoiceTranscript(isMentor ? 'mentor' : 'user', message);
-        if (isMentor) { addMsg('mentor', message); addToHistory('assistant', message); }
-        else { addToHistory('user', message); }
+        const clean = stripStageTags(message);
+        if (!clean) return;
+        // A voice call is a CALL. It shows only in the live call panel and must
+        // NOT dump its transcript into the persistent text thread or chat history.
+        appendVoiceTranscript(isMentor ? 'mentor' : 'user', clean);
+        _voiceLog.push((isMentor ? 'Mentor' : 'You') + ': ' + clean);
       },
       onModeChange: ({ mode }) => {
         const pulse  = document.getElementById('voice-pulse');
@@ -5775,7 +5875,17 @@ async function startVoiceSession() {
         showVoiceError('The voice connection dropped. Please try again.');
         voiceState = 'idle'; stopVoiceTimer();
       },
-    });
+    };
+    try {
+      voiceConversation = await ELConv.startSession({ signedUrl, overrides: sessionOverrides, ...voiceCbs });
+    } catch (ovErr) {
+      // The agent may not have the first-message (or prompt) override enabled, which
+      // rejects the session — retry prompt-only so the call still connects (the
+      // dynamic opener just won't apply until the override is enabled in ElevenLabs).
+      console.warn('Voice: overrides rejected, retrying prompt-only —', ovErr);
+      const promptOnly = fullPrompt ? { agent: { prompt: { prompt: fullPrompt } } } : undefined;
+      voiceConversation = await ELConv.startSession({ signedUrl, overrides: promptOnly, ...voiceCbs });
+    }
 
   } catch (err) {
     console.error('startVoiceSession:', err);
@@ -5810,6 +5920,20 @@ async function endVoiceSession() {
       msgs.scrollTop = msgs.scrollHeight;
     }
   }
+
+  // Remember the call so the mentor's NEXT text reply is aware of it — nuance
+  // like "we just spoke" or "you dropped the call" — without dumping the transcript.
+  try {
+    if (voiceSeconds > 0) {
+      sessionStorage.setItem('ek_last_voice_call', JSON.stringify({
+        at: Date.now(),
+        seconds: voiceSeconds,
+        ended: voiceEndedByTimeout ? 'the call dropped / timed out' : 'the user ended the call',
+        gist: _voiceLog.slice(-8).join(' · ').slice(0, 700),
+      }));
+    }
+  } catch (_) {}
+  _voiceLog = [];
 
   voiceEndedByTimeout = false;
   voiceState = 'idle';

@@ -91,6 +91,21 @@ html.ek-authed .ek-auth-cta { display: inline-flex; }
 .ek-skel-wrap { padding: 30px 28px; }
 @media (prefers-reduced-motion: reduce) { .ek-skel { animation: none; } }
 
+/* Quiet loader — replaces the shimmer skeletons. Matches the app's voice: a
+   single calm mono line that breathes, not a SaaS placeholder block. */
+@keyframes ek-breathe { 0%,100% { opacity: 0.35; } 50% { opacity: 0.72; } }
+.ek-quietload {
+  padding: 44px 28px;
+  text-align: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--muted, #6b6b6b);
+  animation: ek-breathe 2.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) { .ek-quietload { animation: none; opacity: 0.55; } }
+
 /* ── Pillar switcher ─────────────────────────────────────────────────────────
    Persistent Marcus / Theo / Iris switch shown in each pillar's header. The
    active pill (the current space) is highlighted with the page's accent —

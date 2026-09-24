@@ -665,7 +665,7 @@
 
       <!-- List -->
       <div id="reviews-list">
-        <div class="ek-skel-wrap"><div class="ek-skel ek-skel-line md"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-line sm"></div></div>
+        <div class="ek-quietload">Loading</div>
       </div>
     </div>
 
@@ -873,7 +873,7 @@
     // ── LOAD REVIEWS ───────────────────────────────────────────────
     async function loadReviews(filter = 'all') {
       const list = document.getElementById('reviews-list');
-      list.innerHTML = '<div class="ek-skel-wrap"><div class="ek-skel ek-skel-line md"></div><div class="ek-skel ek-skel-block"></div><div class="ek-skel ek-skel-line sm"></div></div>';
+      list.innerHTML = '<div class="ek-quietload">Loading</div>';
       try {
         const url = filter === 'all' ? '/api/reviews' : `/api/reviews?type=${filter}`;
         const res = await fetch(url);
