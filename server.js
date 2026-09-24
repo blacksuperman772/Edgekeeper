@@ -249,19 +249,22 @@ function serveInjectedHtml(filePath) {
           '$1width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover$2'
         );
 
-        const isImmersive = /workspace\.html|chamber\.html|study\.html/.test(filePath);
+        const isImmersive = /workspace\.html|chamber\.html|study\.html|onboarding\.html|academy-onboarding\.html/.test(filePath);
         let css = 'html.ek-app .topbar,html.ek-app #main-nav,html.ek-app #nav,html.ek-app #top-bar,html.ek-app body>nav,html.ek-app .page-header,html.ek-app .ek-pillars{display:none!important}'
           + 'html.ek-app .page-wrap{padding-top:16px!important}'
           + 'html.ek-app #cursor,html.ek-app #cursor-ring{display:none!important}'
           + 'html.ek-app,html.ek-app body{touch-action:pan-x pan-y;overscroll-behavior:none}';
 
         if (isImmersive) {
-          css += '.ek-back{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;height:48px;display:flex;align-items:center;padding:0 4px;background:#050505;border-bottom:1px solid rgba(232,228,220,.08);z-index:9999;font-family:"Inter",-apple-system,sans-serif}'
+          css += '.ek-back{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 4px;background:#050505;border-bottom:1px solid rgba(232,228,220,.08);z-index:9999;font-family:"Inter",-apple-system,sans-serif}'
             + '.ek-back a{display:flex;align-items:center;gap:6px;color:#bfbab2;text-decoration:none;font:400 .84rem "Inter",-apple-system,sans-serif;padding:10px 12px;border-radius:8px;-webkit-tap-highlight-color:transparent}'
             + '.ek-back a:active{opacity:.6}'
             + '.ek-back svg{width:22px;height:22px}'
+            + '.ek-menu{background:none;border:none;color:#bfbab2;padding:10px 12px;cursor:pointer;-webkit-tap-highlight-color:transparent}'
+            + '.ek-menu:active{opacity:.6}'
+            + '.ek-menu svg{width:20px;height:20px}'
             + 'html.ek-app{height:100%!important;overflow:hidden!important}'
-            + 'html.ek-app body{position:fixed!important;top:calc(48px + env(safe-area-inset-top,0px))!important;left:0!important;right:0!important;bottom:0!important;overflow:hidden!important;padding:0!important;margin:0!important}'
+            + 'html.ek-app body{position:fixed!important;top:calc(48px + env(safe-area-inset-top,0px))!important;left:0!important;right:0!important;bottom:0!important;height:auto!important;overflow:hidden!important;padding:0!important;margin:0!important}'
             + 'html.ek-app .workspace{grid-template-rows:0 1fr!important;height:100%!important;overflow:hidden!important}'
             + 'html.ek-app #office-skeleton{display:none!important}'
             + 'html.ek-app .shell{grid-template-rows:0 1fr!important;height:100%!important;overflow:hidden!important}'
@@ -275,16 +278,29 @@ function serveInjectedHtml(filePath) {
             + 'html.ek-app #sb-backdrop{top:calc(48px + env(safe-area-inset-top,0px))!important}'
             + 'html.ek-app #office-backdrop{top:calc(48px + env(safe-area-inset-top,0px))!important}'
             + 'html.ek-app .panel-col.open{top:calc(48px + env(safe-area-inset-top,0px))!important}'
-            + 'html.ek-app .panel-body{height:calc(100% - 56px)!important}';
+            + 'html.ek-app .panel-body{height:calc(100% - 56px)!important}'
+            + 'html.ek-app #intake-room{top:calc(48px + env(safe-area-inset-top,0px))!important}'
+            + 'html.ek-app .ambient{display:none!important}';
 
-          let backUrl = '/app', title = '';
-          if (filePath.endsWith('workspace.html')) title = 'Marcus';
-          else if (filePath.endsWith('chamber.html')) title = 'Iris';
-          else if (filePath.endsWith('study.html')) { title = 'Lesson'; backUrl = '/my-academy'; }
+          let backUrl = '/app', title = '', menuBtn = '';
+          if (filePath.endsWith('workspace.html')) {
+            title = 'Marcus';
+            menuBtn = '<button class="ek-menu" onclick="toggleOfficeNav()" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>';
+          } else if (filePath.endsWith('chamber.html')) {
+            title = 'Iris';
+            menuBtn = '<button class="ek-menu" onclick="var s=document.getElementById(\'side\'),c=document.getElementById(\'scrim\');s.classList.toggle(\'open\');c.classList.toggle(\'show\')" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>';
+          } else if (filePath.endsWith('study.html')) {
+            title = 'Lesson'; backUrl = '/my-academy';
+            menuBtn = '<button class="ek-menu" onclick="toggleModulePanel()" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>';
+          } else if (filePath.endsWith('onboarding.html')) {
+            title = 'Intake';
+          } else if (filePath.endsWith('academy-onboarding.html')) {
+            title = 'Academy'; css += 'html.ek-app body{overflow-y:auto!important}';
+          }
 
           html = html.replace(/<\/head>/i, '<style>' + css + '</style></head>');
           html = html.replace(/<\/body>/i,
-            '<header class="ek-back"><a href="' + backUrl + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 19l-7-7 7-7"/></svg>' + title + '</a></header></body>');
+            '<header class="ek-back"><a href="' + backUrl + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 19l-7-7 7-7"/></svg>' + title + '</a>' + menuBtn + '</header></body>');
         } else {
           css += 'html.ek-app body{padding-top:0!important;padding-bottom:calc(54px + env(safe-area-inset-bottom,0px))!important}'
             + '.ek-appnav{position:fixed;bottom:0;left:0;right:0;display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid rgba(232,228,220,.1);background:rgba(4,4,4,.92);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);padding-bottom:env(safe-area-inset-bottom,0px);z-index:9999;font-family:"Inter",-apple-system,sans-serif}'
