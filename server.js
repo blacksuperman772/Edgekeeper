@@ -207,22 +207,34 @@ function serveInjectedHtml(filePath) {
           /(<meta\s+name="viewport"\s+content=")[^"]*(")/i,
           '$1width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover$2'
         );
-        const appAuthCss = 'html.ek-app nav{display:none!important}'
+        const appAuthCss = 'html.ek-app,html.ek-app body{height:100%!important;overflow:hidden!important;overscroll-behavior:none;touch-action:pan-x pan-y}'
+          + 'html.ek-app nav{display:none!important}'
           + 'html.ek-app .ambient{display:none!important}'
           + 'html.ek-app footer{display:none!important}'
           + 'html.ek-app #cursor,html.ek-app #cursor-ring{display:none!important}'
-          + 'html.ek-app body{cursor:auto!important;min-height:100dvh;justify-content:center;padding:24px 16px}'
-          + 'html.ek-app main{width:100%;max-width:400px;margin:0 auto}'
+          + 'html.ek-app body{cursor:auto!important;display:flex!important;flex-direction:column!important;padding:0!important;margin:0!important}'
+          + 'html.ek-app main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;justify-content:center;padding:24px 16px;width:100%;max-width:400px;margin:0 auto;box-sizing:border-box}'
           + 'html.ek-app .auth-card{border:none;padding:0}'
           + 'html.ek-app .auth-eyebrow{display:none}'
           + 'html.ek-app .auth-headline{text-align:center;font-size:1.35rem}'
           + 'html.ek-app .auth-subline{text-align:center}'
           + 'html.ek-app .privacy-note{text-align:center;font-size:.65rem}'
           + '.ek-auth-mark{text-align:center;margin-bottom:28px;font:400 .72rem "Cormorant Garamond",Georgia,serif;letter-spacing:.28em;text-transform:uppercase;color:#555}'
-          + '.ek-auth-mark b{font-weight:400;color:#7a6a45}';
+          + '.ek-auth-mark b{font-weight:400;color:#7a6a45}'
+          + '.ek-splash{position:fixed;inset:0;z-index:9000;background:#0a0a09;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .4s,visibility .4s}'
+          + '.ek-splash.done{opacity:0;visibility:hidden;pointer-events:none}'
+          + '.ek-splash-mark{font:400 1.1rem "Cormorant Garamond",Georgia,serif;letter-spacing:.32em;text-transform:uppercase;color:rgba(232,228,220,.35)}'
+          + '.ek-splash-mark em{font-style:normal;color:rgba(184,160,106,.5)}'
+          + '.ek-splash-bar{width:48px;height:2px;background:rgba(232,228,220,.06);border-radius:1px;overflow:hidden}'
+          + '.ek-splash-bar::after{content:"";display:block;width:100%;height:100%;background:rgba(184,160,106,.5);transform:translateX(-100%);animation:ek-sfill .8s .2s ease forwards}'
+          + '@keyframes ek-sfill{to{transform:translateX(0)}}';
         html = html.replace(/<\/head>/i, '<style>' + appAuthCss + '</style></head>');
         html = html.replace(/<div class="auth-card">/i,
           '<div class="auth-card"><div class="ek-auth-mark">edge<b>k</b>eeper</div>');
+        // Inject splash screen before </body>
+        html = html.replace(/<\/body>/i,
+          '<div class="ek-splash" id="ek-splash"><span class="ek-splash-mark">edge<em>k</em>eeper</span><div class="ek-splash-bar"></div></div>'
+          + '<script>(function(){var s=document.getElementById("ek-splash");try{if(sessionStorage.getItem("ek_splash")){s.classList.add("done");return}sessionStorage.setItem("ek_splash","1")}catch(e){s.classList.add("done");return}setTimeout(function(){s.classList.add("done")},1000)})()</script></body>');
       }
 
       const isAppMode = req.cookies?.ek_app === '1' && req.user && !filePath.endsWith('app.html');
