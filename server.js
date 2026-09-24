@@ -265,7 +265,9 @@ function serveInjectedHtml(filePath) {
             + '.ek-menu:active{opacity:.6}'
             + '.ek-menu svg{width:20px;height:20px}'
             + 'html.ek-app{height:100%!important;overflow:hidden!important}'
-            + 'html.ek-app body{height:100%!important;overflow:hidden!important;margin:0!important;padding:' + hdrH + ' 0 0 0!important;box-sizing:border-box!important}'
+            + 'html.ek-app body{height:100%!important;overflow:hidden!important;margin:0!important;padding:' + hdrH + ' 0 env(safe-area-inset-bottom,0px) 0!important;box-sizing:border-box!important}'
+            + 'html.ek-app .topbar{display:none!important}'
+            + 'html.ek-app #top-bar{display:none!important}'
             + 'html.ek-app .workspace{grid-template-rows:1fr!important;height:100%!important;overflow:hidden!important}'
             + 'html.ek-app .workspace>.main{height:100%!important}'
             + 'html.ek-app #office-skeleton{display:none!important}'
@@ -282,7 +284,7 @@ function serveInjectedHtml(filePath) {
             + 'html.ek-app .scrim{top:' + hdrH + '!important}'
             + 'html.ek-app .panel-col.open{top:' + hdrH + '!important}'
             + 'html.ek-app .panel-body{height:calc(100% - 56px)!important}'
-            + 'html.ek-app #intake-room{top:' + hdrH + '!important;bottom:0!important;left:0!important;right:0!important;overflow:hidden!important;border:1px solid rgba(232,228,220,.08)!important;border-top:none!important}'
+            + 'html.ek-app #intake-room{top:' + hdrH + '!important;bottom:env(safe-area-inset-bottom,0px)!important;left:0!important;right:0!important;overflow:hidden!important;border:1px solid rgba(232,228,220,.15)!important;border-top:none!important}'
             + 'html.ek-app .ambient{display:none!important}';
 
           let backUrl = '/app', title = '', menuBtn = '';
