@@ -787,6 +787,98 @@
       .nav-cta { padding: 8px 14px; font-size: 0.6rem; letter-spacing: 0.1em; }
       nav > div { gap: 12px !important; }
     }
+
+    /* ══ APP-NATIVE VIEW (installed app only) ══════════════════════════
+       In the app this is an upgrade screen, not a marketing page: drop the
+       serif hero, comparison table, guarantee, FAQ, final CTA and footer,
+       and stack the plans as compact tap-to-choose cards. The website view
+       above is untouched. */
+    .app-only { display: none; }
+    html.ek-app .app-only { display: block; }
+
+    html.ek-app .pricing-hero > .section-inner > .hero-headline,
+    html.ek-app .pricing-hero > .section-inner > .hero-sub,
+    html.ek-app .pricing-hero > img,
+    html.ek-app .pricing-hero::before,
+    html.ek-app .table-section,
+    html.ek-app .guarantee-section,
+    html.ek-app .faq-section,
+    html.ek-app .final-cta,
+    html.ek-app footer { display: none !important; }
+
+    html.ek-app .page-wrap { padding-top: 6px !important; }
+    html.ek-app .pricing-hero { padding: 14px 0 6px !important; }
+    html.ek-app .hero-label { font-size: 0.58rem !important; margin-bottom: 10px !important; opacity: 1 !important; transform: none !important; }
+    html.ek-app .app-sub {
+      font-size: 0.9rem; color: var(--faint); line-height: 1.55;
+      max-width: 340px; margin: 0 auto 22px; text-align: center;
+    }
+    html.ek-app .billing-toggle { opacity: 1 !important; transform: none !important; }
+
+    html.ek-app .cards-section { padding: 14px 0 24px !important; }
+    html.ek-app .cards-section > .section-inner { padding: 0 16px !important; }
+    html.ek-app .cards-grid {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 12px !important;
+      background: transparent !important;
+      max-width: 520px !important;
+      margin: 0 auto !important;
+    }
+    html.ek-app .price-card {
+      padding: 22px 20px !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 14px !important;
+      margin: 0 !important;
+      background: var(--obsidian) !important;
+    }
+    html.ek-app .price-card.featured {
+      margin: 0 !important;
+      border: 1px solid rgba(184,160,106,0.42) !important;
+      background: linear-gradient(180deg, rgba(184,160,106,0.06), var(--obsidian) 60%) !important;
+    }
+    html.ek-app .price-card.featured::before { border-radius: 14px 14px 0 0; }
+    html.ek-app .featured-badge { top: 18px; right: 18px; }
+    html.ek-app .card-tier { margin-bottom: 6px !important; }
+    html.ek-app .card-tagline { margin-top: 0 !important; margin-bottom: 14px !important; font-size: 1rem !important; }
+    html.ek-app .card-price { font-size: 2.4rem !important; margin-bottom: 2px !important; }
+    html.ek-app .card-price .currency { font-size: 1.1rem !important; margin-top: 6px !important; }
+    html.ek-app .save-inline { margin-bottom: 18px !important; }
+    html.ek-app .card-features { margin-bottom: 18px !important; }
+    html.ek-app .card-features li { padding: 8px 0 !important; font-size: 0.82rem !important; }
+    html.ek-app .card-cta,
+    html.ek-app .card-contact {
+      border-radius: 10px !important;
+      padding: 15px 22px !important;
+      font-size: 0.74rem !important;
+    }
+
+    /* Current-plan state — set by JS from /api/me */
+    html.ek-app .price-card.ek-current {
+      border-color: rgba(184,160,106,0.55) !important;
+    }
+    .ek-current-badge {
+      display: none;
+      position: absolute;
+      top: 18px; right: 18px;
+      font-family: var(--mono);
+      font-size: 0.55rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold);
+      border: 1px solid rgba(184,160,106,0.45);
+      background: rgba(184,160,106,0.08);
+      padding: 4px 10px;
+      border-radius: 4px;
+    }
+    html.ek-app .price-card.ek-current .ek-current-badge { display: block; }
+    html.ek-app .price-card.ek-current .featured-badge { display: none; }
+    html.ek-app .price-card.ek-current .card-cta {
+      color: var(--muted) !important;
+      border-color: var(--border) !important;
+      background: transparent !important;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -819,6 +911,7 @@
     <img src="/assets/workspace-ambient.webp" alt="" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;opacity:0.06;pointer-events:none;z-index:0;" />
     <div class="section-inner" style="position:relative;z-index:1;">
       <p class="hero-label">Pricing</p>
+      <p class="app-sub app-only">Your team grows as you do. Move up when you're ready — your memory, journal and rules carry over.</p>
       <h1 class="hero-headline">The cost of one bad trade<br>exceeds a year of this.</h1>
       <p class="hero-sub">Start free in the Academy with Theo. Resident brings in Marcus to coach your trading. Fellow adds Iris to guard your capital. Private Office is the whole team, fully open.</p>
       <div class="billing-toggle" id="billingToggle">
@@ -1254,7 +1347,7 @@
             <span class="faq-icon">+</span>
           </button>
           <div class="faq-answer">
-            Guardian connects to your live trading account via a webhook or MT4/MT5 EA. On Resident it's read-only: it shows you your real behavior — drawdown, loss patterns, where discipline slips. On Fellow it goes active: the loss limits you set with your mentor are held by your guardian, cooldowns kick in after consecutive losses, the Break Room makes you pause before re-entry, and the execution firewall checks your own rules before a trade lands. It never touches your broker's controls — it controls EdgeKeeper's execution layer. Accountability that runs even when the conversation isn't open.
+            Guardian connects to your live trading account via a webhook or MT4/MT5 EA. On Resident it's read-only: it shows you your real behavior — drawdown, loss patterns, where discipline slips. On Fellow it goes active: the loss limits you set with your mentor are held by your guardian, cooldowns kick in after consecutive losses, the Break Room makes you pause before re-entry, and the execution firewall checks your own rules before a trade lands. By default it controls EdgeKeeper's execution layer and never touches your broker. If you explicitly opt in to the Guardian lock, it can also close open positions and cancel pending orders on your connected account when you breach your limits — it cannot stop an order being sent, and you can withdraw that consent at any time. Accountability that runs even when the conversation isn't open.
           </div>
         </div>
 
@@ -1343,6 +1436,9 @@ const plans = {
 
 function updatePrices() {
   document.querySelectorAll('.price-num').forEach(el => {
+    // Skip cards with no numeric price (Academy "Free", Institution "Custom") —
+    // otherwise toggling billing overwrites their label with NaN.
+    if (el.dataset.monthly === undefined) return;
     const monthly = parseInt(el.dataset.monthly, 10);
     const annual  = parseInt(el.dataset.annual, 10);
     el.textContent = isAnnual ? annual : monthly;
@@ -1510,6 +1606,34 @@ const revealObs = new IntersectionObserver(entries => {
   });
 }, { threshold: 0.1 });
 revealEls.forEach(el => revealObs.observe(el));
+
+// ── APP MODE: mark the member's current plan ──────────────────────────
+// Only in the installed app. Reads plan.slug from /api/me and flags the
+// matching card so the upgrade screen shows where the member already is.
+if (document.documentElement.classList.contains('ek-app')) {
+  (async () => {
+    try {
+      const r = await fetch('/api/me', { credentials: 'include' });
+      if (!r.ok) return;
+      const me   = await r.json();
+      const slug = me.plan?.slug || 'free';
+      const tierByPlan = { free: 'Academy', starter: 'Resident', pro: 'Fellow', professional: 'Private Office', institutional: 'Institution' };
+      const wantTier = tierByPlan[slug];
+      if (!wantTier) return;
+      document.querySelectorAll('.price-card').forEach(card => {
+        const tier = card.querySelector('.card-tier')?.textContent?.trim();
+        if (tier !== wantTier) return;
+        card.classList.add('ek-current');
+        const badge = document.createElement('div');
+        badge.className = 'ek-current-badge';
+        badge.textContent = 'Current plan';
+        card.appendChild(badge);
+        const cta = card.querySelector('.card-cta');
+        if (cta) { cta.textContent = 'Your plan'; cta.removeAttribute('onclick'); cta.disabled = true; }
+      });
+    } catch (_) {}
+  })();
+}
 </script>
 <script src="/assets/cursor.js"></script>
 </body>
