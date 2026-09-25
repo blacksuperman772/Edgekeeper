@@ -50,6 +50,10 @@
       position: fixed; inset: 0; z-index: 1;
       display: flex; flex-direction: column;
       opacity: 0; transition: opacity 1s ease;
+      /* Standalone PWA uses a translucent status bar over a viewport-fit=cover
+         page, so pad content into the safe area or the header hides behind the notch. */
+      padding: env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
+      box-sizing: border-box;
     }
     #intake-room.visible { opacity: 1; }
 
@@ -230,8 +234,9 @@
     .account-error { display: none; padding: 10px 14px; background: rgba(180,60,60,0.08); border: 1px solid rgba(180,60,60,0.2); font-size: 0.78rem; color: #c97070; margin-bottom: 16px; }
     .acc-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
     .acc-field label { font-family: var(--mono); font-size: 0.52rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
-    .acc-field input { background: var(--stone); border: 1px solid var(--border); padding: 13px 16px; font-family: var(--sans); font-size: 0.88rem; font-weight: 300; color: var(--bright); outline: none; transition: border-color .2s; width: 100%; -webkit-appearance: none; }
-    .acc-field input:focus { border-color: var(--mc-dim); }
+    .acc-field input, .acc-field select { background: var(--stone); border: 1px solid var(--border); padding: 13px 16px; font-family: var(--sans); font-size: 0.88rem; font-weight: 300; color: var(--bright); outline: none; transition: border-color .2s; width: 100%; -webkit-appearance: none; appearance: none; }
+    .acc-field input:focus, .acc-field select:focus { border-color: var(--mc-dim); }
+    .acc-field select option { background: var(--stone); color: var(--bright); }
     .acc-field input::placeholder { color: var(--dim); }
     .acc-btn { width: 100%; margin-top: 8px; padding: 14px 24px; background: transparent; border: 1px solid rgba(184,160,106,0.5); font-family: var(--mono); font-size: 0.68rem; font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: var(--white); cursor: none; transition: all .2s; }
     .acc-btn:hover:not(:disabled) { border-color: var(--mc); background: var(--mc-bg); }
@@ -437,12 +442,20 @@
     <p class="account-sub" id="account-sub">Your mentor built a profile on you today. Create an account to keep it — and pick up exactly where you left off.</p>
     <div class="account-error" id="account-error"></div>
     <div class="acc-field">
+      <label for="acc-name">Your name</label>
+      <input type="text" id="acc-name" placeholder="What should your mentor call you?" autocomplete="given-name" />
+    </div>
+    <div class="acc-field">
       <label for="acc-email">Email</label>
       <input type="email" id="acc-email" placeholder="your@email.com" autocomplete="email" />
     </div>
     <div class="acc-field">
       <label for="acc-password">Password</label>
       <input type="password" id="acc-password" placeholder="At least 8 characters" autocomplete="new-password" />
+    </div>
+    <div class="acc-field">
+      <label for="acc-country">Where are you based?</label>
+      <select id="acc-country" autocomplete="country"></select>
     </div>
     <button class="acc-btn" id="acc-btn" onclick="registerAndProceed()">Save My Session →</button>
     <p class="account-signin">Already have an account? <a href="auth.html" class="account-signin-link">Sign in →</a></p>
@@ -466,17 +479,47 @@ const sb = createClient(window.__EK_SUPABASE_URL__, window.__EK_SUPABASE_ANON__)
 let _plan = null;
 
 // ── ACCOUNT CREATION (runs after intake completes) ────────────────────
+let _jurisdictionInit = false;
 function showAccountOverlay() {
   document.getElementById('account-overlay').classList.add('active');
+  if (!_jurisdictionInit) { _jurisdictionInit = true; initJurisdiction(); }
   setTimeout(() => {
     const emailEl = document.getElementById('acc-email');
     if (emailEl) emailEl.focus();
   }, 500);
 }
 
+// ── Jurisdiction: full country list, prefill from detected IP, block if we
+// can't serve the region. The server re-checks, so this is UX not the gate.
+const EK_COUNTRIES = [["AF","Afghanistan"],["AL","Albania"],["DZ","Algeria"],["AR","Argentina"],["AU","Australia"],["AT","Austria"],["BH","Bahrain"],["BD","Bangladesh"],["BE","Belgium"],["BR","Brazil"],["BG","Bulgaria"],["CA","Canada"],["CL","Chile"],["CN","China"],["CO","Colombia"],["HR","Croatia"],["CY","Cyprus"],["CZ","Czechia"],["DK","Denmark"],["EG","Egypt"],["EE","Estonia"],["FI","Finland"],["FR","France"],["DE","Germany"],["GH","Ghana"],["GR","Greece"],["HK","Hong Kong"],["HU","Hungary"],["IN","India"],["ID","Indonesia"],["IE","Ireland"],["IL","Israel"],["IT","Italy"],["JP","Japan"],["JO","Jordan"],["KE","Kenya"],["KW","Kuwait"],["LV","Latvia"],["LT","Lithuania"],["LU","Luxembourg"],["MY","Malaysia"],["MT","Malta"],["MX","Mexico"],["MA","Morocco"],["NL","Netherlands"],["NZ","New Zealand"],["NG","Nigeria"],["NO","Norway"],["OM","Oman"],["PK","Pakistan"],["PA","Panama"],["PE","Peru"],["PH","Philippines"],["PL","Poland"],["PT","Portugal"],["QA","Qatar"],["RO","Romania"],["SA","Saudi Arabia"],["RS","Serbia"],["SG","Singapore"],["SK","Slovakia"],["SI","Slovenia"],["ZA","South Africa"],["KR","South Korea"],["ES","Spain"],["LK","Sri Lanka"],["SE","Sweden"],["CH","Switzerland"],["TW","Taiwan"],["TZ","Tanzania"],["TH","Thailand"],["TN","Tunisia"],["TR","Türkiye"],["UG","Uganda"],["AE","United Arab Emirates"],["GB","United Kingdom"],["US","United States"],["UA","Ukraine"],["UY","Uruguay"],["VN","Vietnam"],["OTHER","Somewhere else"]];
+
+async function initJurisdiction() {
+  const sel = document.getElementById('acc-country');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Select your country…</option>'
+    + EK_COUNTRIES.map(([c, n]) => `<option value="${c}">${n}</option>`).join('');
+  try {
+    const r = await fetch('/api/geo');
+    if (r.ok) {
+      const g = await r.json();
+      if (g.country) sel.value = g.country;
+      if (!g.allowed) showRegionBlock(g.message);
+    }
+  } catch (_) {}
+}
+
+function showRegionBlock(msg) {
+  const errEl = document.getElementById('account-error');
+  const btn   = document.getElementById('acc-btn');
+  if (errEl) { errEl.textContent = msg || 'EdgeKeeper isn\'t available in your region yet.'; errEl.style.display = 'block'; }
+  if (btn)   { btn.disabled = true; btn.textContent = 'Not available in your region'; }
+}
+
 async function registerAndProceed() {
-  const email    = (document.getElementById('acc-email').value || '').trim();
-  const password = document.getElementById('acc-password').value || '';
+  const email       = (document.getElementById('acc-email').value || '').trim();
+  const password    = document.getElementById('acc-password').value || '';
+  const displayName = (document.getElementById('acc-name').value || '').trim().slice(0, 60);
+  const country     = (document.getElementById('acc-country')?.value || '').trim();
   const errEl    = document.getElementById('account-error');
   const btn      = document.getElementById('acc-btn');
 
@@ -487,6 +530,9 @@ async function registerAndProceed() {
   }
   if (password.length < 8) {
     errEl.textContent = 'Password must be at least 8 characters.'; errEl.style.display = 'block'; return;
+  }
+  if (!country) {
+    errEl.textContent = 'Please select where you are based.'; errEl.style.display = 'block'; return;
   }
 
   btn.disabled    = true;
@@ -519,6 +565,8 @@ async function registerAndProceed() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email, password,
+        displayName,
+        country,
         mentor:        mentorKey,
         plan:          _plan || 'free',
         guardianLevel: guardianLvl,
@@ -529,6 +577,7 @@ async function registerAndProceed() {
     });
 
     const data = await res.json();
+    if (res.status === 451 || data.region_blocked) { showRegionBlock(data.error); return; }
     if (!res.ok) throw new Error(data.error || 'Could not create your account.');
 
     // Account created — sign in client-side to get session token

@@ -250,7 +250,7 @@ function serveInjectedHtml(filePath) {
         );
 
         const isImmersive = /workspace\.html|chamber\.html|study\.html|onboarding\.html|academy-onboarding\.html|academy\.html/.test(filePath);
-        let css = 'html.ek-app .topbar,html.ek-app #main-nav,html.ek-app #nav,html.ek-app #top-bar,html.ek-app body>nav,html.ek-app .page-header,html.ek-app .ek-pillars{display:none!important}'
+        let css = 'html.ek-app .topbar,html.ek-app #main-nav,html.ek-app #nav,html.ek-app #top-bar,html.ek-app body>nav:not(.ek-appnav),html.ek-app .page-header,html.ek-app .ek-pillars{display:none!important}'
           + 'html.ek-app .page-wrap{padding-top:16px!important}'
           + 'html.ek-app #cursor,html.ek-app #cursor-ring{display:none!important}'
           + 'html.ek-app,html.ek-app body{touch-action:pan-x pan-y;overscroll-behavior:none}';
@@ -268,13 +268,13 @@ function serveInjectedHtml(filePath) {
             + 'html.ek-app body{height:100%!important;overflow:hidden!important;margin:0!important;padding:' + hdrH + ' 0 env(safe-area-inset-bottom,0px) 0!important;box-sizing:border-box!important;display:flex!important;flex-direction:column!important}'
             + 'html.ek-app .topbar{display:none!important}'
             + 'html.ek-app #top-bar{display:none!important}'
-            + 'html.ek-app .workspace{flex:1!important;min-height:0!important;grid-template-rows:1fr!important;overflow:hidden!important}'
+            + 'html.ek-app .workspace{flex:1!important;min-height:0!important;height:auto!important;grid-template-rows:1fr!important;overflow:hidden!important}'
             + 'html.ek-app .workspace>.main{min-height:0!important;overflow:hidden!important}'
             + 'html.ek-app .chat-col{flex:1!important;display:flex!important;flex-direction:column!important;min-height:0!important;overflow:hidden!important}'
             + 'html.ek-app .chat-messages{flex:1!important;min-height:0!important;overflow-y:auto!important}'
             + 'html.ek-app .chat-input-area{flex-shrink:0!important}'
             + 'html.ek-app #office-skeleton{display:none!important}'
-            + 'html.ek-app .shell{flex:1!important;min-height:0!important;grid-template-rows:1fr!important;overflow:hidden!important}'
+            + 'html.ek-app .shell{flex:1!important;min-height:0!important;height:auto!important;grid-template-rows:1fr!important;overflow:hidden!important}'
             + 'html.ek-app .shell>.main{min-height:0!important;overflow:hidden!important}'
             + 'html.ek-app .chat{flex:1!important;display:flex!important;flex-direction:column!important;min-height:0!important;overflow:hidden!important}'
             + 'html.ek-app .thread{flex:1!important;min-height:0!important;overflow-y:auto!important}'
@@ -304,10 +304,10 @@ function serveInjectedHtml(filePath) {
           } else if (filePath.endsWith('study.html')) {
             title = 'Lesson'; backUrl = '/my-academy';
             menuBtn = '<button class="ek-menu" onclick="toggleModulePanel()" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>';
-          } else if (filePath.endsWith('onboarding.html')) {
-            title = 'Intake';
           } else if (filePath.endsWith('academy-onboarding.html')) {
             title = 'Academy'; css += 'html.ek-app body{overflow-y:auto!important}';
+          } else if (filePath.endsWith('onboarding.html')) {
+            title = 'Intake';
           } else if (filePath.endsWith('academy.html')) {
             title = 'Academy'; backUrl = '/app';
             css += 'html.ek-app body{overflow-y:auto!important}';
@@ -317,8 +317,8 @@ function serveInjectedHtml(filePath) {
           html = html.replace(/<\/body>/i,
             '<header class="ek-back"><a href="' + backUrl + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 19l-7-7 7-7"/></svg>' + title + '</a>' + menuBtn + '</header></body>');
         } else {
-          css += 'html.ek-app body{padding-top:0!important;padding-bottom:calc(54px + env(safe-area-inset-bottom,0px))!important}'
-            + '.ek-appnav{position:fixed;bottom:0;left:0;right:0;display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid rgba(232,228,220,.1);background:rgba(4,4,4,.92);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);padding-bottom:env(safe-area-inset-bottom,0px);z-index:9999;font-family:"Inter",-apple-system,sans-serif}'
+          css += 'html.ek-app body{padding-top:env(safe-area-inset-top,0px)!important;padding-bottom:calc(54px + env(safe-area-inset-bottom,0px))!important}'
+            + '.ek-appnav{position:fixed!important;top:auto!important;bottom:0!important;left:0!important;right:0!important;height:auto!important;display:grid!important;grid-template-columns:repeat(5,1fr);border-top:1px solid rgba(232,228,220,.1);background:rgba(4,4,4,.92);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);padding-bottom:env(safe-area-inset-bottom,0px);z-index:9999;font-family:"Inter",-apple-system,sans-serif}'
             + '.ek-appnav a,.ek-appnav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:54px;color:#3a3835;background:none;border:none;cursor:pointer;font:300 .44rem "DM Mono",monospace;letter-spacing:.04em;text-transform:uppercase;text-decoration:none;-webkit-tap-highlight-color:transparent;transition:color .15s}'
             + '.ek-appnav svg{width:19px;height:19px}'
             + '.ek-appnav .ek-on{color:#b8a06a}'
