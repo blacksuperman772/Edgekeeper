@@ -640,6 +640,24 @@ async function requireIncompleteOnboarding(req, res, next) {
   next();
 }
 
+// ── Academy onboarding guard — enrolled users never see the track picker again ─
+// The page is public (new users arrive pre-signup), but an authenticated user
+// who already picked a track must not land back on "Learn to trade. Properly."
+// via the back stack. Server-side so there's no client-side flash before the
+// academy.html/academy-onboarding.html JS guards catch up.
+async function redirectEnrolledAcademy(req, res, next) {
+  if (!req.user) return next();
+  try {
+    const { data } = await supabaseAdmin
+      .from('user_profiles')
+      .select('academy_track')
+      .eq('id', req.user.id)
+      .maybeSingle();
+    if (data?.academy_track) return res.redirect('/my-academy');
+  } catch (_) { /* fall through to the picker */ }
+  next();
+}
+
 // ── Academy entitlement ───────────────────────────────────────────────────────
 // Track 1 (Market Foundations) is free for any enrolled user — the beginner hook.
 // Tracks 2-6 require any paid plan. Enforced server-side; the UI lock is cosmetic.
@@ -1016,8 +1034,8 @@ app.get('/settings',         (req, res) => res.redirect('/settings.html'));
 app.get('/assessment.html',  requireAuthPage, serveInjectedHtml(path.join(__dirname, 'assessment.html')));
 app.get('/academy.html',              (req, res) => res.redirect(301, '/my-academy'));
 // Academy onboarding is intentionally public — new users arrive before signup
-app.get('/academy-onboarding.html',   serveInjectedHtml(path.join(__dirname, 'academy-onboarding.html')));
-app.get('/academy-onboarding',        serveInjectedHtml(path.join(__dirname, 'academy-onboarding.html')));
+app.get('/academy-onboarding.html',   redirectEnrolledAcademy, serveInjectedHtml(path.join(__dirname, 'academy-onboarding.html')));
+app.get('/academy-onboarding',        redirectEnrolledAcademy, serveInjectedHtml(path.join(__dirname, 'academy-onboarding.html')));
 app.get('/study.html',                requireAuthPage, gateAcademyModule, serveInjectedHtml(path.join(__dirname, 'study.html')));
 app.get('/study',                     requireAuthPage, gateAcademyModule, serveInjectedHtml(path.join(__dirname, 'study.html')));
 // Iris's Chamber — the Guardian environment (Fellow gating enforced by /api/guardian)

@@ -210,6 +210,14 @@
     }
     .panel-account-link:hover { color: var(--muted); }
 
+    /* App mode: the module panel is navigation, not a marketing sidebar. The
+       "who is Theo / who is Marcus" badges and the account link are website
+       carryover — the user already knows their mentors and reaches account
+       through the bottom nav. Hide them so the panel is purely about the module.
+       (The wrapping anchor collapses to zero height once its badge is hidden.) */
+    html.ek-app .companion-badge,
+    html.ek-app .panel-account-link { display: none !important; }
+
     /* ── RIGHT: COMPANION PANEL ── */
     #companion-panel {
       flex: 1; display: flex; flex-direction: column;
@@ -1110,17 +1118,26 @@ function buildTheoMemory() {
   const nameLine = studentName
     ? `\nSTUDENT NAME: ${studentName}. Use their name naturally and sparingly — at most once or twice per conversation, never as a verbal tic.`
     : '';
+  let voiceLine = '';
+  try {
+    const vc = JSON.parse(sessionStorage.getItem('ek_theo_last_call') || 'null');
+    if (vc && (Date.now() - vc.at) < 30 * 60 * 1000) {
+      const agoMin = Math.round((Date.now() - vc.at) / 60000);
+      voiceLine = `\nYOU WERE JUST ON A VOICE CALL with this student ${agoMin === 0 ? 'moments' : agoMin + ' min'} ago — you were literally just talking out loud. Continue from it; do not greet them as if you have not spoken.`;
+      sessionStorage.removeItem('ek_theo_last_call');
+    }
+  } catch (_) {}
   const done = [];
   for (const key in MODULES) {
     const ts = localStorage.getItem('ek_academy_' + key + '_completed');
     if (ts) done.push({ title: MODULES[key].title, ts: parseInt(ts, 10) || 0 });
   }
   if (!done.length) {
-    return nameLine + '\nYOUR MEMORY OF THIS STUDENT: This may be one of your first lessons together. Set the tone warmly and assume no prior knowledge.';
+    return nameLine + voiceLine + '\nYOUR MEMORY OF THIS STUDENT: This may be one of your first lessons together. Set the tone warmly and assume no prior knowledge.';
   }
   done.sort((a, b) => a.ts - b.ts);
   const recent = done.slice(-6).map(d => d.title).join(', ');
-  return nameLine + `\nYOUR MEMORY OF THIS STUDENT (refer to it naturally; never recite it as a list): They have completed ${done.length} module(s) with you, most recently ${recent}. Connect this lesson to what they already know wherever it genuinely helps.`;
+  return nameLine + voiceLine + `\nYOUR MEMORY OF THIS STUDENT (refer to it naturally; never recite it as a list): They have completed ${done.length} module(s) with you, most recently ${recent}. Connect this lesson to what they already know wherever it genuinely helps.`;
 }
 
 async function callCompanion(userMsg) {
@@ -1375,6 +1392,13 @@ function mountExercise() {
 // other voice sessions; his agent runs his teaching persona plus this module's context.
 let theoVoiceState = 'idle';
 let theoConv = null;
+let _theoVoiceLog = [];
+// Strip TTS pacing/stage directions the voice model emits (e.g. [slow], [normal]).
+function stripStageTags(s) {
+  return String(s || '')
+    .replace(/\[(?:slow|normal|fast|slower|faster|pause|long pause|short pause|beat|whisper|whispering|sighs?|laughs?|chuckles?|warmly|softly|firmly|quietly|gently|serious|flat|calm|warm)\]/gi, '')
+    .replace(/\s{2,}/g, ' ').trim();
+}
 
 function resetVoice(msg) {
   theoVoiceState = 'idle';
@@ -1429,8 +1453,10 @@ async function startTheoVoice() {
     const sessionCallbacks = {
       signedUrl,
       onMessage: ({ message, source }) => {
-        if (source === 'ai') { addMsg('companion', message); history.push({ role: 'assistant', content: message }); }
-        else { history.push({ role: 'user', content: message }); }
+        // A voice call is a CALL — no transcript dumped into the lesson thread.
+        // Kept only for continuity awareness after the call ends.
+        const clean = stripStageTags(message);
+        if (clean) _theoVoiceLog.push((source === 'ai' ? 'Theo' : 'You') + ': ' + clean);
       },
       onModeChange: ({ mode }) => { if (status) status.textContent = mode === 'speaking' ? 'Theo is speaking…' : 'Listening…'; },
       onStatusChange: ({ status: st }) => {
@@ -1463,6 +1489,11 @@ async function startTheoVoice() {
 async function endTheoVoice() {
   theoVoiceState = 'ending';
   if (theoConv) { try { await theoConv.endSession(); } catch (_) {} theoConv = null; }
+  // Remember the call so Theo's next typed reply knows you were just talking.
+  if (_theoVoiceLog.length) {
+    try { sessionStorage.setItem('ek_theo_last_call', JSON.stringify({ at: Date.now(), gist: _theoVoiceLog.slice(-8).join(' · ').slice(0, 600) })); } catch (_) {}
+    _theoVoiceLog = [];
+  }
   resetVoice('Prefer to talk it through?');
 }
 

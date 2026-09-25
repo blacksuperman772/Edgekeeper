@@ -472,7 +472,9 @@ async function enrollAndGo() {
     });
     window.ek?.('academy_enrolled', { track: selectedTrack });
   } catch (_) {}
-  window.location.href = '/study.html?module=' + selectedFirst + '&track=' + selectedTrack + '&first=1';
+  // replace() so the picker leaves the back stack — a user who just enrolled
+  // must never land back on "Learn to trade. Properly." by pressing back.
+  window.location.replace('/study.html?module=' + selectedFirst + '&track=' + selectedTrack + '&first=1');
 }
 
 // ── SIGNUP FORM SUBMIT ─────────────────────────────────────────────────
@@ -522,7 +524,7 @@ async function submitSignup(e) {
 
     window.ek?.('signup_success', { flow: 'academy' });
     window.ek?.('academy_enrolled', { track: selectedTrack });
-    window.location.href = '/study.html?module=' + selectedFirst + '&track=' + selectedTrack + '&first=1';
+    window.location.replace('/study.html?module=' + selectedFirst + '&track=' + selectedTrack + '&first=1');
 
   } catch (err) {
     errEl.textContent = err.message;
