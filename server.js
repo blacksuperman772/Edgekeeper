@@ -249,7 +249,7 @@ function serveInjectedHtml(filePath) {
           '$1width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover$2'
         );
 
-        const isImmersive = /workspace\.html|chamber\.html|study\.html|onboarding\.html|academy-onboarding\.html/.test(filePath);
+        const isImmersive = /workspace\.html|chamber\.html|study\.html|onboarding\.html|academy-onboarding\.html|academy\.html/.test(filePath);
         let css = 'html.ek-app .topbar,html.ek-app #main-nav,html.ek-app #nav,html.ek-app #top-bar,html.ek-app body>nav,html.ek-app .page-header,html.ek-app .ek-pillars{display:none!important}'
           + 'html.ek-app .page-wrap{padding-top:16px!important}'
           + 'html.ek-app #cursor,html.ek-app #cursor-ring{display:none!important}'
@@ -308,6 +308,9 @@ function serveInjectedHtml(filePath) {
             title = 'Intake';
           } else if (filePath.endsWith('academy-onboarding.html')) {
             title = 'Academy'; css += 'html.ek-app body{overflow-y:auto!important}';
+          } else if (filePath.endsWith('academy.html')) {
+            title = 'Academy'; backUrl = '/app';
+            css += 'html.ek-app body{overflow-y:auto!important}';
           }
 
           html = html.replace(/<\/head>/i, '<style>' + css + '</style></head>');

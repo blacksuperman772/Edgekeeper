@@ -1,6 +1,6 @@
 'use strict';
 
-const VERSION = 'edgekeeper-shell-v3';
+const VERSION = 'edgekeeper-shell-v4';
 const STATIC_CACHE = VERSION + '-static';
 const NAVIGATION_CACHE = VERSION + '-navigation';
 const OFFLINE_URL = '/offline.html';
