@@ -385,7 +385,12 @@ async function verifySession(req, res, next) {
   const COOKIE_OPTS = {
     httpOnly: true,
     secure:   process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    // Lax, not Strict: Strict cookies are NOT sent on top-level navigations
+    // that arrive from a cross-site origin, so returning from Stripe checkout
+    // (or any external redirect) would drop the session and dump the user on
+    // the logged-out website. Lax sends the cookie on the top-level GET return
+    // while still withholding it from cross-site POST/subresource (CSRF-safe).
+    sameSite: 'lax',
     path:     '/',
   };
 
@@ -732,7 +737,7 @@ app.post('/api/auth/session', tokenLimiter, sharedLimit('auth_session', 60, 10),
     const COOKIE_OPTS = {
       httpOnly: true,
       secure:   process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax', // see note above — survives the return from Stripe checkout
       path:     '/',
     };
     // access_token lives 1 hour (matches Supabase JWT TTL); ek_refresh lives 30 days
@@ -748,7 +753,7 @@ app.post('/api/auth/session', tokenLimiter, sharedLimit('auth_session', 60, 10),
 
 // DELETE /api/auth/session — sign out (clears both HttpOnly session cookies)
 app.delete('/api/auth/session', (req, res) => {
-  const opts = { path: '/', sameSite: 'strict', httpOnly: true };
+  const opts = { path: '/', sameSite: 'lax', httpOnly: true };
   res.clearCookie('ek_session', opts);
   res.clearCookie('ek_refresh',  opts);
   res.json({ ok: true });
@@ -792,7 +797,7 @@ app.get('/', async (req, res) => {
 });
 
 app.get(['/app', '/app.html'], requireAuthPage, (req, res, next) => {
-  res.cookie('ek_app', '1', { path: '/', sameSite: 'strict', maxAge: 365 * 24 * 60 * 60 * 1000 });
+  res.cookie('ek_app', '1', { path: '/', sameSite: 'lax', maxAge: 365 * 24 * 60 * 60 * 1000 });
   next();
 }, serveInjectedHtml(path.join(__dirname, 'app.html')));
 
@@ -5282,7 +5287,7 @@ app.delete('/api/account', requireAuthApi, sharedLimit('gdpr_delete', 3600, 3), 
       logServerError('gdpr-delete-auth', authErr, { user: userId });
       return res.status(500).json({ error: 'Your data was removed but the login could not be deleted. Contact support to finish.' });
     }
-    const _delOpts = { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', path: '/' };
+    const _delOpts = { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' };
     res.clearCookie('ek_session', _delOpts);
     res.clearCookie('ek_refresh',  _delOpts);
     res.json({ ok: true });
