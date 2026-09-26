@@ -393,6 +393,20 @@
       margin-bottom: 36px;
     }
     .save-inline.hidden { visibility: hidden; }
+    /* Resident first-month intro offer — shown on monthly, hidden on annual */
+    .intro-offer {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      color: var(--gold);
+      border: 1px solid rgba(184,160,106,0.35);
+      background: rgba(184,160,106,0.06);
+      padding: 3px 9px;
+      display: inline-block;
+      margin-bottom: 36px;
+      border-radius: 2px;
+    }
+    .intro-offer.hidden { display: none; }
     .card-features {
       list-style: none;
       margin-bottom: 44px;
@@ -961,6 +975,7 @@
           </div>
           <div class="card-cadence" id="cadence-starter">Billed monthly</div>
           <div class="save-inline hidden" id="save-starter">Save $198 / year</div>
+          <div class="intro-offer" id="intro-starter">50% off your first month</div>
           <ul class="card-features">
             <li class="included"><span class="check">✓</span> The full Academy — all 6 tracks with Theo</li>
             <li class="included"><span class="check">✓</span> Marcus, your performance coach — every day</li>
@@ -1006,13 +1021,13 @@
           <div class="card-cadence" id="cadence-professional">Billed monthly</div>
           <div class="save-inline hidden" id="save-professional">Save $1198 / year</div>
           <ul class="card-features">
-            <li class="included"><span class="check">✓</span> Everything in Fellow — no limits</li>
-            <li class="included"><span class="check">✓</span> Open voice access</li>
-            <li class="included"><span class="check">✓</span> Custom Guardian rules — built around you</li>
-            <li class="included"><span class="check">✓</span> Multiple account support</li>
-            <li class="included"><span class="check">✓</span> The Vault — intervention archive</li>
-            <li class="included"><span class="check">✓</span> Decision Passport</li>
-            <li class="included"><span class="check">✓</span> Monthly behavioral reports</li>
+            <li class="included"><span class="check">✓</span> Everything in Fellow, with every cap removed</li>
+            <li class="included"><span class="check">✓</span> Guardian protection across <strong>every account you trade</strong> — not just one</li>
+            <li class="included"><span class="check">✓</span> Guardian rules built around your strategy, not presets</li>
+            <li class="included"><span class="check">✓</span> Open voice — talk to your team with no session limit</li>
+            <li class="included"><span class="check">✓</span> The Vault — every intervention and decision kept for good</li>
+            <li class="included"><span class="check">✓</span> Decision Passport — the standing record of how you trade</li>
+            <li class="included"><span class="check">✓</span> A written behavioral report from your mentor each month</li>
           </ul>
           <button class="card-cta" data-plan="professional" onclick="initiateCheckout('professional')">Enter Private Office</button>
         </div>
@@ -1460,6 +1475,10 @@ function updatePrices() {
       }
     }
   });
+  // Resident first-month intro applies to monthly only (the coupon is
+  // duration:once on the monthly price); hide it on annual.
+  const intro = document.getElementById('intro-starter');
+  if (intro) intro.classList.toggle('hidden', isAnnual);
 }
 
 function toggleBilling() {

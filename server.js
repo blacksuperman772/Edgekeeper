@@ -5347,19 +5347,29 @@ app.post('/api/billing/initiate', requireAuthApi, apiLimiter, async (req, res) =
       return res.status(501).json({ error: 'Payment plan not yet configured' });
     }
     try {
-      const session = await stripeClient.checkout.sessions.create({
+      // Resident intro: 50% off the first month (monthly only). The coupon is
+      // created once in the Stripe dashboard (percent_off 50, duration: once)
+      // and its id set as STRIPE_COUPON_RESIDENT_FIRST_MONTH. Absent env → no
+      // discount, checkout still works.
+      const introCoupon = (plan === 'starter' && billing === 'monthly')
+        ? process.env.STRIPE_COUPON_RESIDENT_FIRST_MONTH
+        : null;
+      const sessionParams = {
         mode: 'subscription',
         line_items: [{ price: priceId, quantity: 1 }],
         success_url: `${appUrlBase}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url:  `${appUrlBase}/pricing.html?canceled=1`,
         customer_email: req.user.email,
         client_reference_id: req.user.id,
-        allow_promotion_codes: true,
         // Metadata on BOTH the session and the subscription so later
         // subscription.updated / .deleted webhooks can identify the user.
         metadata: { user_id: req.user.id, plan, billing },
         subscription_data: { metadata: { user_id: req.user.id, plan, billing } },
-      });
+      };
+      // Stripe rejects `discounts` and `allow_promotion_codes` together — pick one.
+      if (introCoupon) sessionParams.discounts = [{ coupon: introCoupon }];
+      else sessionParams.allow_promotion_codes = true;
+      const session = await stripeClient.checkout.sessions.create(sessionParams);
       if (!session.url) {
         console.error('Stripe returned no checkout URL');
         return res.status(502).json({ error: 'Payment initiation failed' });
