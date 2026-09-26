@@ -250,7 +250,7 @@ function serveInjectedHtml(filePath) {
         );
 
         const isImmersive = /workspace\.html|chamber\.html|study\.html|onboarding\.html|academy-onboarding\.html|academy\.html/.test(filePath);
-        let css = 'html.ek-app .topbar,html.ek-app #main-nav,html.ek-app #nav,html.ek-app #top-bar,html.ek-app body>nav:not(.ek-appnav),html.ek-app .page-header,html.ek-app .ek-pillars{display:none!important}'
+        let css = 'html.ek-app .topbar,html.ek-app #main-nav,html.ek-app #nav,html.ek-app #top-bar,html.ek-app #top-label,html.ek-app body>nav:not(.ek-appnav),html.ek-app body>footer,html.ek-app .page-header,html.ek-app .ek-pillars{display:none!important}'
           + 'html.ek-app .page-wrap{padding-top:16px!important}'
           + 'html.ek-app #cursor,html.ek-app #cursor-ring{display:none!important}'
           + 'html.ek-app,html.ek-app body{touch-action:pan-x pan-y;overscroll-behavior:none}';
