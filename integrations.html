@@ -466,6 +466,14 @@
       color: var(--bright); font-family: var(--mono); font-size: 0.9rem;
       outline: none; transition: border-color .2s;
     }
+    /* unified dropdown chevron — native OS arrow removed so every select aligns identically */
+    select.cf-input {
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath d='M1 1.5 5 5.5 9 1.5' fill='none' stroke='%23a99e8a' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 38px;
+    }
     .cf-input:focus { border-color: var(--gold); }
     .cf-input::placeholder { color: rgba(255,255,255,0.2); }
     .cf-hint { display: block; font-size: 0.74rem; color: var(--muted); margin-top: 7px; }
@@ -586,7 +594,7 @@
     <div class="connect-card" id="mt-connect-card" style="display:none;">
       <span class="connect-badge">Fastest · works on mobile</span>
       <h3 class="connect-title">Connect with your broker login</h3>
-      <p class="connect-sub">You enter your account on a secure page — <b>EdgeKeeper never sees your password.</b> No download, no install. Your Guardian connects and starts watching within a minute.</p>
+      <p class="connect-sub">Enter your account below and your Guardian connects within a minute. We use it once to set up <b>read-only monitoring</b> through our data provider over an encrypted connection — <b>your password is never stored</b>. No download, no install.</p>
 
       <div id="connect-form">
         <div class="cf-row">
@@ -613,7 +621,17 @@
           <input class="cf-input" id="mt-server-custom" type="text" placeholder="e.g. YourBroker-Live" autocomplete="off" spellcheck="false">
           <span class="cf-hint">Type it exactly as shown in your MetaTrader login window, next to your account number.</span>
         </div>
-        <button class="cf-submit" id="mt-connect-btn" onclick="startBrokerLink()">Continue to secure login →</button>
+        <div class="cf-row">
+          <label class="cf-label" for="mt-login">Account number</label>
+          <input class="cf-input" id="mt-login" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="e.g. 51234567">
+          <span class="cf-hint">Your numeric login — shown in your MetaTrader login window, next to the server.</span>
+        </div>
+        <div class="cf-row">
+          <label class="cf-label" for="mt-password">Password</label>
+          <input class="cf-input" id="mt-password" type="password" autocomplete="off" placeholder="Your account password">
+          <span class="cf-hint">Use your <b>read-only investor password</b> if you have one — your Guardian only needs to watch, not trade.</span>
+        </div>
+        <button class="cf-submit" id="mt-connect-btn" onclick="startBrokerLink()">Connect account →</button>
       </div>
       <div class="cf-status" id="mt-connect-status"></div>
     </div>
@@ -761,7 +779,7 @@
         <span class="step-text">The Guardian flags patterns and warns you before you break a rule again</span>
       </li>
     </ul>
-    <a href="/workspace.html" class="btn-link">Open Guardian Layer →</a>
+    <a href="/chamber" class="btn-link">Open Guardian Layer →</a>
   </section>
 
 </div>
@@ -992,7 +1010,19 @@
     const form = document.getElementById('connect-form');
     if (form) form.style.display = 'none';
     const srv = d.server ? escHtml(d.server) : 'your broker';
-    setLinkStatus('✓ Connected to ' + srv + '. Your Guardian is watching this account. <a href="/workspace.html">Open Guardian Layer →</a>', 'ok');
+    setLinkStatus('✓ Connected to ' + srv + '. Your Guardian is watching this account. <a href="/chamber">Open Guardian Layer →</a>', 'ok');
+  }
+
+  // Account dropped or was removed on MetaApi — re-show the form so they can relink.
+  function showDisconnected(d) {
+    const form = document.getElementById('connect-form');
+    if (form) form.style.display = '';
+    const removed = d.connectionStatus === 'removed';
+    const srv = d.server ? escHtml(d.server) : 'your account';
+    setLinkStatus((removed
+      ? 'This account was removed on MetaApi. '
+      : 'Your Guardian lost connection to ' + srv + '. ') +
+      'Reconnect below to resume watching.', 'error');
   }
 
   async function checkExistingLink() {
@@ -1002,6 +1032,11 @@
       const d = await res.json();
       if (d.status === 'connected') {
         showConnected(d);
+      } else if (d.status === 'syncing') {
+        setLinkStatus('Account connected — syncing your first snapshot. This finishes on its own in a moment.', '');
+        startPolling();
+      } else if (d.status === 'disconnected') {
+        showDisconnected(d);
       } else if (d.metaapi_account_id || d.status === 'pending_credentials') {
         setLinkStatus('A connection is set up but not live yet. Finish entering your login on the MetaApi page, then it will connect automatically.', '');
         startPolling();
@@ -1010,27 +1045,37 @@
   }
 
   // ── Broker → server picker ─────────────────────────────────────
+  // A confident set of common servers per broker. Not exhaustive by design —
+  // brokers run dozens and rename them, so "My server isn’t listed…" free-text is
+  // the reliable catch-all (the exact name is in the user’s MetaTrader login window).
   const EK_BROKERS = {
-    'IC Markets':        ['ICMarketsSC-MT5', 'ICMarketsSC-Demo', 'ICMarketsSC-Live', 'ICMarketsEU-Live'],
-    'Pepperstone':       ['Pepperstone-Demo', 'Pepperstone-Live', 'Pepperstone-Edge01-Live'],
-    'OANDA':             ['OANDA-Demo-1', 'OANDA-Live-1', 'OANDA-v20 Live-1'],
-    'Exness':            ['Exness-MT5Real', 'Exness-MT5Trial', 'Exness-MT5Real8'],
-    'XM':                ['XMGlobal-MT5', 'XMGlobal-Demo', 'XMGlobal-MT5 2'],
-    'FTMO':              ['FTMO-Server', 'FTMO-Demo', 'FTMO-Server2'],
-    'Deriv':             ['DerivSVG-Server', 'Deriv-Demo', 'DerivSVG-Server-02'],
-    'RoboForex':         ['RoboForex-Pro', 'RoboForex-ECN', 'RoboForex-Demo'],
-    'FxPro':             ['FxPro-MT5', 'FxPro.com-Demo'],
-    'Vantage':           ['Vantage-Live', 'Vantage-Demo', 'VantageInternational-Live'],
-    'Eightcap':          ['EightcapGlobal-Live', 'EightcapGlobal-Demo'],
-    'ThinkMarkets':      ['ThinkMarkets-Live', 'ThinkMarkets-Demo'],
-    'Tickmill':          ['Tickmill-Live', 'Tickmill-Demo'],
-    'Admirals':          ['AdmiralsGroup-Live', 'Admirals-Demo'],
-    'Fusion Markets':    ['FusionMarkets-Live', 'FusionMarkets-Demo'],
-    'Blueberry Markets': ['Blueberry-Live', 'Blueberry-Demo'],
-    'FBS':               ['FBS-Real', 'FBS-Demo'],
-    'HFM (HotForex)':    ['HFMarketsGlobal-Live', 'HFMarketsGlobal-Demo'],
-    'Axi':               ['AxiCorp-Live', 'AxiCorp-Demo'],
-    'FP Markets':        ['FPMarkets-Live', 'FPMarkets-Demo'],
+    'IC Markets':        ['ICMarketsSC-MT5', 'ICMarketsSC-MT5-2', 'ICMarketsSC-Demo', 'ICMarketsSC-Live', 'ICMarketsSC-Live02', 'ICMarketsEU-Live', 'ICMarketsEU-Demo', 'ICMarketsSC-Live04', 'ICMarketsSC-Live18'],
+    'Pepperstone':       ['Pepperstone-Demo', 'Pepperstone-Live', 'Pepperstone-Edge01-Live', 'Pepperstone-Edge02-Live', 'Pepperstone-Edge04-Live', 'PepperstoneUK-Live', 'PepperstoneGroupLimited-Live'],
+    'OANDA':             ['OANDA-Demo-1', 'OANDA-Live-1', 'OANDA-Live-2', 'OANDA-v20 Live-1', 'OANDA-v20 Live-2', 'OANDA-v20 Practice-1', 'OANDA-GLOBAL markets-Live'],
+    'Exness':            ['Exness-MT5Real', 'Exness-MT5Real2', 'Exness-MT5Real8', 'Exness-MT5Real14', 'Exness-MT5Real20', 'Exness-MT5Trial', 'Exness-MT5Trial7', 'Exness-Real', 'Exness-Trial'],
+    'XM':                ['XMGlobal-MT5', 'XMGlobal-MT5 2', 'XMGlobal-MT5 3', 'XMGlobal-MT5 4', 'XMGlobal-MT5 5', 'XMGlobal-Demo', 'XMGlobal-Demo 3', 'XMTrading-MT5', 'XMTrading-Real 30'],
+    'FTMO':              ['FTMO-Server', 'FTMO-Server2', 'FTMO-Server3', 'FTMO-Server4', 'FTMO-Demo'],
+    'Deriv':             ['DerivSVG-Server', 'DerivSVG-Server-02', 'DerivSVG-Server-03', 'Deriv-Demo', 'DerivBVI-Server', 'DerivVanuatu-Server', 'Deriv-Server', 'Deriv-Server-02'],
+    'RoboForex':         ['RoboForex-Pro', 'RoboForex-ECN', 'RoboForex-Prime', 'RoboForex-ProCent', 'RoboForex-Demo', 'RoboForex-DemoPro'],
+    'FxPro':             ['FxPro-MT5', 'FxPro.com-Demo', 'FxProGlobal-MT5', 'FxPro-MT5 2'],
+    'Vantage':           ['Vantage-Live', 'Vantage-Live 2', 'Vantage-Live 5', 'Vantage-Demo', 'VantageInternational-Live', 'VantageInternational-Live 4', 'VantageInternational-Demo'],
+    'Eightcap':          ['EightcapGlobal-Live', 'EightcapGlobal-Live 2', 'EightcapGlobal-Demo', 'Eightcap-Live', 'Eightcap-Demo'],
+    'ThinkMarkets':      ['ThinkMarkets-Live', 'ThinkMarkets-Live 2', 'ThinkMarkets-Demo', 'TFGlobal-Live', 'TFGlobal-Demo'],
+    'Tickmill':          ['Tickmill-Live', 'Tickmill-Live02', 'Tickmill-Demo', 'TickmillUK-Live', 'TickmillEU-Live', 'TickmillSC-Live'],
+    'Admirals':          ['AdmiralsGroup-Live', 'AdmiralsSC-Live', 'AdmiralMarkets-Live', 'AdmiralMarkets-Demo', 'Admirals-Demo'],
+    'Fusion Markets':    ['FusionMarkets-Live', 'FusionMarkets-Live2', 'FusionMarkets-Demo'],
+    'Blueberry Markets': ['Blueberry-Live', 'Blueberry-Live 2', 'Blueberry-Demo'],
+    'FBS':               ['FBS-Real', 'FBS-Real-3', 'FBS-Real-6', 'FBS-Demo', 'FBS-Real-16'],
+    'HFM (HotForex)':    ['HFMarketsGlobal-Live', 'HFMarketsGlobal-Live2', 'HFMarketsGlobal-Live5', 'HFMarketsGlobal-Demo', 'HFMarketsSV-Live', 'HFMarketsSV-Demo'],
+    'Axi':               ['AxiCorp-Live', 'AxiCorp-Live 2', 'AxiCorp-Demo', 'AxiCorp-US03-Live'],
+    'FP Markets':        ['FPMarkets-Live', 'FPMarkets-Live2', 'FPMarkets-Demo', 'FPMarketsLLC-Live'],
+    'CMC Markets':       ['CMCMarkets-Live', 'CMCMarkets-Demo'],
+    'ThinkorSwim / TD':  ['MetaQuotes-Demo'],
+    'Coinexx':           ['Coinexx-Live', 'Coinexx-Demo'],
+    'Fondex':            ['Fondex-Live', 'Fondex-Demo'],
+    'Errante':           ['Errante-Live', 'Errante-Demo'],
+    'FXTM (ForexTime)':  ['ForexTimeFXTM-Live', 'ForexTimeFXTM-Demo', 'Exinity-Live', 'Exinity-Demo'],
+    'Purple Trading':    ['PurpleTrading-01Live', 'PurpleTrading-01Demo'],
   };
 
   function populateBrokers() {
@@ -1075,32 +1120,46 @@
     const btn = document.getElementById('mt-connect-btn');
     const platform = (document.querySelector('input[name="mt-platform"]:checked') || {}).value || 'mt5';
     const server = selectedServer();
+    const login = ((document.getElementById('mt-login') || {}).value || '').trim();
+    const password = (document.getElementById('mt-password') || {}).value || '';
     if (!server) { setLinkStatus('Choose your broker and server first.', 'error'); return; }
+    if (!/^\d{3,20}$/.test(login)) { setLinkStatus('Enter your numeric account number (login).', 'error'); return; }
+    if (!password) { setLinkStatus('Enter your account password.', 'error'); return; }
 
     btn.disabled = true;
-    setLinkStatus('<span class="cf-spin"></span>Setting up your secure connection…', '');
+    setLinkStatus('<span class="cf-spin"></span>Connecting your account…', '');
 
     try {
       const res = await fetch('/api/guardian/link/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ platform, server }),
+        body: JSON.stringify({ platform, server, login, password }),
       });
       const d = await res.json().catch(() => ({}));
 
       if (res.status === 202 && d.pending) {
-        setLinkStatus('<span class="cf-spin"></span>Detecting your broker settings — this can take up to a minute. Tap Continue again shortly.', '');
+        setLinkStatus('<span class="cf-spin"></span>Detecting your broker settings — this can take up to a minute. Tap Connect again shortly.', '');
         btn.disabled = false;
         return;
       }
       if (!res.ok) {
-        setLinkStatus(escHtml(d.error || 'Could not start the connection.'), 'error');
+        setLinkStatus(escHtml(d.error || 'Could not connect. Double-check your server, login and password.'), 'error');
         btn.disabled = false;
         return;
       }
+      // In-app connect: credentials went straight to MetaApi; poll until the
+      // account is live. Clear the password field immediately.
+      const pw = document.getElementById('mt-password'); if (pw) pw.value = '';
+      if (d.connecting || d.accountId) {
+        setLinkStatus('<span class="cf-spin"></span>Account received — connecting to your broker. This can take up to a minute.', '');
+        startPolling();
+        btn.disabled = false;
+        return;
+      }
+      // Fallback: older hosted-link flow (only if the server didn't take creds).
       if (d.configurationLink) {
         window.open(d.configurationLink, '_blank', 'noopener');
-        setLinkStatus('<span class="cf-spin"></span>A secure MetaApi page opened in a new tab. Enter your broker login and password there — we’ll detect the connection automatically.', '');
+        setLinkStatus('<span class="cf-spin"></span>A secure page opened in a new tab — finish there and we’ll detect the connection.', '');
         startPolling();
         btn.disabled = false;
       }
@@ -1120,6 +1179,7 @@
         if (!res.ok) return;
         const d = await res.json();
         if (d.status === 'connected') { clearInterval(_linkPoll); showConnected(d); }
+        else if (d.status === 'disconnected') { clearInterval(_linkPoll); showDisconnected(d); }
       } catch (_) {}
     }, 4000);
   }
