@@ -3810,8 +3810,18 @@ app.post('/api/guardian/link/start', requireAuthApi, apiLimiter, async (req, res
   const platform = String(req.body?.platform || '').toLowerCase();
   const server   = String(req.body?.server || '').trim();
   const name     = String(req.body?.account_name || '').trim().slice(0, 60) || 'EdgeKeeper Guardian';
+  // In-app credentials (optional). These are held only for the single provisioning
+  // call to MetaApi below — never written to broker_connections, never logged.
+  const login    = String(req.body?.login || '').trim();
+  const password = String(req.body?.password || '');
   if (!['mt4', 'mt5'].includes(platform)) return res.status(400).json({ error: 'platform must be mt4 or mt5' });
   if (!server || server.length > 100)     return res.status(400).json({ error: 'A valid broker server name is required.' });
+
+  const inApp = !!(login && password);
+  if (inApp) {
+    if (!/^\d{3,20}$/.test(login))                     return res.status(400).json({ error: 'Your login is the numeric account ID from your broker.' });
+    if (password.length < 3 || password.length > 100)  return res.status(400).json({ error: 'Enter your account password.' });
+  }
 
   // Deterministic transaction id so MetaApi's async broker-settings detection
   // resumes on retry (same user + platform + server → same id).
@@ -3819,7 +3829,10 @@ app.post('/api/guardian/link/start', requireAuthApi, apiLimiter, async (req, res
     .createHash('md5').update(`${userId}:${platform}:${server}`).digest('hex');
 
   try {
-    const acct = await metaapi.createAccount({ platform, server, name, transactionId });
+    const acct = await metaapi.createAccount({
+      platform, server, name, transactionId,
+      ...(inApp ? { login, password } : {}),
+    });
 
     if (acct.pending || !acct.id) {
       // Broker settings detection still running — client retries shortly.
@@ -3833,7 +3846,19 @@ app.post('/api/guardian/link/start', requireAuthApi, apiLimiter, async (req, res
 
     const account = await metaapi.getAccount(acct.id).catch(() => ({}));
     const region  = account?.region || null;
-    const link    = await metaapi.createConfigurationLink(acct.id, 7);
+
+    if (inApp) {
+      // Credentials went straight to MetaApi; the account is provisioning and will
+      // connect on its own. No hosted configuration link, nothing sensitive stored.
+      await supabaseAdmin.from('broker_connections').upsert({
+        user_id: userId, metaapi_account_id: acct.id, platform, server,
+        region, account_name: name, status: 'connecting',
+        status_detail: null, updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+      return res.json({ connecting: true, accountId: acct.id });
+    }
+
+    const link = await metaapi.createConfigurationLink(acct.id, 7);
 
     await supabaseAdmin.from('broker_connections').upsert({
       user_id: userId, metaapi_account_id: acct.id, platform, server,
