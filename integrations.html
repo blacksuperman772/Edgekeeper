@@ -477,6 +477,32 @@
     .cf-input:focus { border-color: var(--gold); }
     .cf-input::placeholder { color: rgba(255,255,255,0.2); }
     .cf-hint { display: block; font-size: 0.74rem; color: var(--muted); margin-top: 7px; }
+    /* MetaTrader-style broker picker: searchable grid of logo tiles */
+    .broker-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+      gap: 8px; margin-top: 10px; max-height: 296px; overflow-y: auto;
+      padding: 2px; scrollbar-width: thin;
+    }
+    .broker-tile {
+      display: flex; flex-direction: column; align-items: center; gap: 9px;
+      padding: 14px 6px; border: 1px solid var(--border); border-radius: 10px;
+      background: rgba(0,0,0,0.22); cursor: pointer; text-align: center;
+      transition: border-color .2s, background .2s, transform .1s;
+    }
+    .broker-tile:hover { border-color: var(--gold-dim); }
+    .broker-tile:active { transform: translateY(1px); }
+    .broker-tile.sel { border-color: var(--gold); background: rgba(184,160,106,0.09); }
+    .broker-logo {
+      width: 42px; height: 42px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--sans); font-weight: 600; font-size: 1rem; letter-spacing: 0.02em;
+      color: #fff; flex-shrink: 0;
+    }
+    .broker-tile-name {
+      font-size: 0.68rem; line-height: 1.25; color: var(--text);
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .broker-grid-empty { grid-column: 1/-1; font-size: 0.8rem; color: var(--muted); padding: 14px 4px; }
     .cf-submit {
       width: 100%; padding: 13px 20px; margin-top: 4px;
       background: var(--gold); border: none; border-radius: 6px;
@@ -605,8 +631,10 @@
           </div>
         </div>
         <div class="cf-row">
-          <label class="cf-label" for="mt-broker">Your broker</label>
-          <select class="cf-input" id="mt-broker" onchange="onBrokerChange()">
+          <span class="cf-label">Your broker</span>
+          <input class="cf-input broker-search" id="mt-broker-search" type="text" placeholder="Search your broker…" autocomplete="off" spellcheck="false" oninput="renderBrokerGrid(this.value)">
+          <div class="broker-grid" id="broker-grid"></div>
+          <select id="mt-broker" onchange="onBrokerChange()" aria-hidden="true" tabindex="-1" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;">
             <option value="">Select your broker…</option>
             <option value="__other__">Other / not listed</option>
           </select>
@@ -850,6 +878,7 @@
       const card = document.getElementById('mt-connect-card');
       if (card) card.style.display = 'block';
       populateBrokers();
+      renderBrokerGrid('');
       // If a broker is already linked, reflect it.
       checkExistingLink();
     } else {
@@ -1087,6 +1116,53 @@
       sel.insertBefore(o, other);
     });
     sel.dataset.populated = '1';
+  }
+
+  // Deterministic brand-ish colour per broker so each tile reads like a distinct
+  // logo without loading any external image (CSP img-src is 'self' data: only).
+  function brokerColor(name) {
+    let h = 0; for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+    return 'hsl(' + (h % 360) + ' 42% 34%)';
+  }
+  function brokerInitials(name) {
+    const letters = name.replace(/[^A-Za-z ]/g, ' ').trim().split(/\s+/);
+    if (letters.length >= 2) return (letters[0][0] + letters[1][0]).toUpperCase();
+    return (name.replace(/[^A-Za-z]/g, '').slice(0, 2) || name.slice(0, 2)).toUpperCase();
+  }
+  function renderBrokerGrid(filter) {
+    const grid = document.getElementById('broker-grid');
+    const sel = document.getElementById('mt-broker');
+    if (!grid || !sel) return;
+    const q = (filter || '').trim().toLowerCase();
+    const names = Object.keys(EK_BROKERS).sort().filter(n => n.toLowerCase().includes(q));
+    grid.innerHTML = '';
+    const tile = (value, label, bg, glyph) => {
+      const t = document.createElement('button');
+      t.type = 'button';
+      t.className = 'broker-tile' + (sel.value === value ? ' sel' : '');
+      const logo = document.createElement('span');
+      logo.className = 'broker-logo'; logo.style.background = bg; logo.textContent = glyph;
+      const nm = document.createElement('span');
+      nm.className = 'broker-tile-name'; nm.textContent = label;
+      t.appendChild(logo); t.appendChild(nm);
+      t.addEventListener('click', () => selectBrokerTile(value));
+      return t;
+    };
+    names.forEach(n => grid.appendChild(tile(n, n, brokerColor(n), brokerInitials(n))));
+    if (!names.length) {
+      const e = document.createElement('div');
+      e.className = 'broker-grid-empty';
+      e.textContent = 'No match — pick “Other / not listed” to enter your server by hand.';
+      grid.appendChild(e);
+    }
+    grid.appendChild(tile('__other__', 'Other / not listed', '#2a2a2a', '+'));
+  }
+  function selectBrokerTile(value) {
+    const sel = document.getElementById('mt-broker');
+    if (!sel) return;
+    sel.value = value;
+    onBrokerChange();
+    renderBrokerGrid((document.getElementById('mt-broker-search') || {}).value || '');
   }
 
   function onBrokerChange() {
