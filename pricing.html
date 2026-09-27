@@ -143,6 +143,53 @@
       background: rgba(184,160,106,0.08);
       border-color: var(--gold);
     }
+    .nav-signin {
+      font-size: 0.7rem; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--faint); text-decoration: none; transition: color .3s;
+    }
+    .nav-signin:hover { color: var(--text); }
+    .ek-install-btn[hidden] { display: none !important; }
+
+    /* ── MOBILE MENU (hamburger) ──────────────────────────────── */
+    .nav-burger {
+      display: none; background: none; border: none; color: var(--text);
+      cursor: none; padding: 6px; position: relative; z-index: 210;
+    }
+    .nav-burger svg { display: block; }
+    .mobile-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+      z-index: 190; opacity: 0; pointer-events: none; transition: opacity .25s;
+    }
+    .mobile-backdrop.open { opacity: 1; pointer-events: auto; }
+    .mobile-menu {
+      position: fixed; top: 0; right: 0; bottom: 0;
+      width: 80%; max-width: 320px;
+      background: var(--obsidian); border-left: 1px solid var(--border);
+      z-index: 200; display: flex; flex-direction: column;
+      padding: calc(84px + env(safe-area-inset-top,0px)) 28px calc(28px + env(safe-area-inset-bottom,0px));
+      transform: translateX(100%); transition: transform .3s cubic-bezier(.32,.72,0,1);
+      overflow-y: auto;
+    }
+    .mobile-menu.open { transform: translateX(0); }
+    .mobile-menu a, .mobile-menu button {
+      text-align: left; font-family: var(--sans); font-size: 0.98rem; font-weight: 300;
+      color: var(--text); text-decoration: none; padding: 16px 0;
+      border: none; border-bottom: 1px solid var(--border);
+      background: none; width: 100%; cursor: none;
+    }
+    .mobile-menu a:hover, .mobile-menu button:hover { color: var(--gold); }
+    .mobile-menu .ek-install-btn {
+      margin-top: 20px; text-align: center; color: var(--gold);
+      border: 1px solid rgba(184,160,106,0.4); border-radius: 4px;
+      letter-spacing: 0.14em; text-transform: uppercase; font-size: 0.72rem;
+    }
+    @media (max-width: 900px) {
+      .nav-burger { display: flex; }
+      .nav-desktop-only { display: none !important; }
+    }
+    @media (min-width: 901px) {
+      .mobile-menu, .mobile-backdrop { display: none !important; }
+    }
 
     /* ── PAGE LAYOUT ──────────────────────────────────────────── */
     .page-wrap {
@@ -910,12 +957,27 @@
     <li><a href="edgekeeper.html#how">Process</a></li>
     <li><a href="pricing.html" class="active">Pricing</a></li>
   </ul>
-  <div style="display:flex;align-items:center;gap:20px;">
-    <a href="auth.html" style="font-size:0.7rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--faint);text-decoration:none;transition:color .3s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--faint)'" data-guest-only>Sign In</a>
-    <a href="auth.html" class="nav-cta" data-guest-only>Apply</a>
-    <a href="/workspace.html" class="nav-cta ek-auth-cta"><span class="cta-full">Enter your office</span><span class="cta-short">Office</span></a>
+  <div class="nav-right" style="display:flex;align-items:center;gap:20px;">
+    <button class="ek-install-btn nav-cta nav-desktop-only" type="button" hidden>Install app</button>
+    <a href="auth.html" class="nav-signin nav-desktop-only" data-guest-only>Sign In</a>
+    <a href="auth.html" class="nav-cta nav-desktop-only" data-guest-only>Apply</a>
+    <a href="/workspace.html" class="nav-cta ek-auth-cta nav-desktop-only"><span class="cta-full">Enter your office</span><span class="cta-short">Office</span></a>
+    <button class="nav-burger" type="button" aria-label="Open menu" aria-expanded="false" onclick="toggleMobileMenu()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="24" height="24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
   </div>
 </nav>
+<div class="mobile-backdrop" id="mobile-backdrop" onclick="toggleMobileMenu()"></div>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="edgekeeper.html#institution">Philosophy</a>
+  <a href="edgekeeper.html#mentors">Mentors</a>
+  <a href="edgekeeper.html#how">Process</a>
+  <a href="pricing.html">Pricing</a>
+  <a href="auth.html" data-guest-only>Sign In</a>
+  <a href="auth.html" data-guest-only>Apply</a>
+  <a href="/workspace.html" class="ek-auth-cta">Enter your office</a>
+  <button class="ek-install-btn" type="button" hidden>Install app</button>
+</div>
 
 <!-- PAGE WRAP -->
 <div class="page-wrap">
@@ -1415,6 +1477,18 @@
 </footer>
 
 <script>
+
+// ── MOBILE MENU (hamburger) ─────────────────────────────────────────
+function toggleMobileMenu() {
+  const menu = document.getElementById('mobile-menu');
+  const back = document.getElementById('mobile-backdrop');
+  const open = !menu.classList.contains('open');
+  menu.classList.toggle('open', open);
+  if (back) back.classList.toggle('open', open);
+  const burger = document.querySelector('.nav-burger');
+  if (burger) burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  document.body.style.overflow = open ? 'hidden' : '';
+}
 
 // ── BILLING TOGGLE ──────────────────────────────────────────────────
 let isAnnual = false;

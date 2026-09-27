@@ -54,12 +54,45 @@
     event.preventDefault();
     installPrompt = event;
     setTimeout(showInstallPrompt, 1200);
+    updateInstallButtons();
   });
   window.addEventListener('appinstalled', function () {
     installPrompt = null;
     var existing = document.querySelector('.ek-install-banner');
     if (existing) existing.remove();
+    updateInstallButtons();
   });
+
+  // Header "Install app" buttons (any element with class .ek-install-btn).
+  // Shown only when the app is actually installable (Chrome/Android/desktop with
+  // a captured prompt, or iOS Safari where install is manual). Hidden once the
+  // app is running standalone. Clicking fires the native prompt, or on iOS
+  // surfaces the Share → Add to Home Screen hint via the existing banner.
+  function updateInstallButtons() {
+    var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    var canInstall = !standalone && (!!installPrompt || ios);
+    var btns = document.querySelectorAll('.ek-install-btn');
+    for (var i = 0; i < btns.length; i++) {
+      var btn = btns[i];
+      btn.hidden = !canInstall;
+      if (!btn.dataset.ekWired) {
+        btn.dataset.ekWired = '1';
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          if (installPrompt) {
+            installPrompt.prompt();
+            installPrompt.userChoice.then(function () { installPrompt = null; updateInstallButtons(); });
+          } else {
+            localStorage.removeItem('ek_install_dismissed_v1');
+            showInstallPrompt();
+          }
+        });
+      }
+    }
+  }
+  window.addEventListener('DOMContentLoaded', updateInstallButtons);
+  window.addEventListener('load', updateInstallButtons);
 
   function base64ToBytes(value) {
     var padding = '='.repeat((4 - value.length % 4) % 4);
