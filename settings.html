@@ -553,10 +553,13 @@
       const { settings } = await res.json();
 
       const planInfo = PLAN_LABELS[settings.subscription_status] || PLAN_LABELS.free;
+      const isFreePlan = !settings.subscription_status || settings.subscription_status === 'free';
       document.getElementById('plan-name').textContent  = planInfo.name;
-      document.getElementById('plan-price').textContent = planInfo.price;
-      document.getElementById('plan-badge').textContent =
-        settings.subscription_status === 'free' ? 'Free' : 'Active';
+      // On the free plan the name already says "Free" — showing the price ("Free")
+      // and a "Free" badge next to it repeated the word three times. Show the price
+      // only for paid plans, and keep the badge a single clean status.
+      document.getElementById('plan-price').textContent = isFreePlan ? '' : planInfo.price;
+      document.getElementById('plan-badge').textContent = 'Active';
 
       const isPaid = settings.subscription_status && settings.subscription_status !== 'free';
       document.getElementById('billing-upgrade-btn').textContent = isPaid ? 'Change Plan' : 'View Plans & Upgrade';
@@ -564,7 +567,10 @@
       document.getElementById('billing-cancel-btn').style.display = isPaid ? '' : 'none';
 
       document.getElementById('display-name').value     = settings.display_name || '';
-      document.getElementById('mentor-select').value    = settings.mentor || 'marcus';
+      // Profiles may still hold legacy mentor slugs (mike/ashley). The select only
+      // has marcus/iris, so map legacy → canonical or the dropdown renders blank.
+      const MENTOR_CANON = { mike: 'marcus', marcus: 'marcus', ashley: 'iris', iris: 'iris' };
+      document.getElementById('mentor-select').value    = MENTOR_CANON[settings.mentor] || 'marcus';
       document.getElementById('timezone-select').value  = settings.timezone || 'UTC';
       document.getElementById('email-notifs').checked   = settings.email_notifications !== false;
       document.getElementById('proactive-msgs').checked = settings.proactive_messages !== false;
