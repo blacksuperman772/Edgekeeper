@@ -152,6 +152,9 @@
       background: rgba(184,160,106,0.08);
       border-color: var(--gold);
     }
+    /* "Install app" button — shown by pwa.js only when installable */
+    .ek-install-btn { cursor: none; font-family: inherit; }
+    .ek-install-btn[hidden] { display: none !important; }
 
     /* ── HERO ──────────────────────────────────────────────────── */
     #hero {
@@ -1409,6 +1412,7 @@
       nav { padding: 20px 24px; }
       .nav-links { display: none; }
       .nav-signin { display: none; }
+      .nav-desktop-only { display: none !important; }
       .hamburger { display: flex; }
       .section-inner { padding: 0 24px; }
       .inst-grid, .engine-grid, .mentor-card { grid-template-columns: 1fr; }
@@ -1579,6 +1583,7 @@
     <a href="/auth.html" class="nav-signin" style="font-size:0.7rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--faint);text-decoration:none;transition:color .3s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--faint)'" data-guest-only>Sign In</a>
     <a href="/onboarding.html?mentor=marcus" class="nav-cta" data-guest-only>Talk to Marcus</a>
     <a href="/workspace.html" class="nav-cta ek-auth-cta"><span class="cta-full">Enter your office</span><span class="cta-short">Office</span></a>
+    <button class="ek-install-btn nav-cta nav-desktop-only" type="button" hidden>Install app</button>
     <button class="hamburger" id="hamburger-btn" aria-label="Toggle menu" onclick="toggleMobileNav()">
       <span></span><span></span><span></span>
     </button>
@@ -1595,6 +1600,7 @@
   <a href="/auth.html" onclick="closeMobileNav()" data-guest-only>Sign In</a>
   <a href="/onboarding.html?mentor=marcus" class="mobile-nav-apply" onclick="closeMobileNav()" data-guest-only>Talk to Marcus</a>
   <a href="/workspace.html" class="mobile-nav-apply ek-auth-cta" onclick="closeMobileNav()">Enter your office</a>
+  <button class="ek-install-btn mobile-nav-apply" type="button" hidden>Install app</button>
 </div>
 
 <!-- HERO -->
