@@ -3600,10 +3600,64 @@ async function maybeAlertGuardianBreach(userId, level, snap) {
   }
   if (level >= 3 && level > prev) {
     await supabaseAdmin.from('guardian_data').update({ last_alert_level: level }).eq('user_id', userId);
+    const label = (INTERVENTION_LADDER[level] && INTERVENTION_LADDER[level].label) || `Level ${level}`;
+
+    // A short human line describing what tripped — reused by push + call.
+    const bits = [];
+    if (snap.dailyPct != null && snap.dailyPct < 0) bits.push(`down ${Math.abs(snap.dailyPct).toFixed(1)}% today`);
+    if (snap.losses)   bits.push(`${snap.losses} losses in a row`);
+    if (snap.drawdown) bits.push(`${Math.abs(snap.drawdown).toFixed(1)}% drawdown`);
+    const summary = bits.join(' · ') || 'your account hit a limit';
+
+    // Live push — the moment it trips, on the device, even with the app closed.
+    await notifications.sendToUser(supabaseAdmin, userId, {
+      type:     'important',
+      title:    `Iris — ${label}`,
+      body:     summary.charAt(0).toUpperCase() + summary.slice(1) + '. Step into the chamber.',
+      deepLink: '/chamber',
+    }).catch(e => console.error('Guardian breach push error:', e && e.message));
+
+    // Outbound call at the top of the ladder (Cooldown+), if configured & consented.
+    if (level >= 4) {
+      await maybeCallGuardianBreach(userId, level, label, summary).catch(e => console.error('Guardian breach call error:', e && e.message));
+    }
+
     const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId);
     const email = authUser?.user?.email;
-    const label = (INTERVENTION_LADDER[level] && INTERVENTION_LADDER[level].label) || `Level ${level}`;
     if (email) await sendEmail(email, `Iris flagged your account — ${label}`, guardianBreachEmailHtml(level, snap));
+  }
+}
+
+// Outbound breach call. Real only when TWILIO_* env + the trader's guardian_phone
+// and call consent are all present; a graceful no-op otherwise so a missing setup
+// never breaks the sync. ponytail: Twilio <Say> TTS for now — swap the TwiML for a
+// hosted ElevenLabs audio URL (Iris's actual voice) when that's wired.
+async function maybeCallGuardianBreach(userId, level, label, summary) {
+  const sid = process.env.TWILIO_ACCOUNT_SID;
+  const token = process.env.TWILIO_AUTH_TOKEN;
+  const from = process.env.TWILIO_FROM_NUMBER;
+  if (!sid || !token || !from) return; // calling not configured — silent skip
+  let phone = null, consent = false;
+  try {
+    const { data: p } = await supabaseAdmin.from('user_profiles')
+      .select('guardian_phone, guardian_call_consent').eq('id', userId).maybeSingle();
+    phone = p?.guardian_phone; consent = !!p?.guardian_call_consent;
+  } catch (_) { return; } // columns not present yet — skip
+  if (!phone || !consent) return; // no number or no consent
+  const speech = `This is Iris from EdgeKeeper. You are ${summary}. You have hit ${label}. Step away from the screen. Open EdgeKeeper when you are ready to talk it through.`;
+  const twiml = `<Response><Say voice="Polly.Joanna">${speech.replace(/[<>&"]/g, ' ')}</Say></Response>`;
+  const body = new URLSearchParams({ To: String(phone), From: from, Twiml: twiml });
+  const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(sid)}/Calls.json`, {
+    method: 'POST',
+    headers: {
+      Authorization: 'Basic ' + Buffer.from(`${sid}:${token}`).toString('base64'),
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body,
+  });
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    console.error('Twilio breach call failed:', res.status, t.slice(0, 200));
   }
 }
 
@@ -6714,6 +6768,33 @@ app.get('/api/cron/guardian-health', verifyCronSecret, async (req, res) => {
     res.json({ ok: true, checked });
   } catch (err) {
     console.error('Guardian health cron error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Always-on Guardian monitor — the live sweep. Point an external scheduler
+// (cron-job.org, Upstash QStash, etc.) at this every ~1 minute with the
+// Authorization: Bearer <CRON_SECRET> header. Each pass reconciles every
+// connected account against MetaApi, which syncs guardian_data, fires the breach
+// push/call, and (with 'protect' consent) closes positions — so a limit breach is
+// caught within a minute even when no one has the app open. Vercel Hobby's daily
+// cron can't do minute cadence, hence the external pinger.
+app.get('/api/cron/guardian-monitor', verifyCronSecret, async (req, res) => {
+  if (!metaapi.isEnabled()) return res.json({ ok: true, skipped: 'metaapi disabled' });
+  try {
+    const { data: links } = await supabaseAdmin
+      .from('broker_connections')
+      .select('user_id')
+      .eq('status', 'connected')
+      .not('metaapi_account_id', 'is', null);
+    let swept = 0;
+    for (const l of links || []) {
+      await reconcileGuardianLink(l.user_id).catch(() => {});
+      swept++;
+    }
+    res.json({ ok: true, swept });
+  } catch (err) {
+    console.error('Guardian monitor cron error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
