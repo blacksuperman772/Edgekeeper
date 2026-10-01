@@ -17,155 +17,502 @@
       --text:#d6dcd4; --bright:#eef2ec; --muted:#5f6b5e; --faint:#7d8a7c;
       --amber:#b8924a; --red:#a85a4a;
       --serif:'Cormorant Garamond',Georgia,serif; --sans:'Inter',sans-serif; --mono:'DM Mono',monospace;
+      --accent:var(--iris);
     }
     html { font-size:16px; }
-    body { background:var(--black); color:var(--text); font-family:var(--sans); font-weight:300; line-height:1.7; min-height:100vh; -webkit-font-smoothing:antialiased; }
+    body {
+      background:var(--black); color:var(--text); font-family:var(--sans); font-weight:300;
+      height:100vh; overflow:hidden; -webkit-font-smoothing:antialiased;
+    }
     a { color:inherit; }
+    /* The whole room takes her colour. When she escalates, the room does too. */
+    body[data-level="3"] { --accent:var(--amber); }
+    body[data-level="4"], body[data-level="5"] { --accent:var(--red); }
 
-    #chamber-bg { position:fixed; inset:0; z-index:0; background:url('/assets/chamber-ambient.webp') center/cover no-repeat; opacity:0.22; pointer-events:none; }
-    #chamber-bg::after { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at center, transparent 25%, var(--black) 88%); }
-    nav { position:relative; z-index:1; display:flex; align-items:center; justify-content:space-between; padding:24px 48px; border-bottom:1px solid var(--border); }
-    .nav-logo { font-family:var(--serif); font-size:1rem; letter-spacing:0.22em; text-transform:uppercase; color:var(--bright); text-decoration:none; }
+    /* ── SHELL ─────────────────────────────────────────────────────── */
+    .shell {
+      display:grid; grid-template-columns:272px 1fr; grid-template-rows:56px 1fr;
+      height:100vh;
+    }
+    .topbar {
+      grid-column:1 / -1; background:var(--stone); border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between; padding:0 22px; gap:16px;
+    }
+    .tb-left { display:flex; align-items:center; gap:26px; min-width:0; }
+    .nav-logo { font-family:var(--serif); font-size:0.95rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--bright); text-decoration:none; white-space:nowrap; }
     .nav-logo span { color:var(--iris); }
-    .nav-right { font-family:var(--mono); font-size:0.6rem; letter-spacing:0.18em; text-transform:uppercase; color:var(--faint); text-decoration:none; transition:color .3s; }
-    .nav-right:hover { color:var(--text); }
+    .tb-title { font-family:var(--mono); font-size:0.56rem; letter-spacing:0.24em; text-transform:uppercase; color:var(--iris-dim); white-space:nowrap; }
+    @keyframes pulse { 0%,100%{ box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 30%, transparent);} 50%{ box-shadow:0 0 0 9px transparent;} }
+    .hamburger { display:none; background:none; border:1px solid var(--border); color:var(--faint); width:34px; height:34px; cursor:pointer; font-size:1rem; }
 
-    main { position:relative; z-index:1; max-width:680px; margin:0 auto; padding:80px 32px 120px; }
+    /* ── SIDEBAR — her live state lives here, always visible ────────── */
+    .side { background:var(--stone); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+    .side-status { padding:22px 20px 18px; border-bottom:1px solid var(--border); text-align:center; }
+    .side-dot { width:9px; height:9px; border-radius:50%; margin:0 auto 14px; background:var(--accent); animation:pulse 3.4s ease-in-out infinite; }
+    .side-state { font-family:var(--serif); font-size:1.9rem; font-weight:300; color:var(--bright); line-height:1.05; }
+    .side-desc { font-size:0.76rem; color:var(--faint); line-height:1.6; margin-top:9px; }
 
-    .eyebrow { font-family:var(--mono); font-size:0.58rem; letter-spacing:0.34em; text-transform:uppercase; color:var(--iris-dim); text-align:center; margin-bottom:40px; }
+    /* the three vitals that matter, permanently on screen */
+    .side-vitals { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border); border-bottom:1px solid var(--border); }
+    .sv { background:var(--stone); padding:13px 6px; text-align:center; }
+    .sv-label { font-family:var(--mono); font-size:0.44rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--muted); margin-bottom:7px; }
+    .sv-val { font-family:var(--serif); font-size:1.15rem; color:var(--text); line-height:1; }
+    .sv-val.warn { color:var(--amber); } .sv-val.alert { color:var(--red); }
 
-    /* status monolith */
-    .monolith { text-align:center; padding:18px 0 8px; }
-    .status-dot { width:9px; height:9px; border-radius:50%; margin:0 auto 26px; background:var(--iris); box-shadow:0 0 0 0 var(--iris-bg); animation:pulse 3.4s ease-in-out infinite; }
-    @keyframes pulse { 0%,100%{ box-shadow:0 0 0 0 rgba(107,140,107,0.18);} 50%{ box-shadow:0 0 0 14px rgba(107,140,107,0);} }
-    .state-name { font-family:var(--serif); font-size:clamp(2.6rem,7vw,3.8rem); font-weight:300; color:var(--bright); line-height:1.05; letter-spacing:-0.01em; }
-    .state-desc { font-size:0.95rem; color:var(--faint); max-width:420px; margin:20px auto 0; line-height:1.8; }
+    .side-nav { flex:1; overflow-y:auto; padding:12px 0; }
+    .side-lbl { font-family:var(--mono); font-size:0.5rem; letter-spacing:0.22em; text-transform:uppercase; color:var(--muted); padding:10px 20px 8px; }
+    .nav-item {
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding:10px 20px; font-size:0.86rem; color:var(--faint); cursor:pointer;
+      border-left:2px solid transparent; transition:color .2s, background .2s, border-color .2s;
+    }
+    .nav-item:hover { color:var(--text); background:rgba(255,255,255,0.02); }
+    .nav-item.active { color:var(--bright); border-left-color:var(--accent); background:var(--iris-bg); }
+    .nav-badge { font-family:var(--mono); font-size:0.5rem; letter-spacing:0.1em; color:var(--muted); border:1px solid var(--border); padding:2px 6px; border-radius:3px; }
+    .side-foot { padding:14px 20px 18px; border-top:1px solid var(--border); font-family:var(--mono); font-size:0.46rem; line-height:1.7; color:var(--muted); opacity:0.8; }
 
-    /* clinical readouts */
-    .readouts { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border); border:1px solid var(--border); margin:64px 0 0; }
-    .readout { background:var(--black); padding:26px 18px; text-align:center; }
-    .readout-label { font-family:var(--mono); font-size:0.52rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
-    .readout-value { font-family:var(--serif); font-size:2rem; font-weight:300; color:var(--text); line-height:1; }
-    .readout-value.warn { color:var(--amber); }
-    .readout-value.alert { color:var(--red); }
-    .meta-line { text-align:center; font-family:var(--mono); font-size:0.56rem; letter-spacing:0.12em; color:var(--muted); margin-top:24px; }
+    /* ── CHAT — the room itself ─────────────────────────────────────── */
+    .main { display:flex; overflow:hidden; position:relative; min-width:0; }
+    .chat { flex:1; display:flex; flex-direction:column; min-width:0; position:relative; overflow:hidden; }
+    .chat-bg { position:absolute; inset:0; background:url('/assets/chamber-ambient.webp') center/cover no-repeat; opacity:0.05; pointer-events:none; filter:blur(1px); }
+    .chat-bg::after { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at center, transparent 8%, var(--black) 78%); }
+    /* flex column + margin-top:auto anchors a short conversation to the bottom
+       (near the composer, like a real chat app); it scrolls from the top only
+       once the thread is tall enough to overflow. */
+    .thread { flex:1; overflow-y:auto; padding:34px 34px 22px; position:relative; scroll-behavior:smooth; display:flex; flex-direction:column; }
+    .thread-inner { max-width:660px; width:100%; margin:auto auto 0; }
 
-    /* dormant note */
-    .dormant { text-align:center; margin-top:64px; padding-top:40px; border-top:1px solid var(--border); }
-    .dormant p { font-family:var(--serif); font-size:1.25rem; font-style:italic; color:var(--faint); line-height:1.8; max-width:480px; margin:0 auto; }
-    .iris-whisper { opacity:0; animation:irisEmerge 2.4s cubic-bezier(.2,.6,.2,1) .6s forwards; }
-    @keyframes irisEmerge { from { opacity:0; transform:translateY(10px); filter:blur(3px); } to { opacity:0.9; transform:translateY(0); filter:blur(0); } }
-    @media (prefers-reduced-motion:reduce) { .iris-whisper { animation:none; opacity:0.9; } }
+    .iris-msg {
+      font-family:var(--serif); font-size:1.16rem; font-weight:300; line-height:1.85; color:var(--bright);
+      padding-left:18px; border-left:1px solid var(--accent); margin:0 0 26px; white-space:pre-wrap;
+      animation:emerge 1s cubic-bezier(.2,.6,.2,1) both;
+    }
+    .iris-msg.calm { color:var(--faint); font-style:italic; border-left-color:var(--iris-dim); }
+    .user-msg {
+      font-size:0.9rem; line-height:1.65; color:rgba(214,220,212,0.66); padding:11px 15px;
+      background:rgba(255,255,255,0.03); border:1px solid var(--border);
+      margin:0 0 26px auto; max-width:78%; width:fit-content; animation:emerge .5s ease both;
+    }
+    .sys-msg {
+      font-family:var(--mono); font-size:0.56rem; letter-spacing:0.14em; text-transform:uppercase;
+      color:var(--accent); text-align:center; margin:8px 0 26px; opacity:0.85;
+      animation:emerge .6s ease both;
+    }
+    .typing { font-family:var(--mono); font-size:0.58rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--iris-dim); padding-left:18px; margin-bottom:20px; }
+    @keyframes emerge { from { opacity:0; transform:translateY(8px); filter:blur(2px); } to { opacity:1; transform:none; filter:blur(0); } }
+    @media (prefers-reduced-motion:reduce) { .iris-msg,.user-msg,.sys-msg { animation:none; } .thread { scroll-behavior:auto; } }
 
-    /* presence / conversation */
-    .presence { margin-top:64px; padding-top:48px; border-top:1px solid var(--iris-dim); }
-    .iris-msg { font-family:var(--serif); font-size:1.2rem; font-weight:300; line-height:1.9; color:var(--bright); padding-left:18px; border-left:1px solid var(--iris); margin-bottom:14px; white-space:pre-wrap; }
-    .user-msg { font-size:0.9rem; color:rgba(214,220,212,0.6); padding:10px 14px; background:rgba(255,255,255,0.03); border:1px solid var(--border); margin:24px 0 24px auto; max-width:80%; }
-    .typing { font-family:var(--mono); font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--iris-dim); padding-left:18px; }
-    .chat-input-wrap { display:flex; gap:10px; margin-top:36px; }
-    .chat-input { flex:1; background:var(--surface); border:1px solid var(--border); color:var(--text); font-family:var(--sans); font-size:0.9rem; padding:12px 16px; resize:none; line-height:1.5; max-height:140px; }
-    .chat-input:focus { outline:none; border-color:var(--iris-dim); }
-    .chat-send { background:var(--iris-bg); border:1px solid var(--iris-dim); color:var(--iris); font-family:var(--mono); font-size:0.58rem; letter-spacing:0.14em; text-transform:uppercase; padding:0 20px; cursor:pointer; transition:background .2s; }
-    .chat-send:hover { background:rgba(107,140,107,0.12); }
+    /* composer pinned to the bottom, like a real room */
+    .composer { border-top:1px solid var(--border); background:var(--stone); padding:16px 34px 18px; position:relative; }
+    .composer-inner { max-width:660px; margin:0 auto; display:flex; gap:10px; align-items:flex-end; }
+    .chat-input {
+      flex:1; background:var(--surface); border:1px solid var(--border); color:var(--text);
+      font-family:var(--sans); font-size:0.92rem; padding:13px 16px; resize:none; line-height:1.5; max-height:150px;
+    }
+    .chat-input:focus { outline:none; border-color:var(--accent); }
+    .chat-send {
+      background:var(--iris-bg); border:1px solid var(--accent); color:var(--accent); font-family:var(--mono);
+      font-size:0.56rem; letter-spacing:0.14em; text-transform:uppercase; padding:0 22px; height:46px; cursor:pointer; transition:background .2s;
+    }
+    .chat-send:hover { background:color-mix(in srgb, var(--accent) 12%, transparent); }
     .chat-send:disabled { opacity:0.4; cursor:default; }
+    .composer-hint { max-width:660px; margin:9px auto 0; font-family:var(--mono); font-size:0.48rem; letter-spacing:0.1em; color:var(--muted); }
 
-    /* locked / empty states */
-    .gate { text-align:center; padding:40px 0; }
-    .gate h1 { font-family:var(--serif); font-size:2rem; font-weight:300; color:var(--bright); margin-bottom:18px; }
-    .gate p { color:var(--faint); max-width:420px; margin:0 auto 28px; line-height:1.8; }
-    .gate a { display:inline-block; font-family:var(--mono); font-size:0.6rem; letter-spacing:0.16em; text-transform:uppercase; color:var(--iris); border:1px solid var(--iris-dim); padding:12px 26px; text-decoration:none; transition:background .2s; }
-    .gate a:hover { background:var(--iris-bg); }
+    /* ── PANEL — detail slides in, conversation stays ───────────────── */
+    .panel { width:0; overflow:hidden; transition:width .35s ease; flex-shrink:0; background:var(--stone); border-left:1px solid var(--border); }
+    .panel.open { width:400px; }
+    .panel-head { display:flex; align-items:center; justify-content:space-between; padding:0 20px; height:56px; border-bottom:1px solid var(--border); }
+    .panel-title { font-family:var(--mono); font-size:0.56rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--faint); white-space:nowrap; }
+    .panel-x { background:none; border:none; color:var(--muted); font-size:1.2rem; cursor:pointer; line-height:1; padding:4px 8px; }
+    .panel-x:hover { color:var(--text); }
+    .panel-body { padding:22px 20px 40px; overflow-y:auto; height:calc(100vh - 112px); }
 
-    .loading { text-align:center; font-family:var(--mono); font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); padding:80px 0; }
+    /* ── shared components inside panels ───────────────────────────── */
+    .readouts { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border); border:1px solid var(--border); }
+    .readouts.two { grid-template-columns:repeat(2,1fr); }
+    .readout { background:var(--black); padding:20px 12px; text-align:center; }
+    .readout-label { font-family:var(--mono); font-size:0.48rem; letter-spacing:0.16em; text-transform:uppercase; color:var(--muted); margin-bottom:11px; }
+    .readout-value { font-family:var(--serif); font-size:1.6rem; font-weight:300; color:var(--text); line-height:1; }
+    .readout-value.warn { color:var(--amber); } .readout-value.alert { color:var(--red); } .readout-value.pos { color:var(--iris); }
+    .meta-line { text-align:center; font-family:var(--mono); font-size:0.52rem; letter-spacing:0.1em; color:var(--muted); margin-top:16px; line-height:1.7; }
+    .panel-sub { font-size:0.8rem; color:var(--muted); line-height:1.65; margin-bottom:18px; }
 
+    .ladder { border:1px solid var(--border); }
+    .ladder-row { display:grid; grid-template-columns:auto 1fr; gap:14px; align-items:baseline; padding:13px 15px; border-bottom:1px solid var(--border); }
+    .ladder-row:last-child { border-bottom:none; }
+    .ladder-row.active { background:var(--iris-bg); }
+    .ladder-lvl { font-family:var(--mono); font-size:0.5rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); white-space:nowrap; }
+    .ladder-row.active .ladder-lvl { color:var(--accent); }
+    .ladder-name { font-family:var(--serif); font-size:1.02rem; color:var(--faint); }
+    .ladder-row.active .ladder-name { color:var(--bright); }
+    .ladder-desc { font-size:0.76rem; color:var(--muted); margin-top:3px; line-height:1.5; }
+
+    .limits-grid { display:grid; grid-template-columns:1fr 1fr; gap:13px; }
+    .lim-field { display:flex; flex-direction:column; gap:6px; }
+    .lim-field span { font-family:var(--mono); font-size:0.5rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); }
+    .lim-field input { background:var(--surface); border:1px solid var(--border); color:var(--text); font-family:var(--mono); font-size:0.86rem; padding:10px 11px; }
+    .lim-field input:focus { outline:none; border-color:var(--accent); }
+    .lim-status { display:block; font-family:var(--mono); font-size:0.52rem; letter-spacing:0.06em; color:var(--accent); margin-top:13px; min-height:13px; }
+
+    .g-btn { background:var(--iris-bg); border:1px solid var(--accent); color:var(--accent); font-family:var(--mono); font-size:0.54rem; letter-spacing:0.14em; text-transform:uppercase; padding:11px 20px; cursor:pointer; transition:background .2s; text-decoration:none; display:inline-block; }
+    .g-btn:hover { background:color-mix(in srgb, var(--accent) 12%, transparent); }
+    .g-btn.ghost { background:none; border-color:var(--border); color:var(--faint); }
+    .g-btn.ghost:hover { border-color:var(--iris-dim); color:var(--text); }
+    .g-btn.danger { background:none; border-color:rgba(168,90,74,0.4); color:var(--red); }
+    .g-btn.danger:hover { background:rgba(168,90,74,0.08); }
+    .panel-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
+
+    .trend { display:flex; align-items:flex-end; gap:5px; height:130px; padding-top:8px; }
+    .trend-bar { flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; height:100%; }
+    .trend-fill { width:100%; background:var(--muted); border-radius:1px; min-height:3px; transition:height .5s ease; }
+    .trend-fill.up { background:var(--iris); } .trend-fill.down { background:var(--red); }
+    .trend-day { font-family:var(--mono); font-size:0.4rem; color:var(--muted); margin-top:6px; white-space:nowrap; }
+    .trend-empty { text-align:center; color:var(--muted); font-family:var(--mono); font-size:0.56rem; padding:22px 0; line-height:1.8; }
+
+    /* ── gate / loading overlay ─────────────────────────────────────── */
+    #gate { position:fixed; inset:0; z-index:200; background:var(--black); display:none; align-items:center; justify-content:center; padding:32px; }
+    #gate.show { display:flex; }
+    .gate-inner { text-align:center; max-width:480px; }
+    .gate-inner h1 { font-family:var(--serif); font-size:2rem; font-weight:300; color:var(--bright); margin-bottom:16px; line-height:1.25; }
+    .gate-inner p { color:var(--faint); line-height:1.8; margin-bottom:26px; }
+    .gate-inner a { display:inline-block; font-family:var(--mono); font-size:0.58rem; letter-spacing:0.16em; text-transform:uppercase; color:var(--iris); border:1px solid var(--iris-dim); padding:12px 26px; text-decoration:none; }
+    .gate-inner a:hover { background:var(--iris-bg); }
+    .loading { font-family:var(--mono); font-size:0.58rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); }
+
+    .scrim { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:45; }
+    .scrim.show { display:block; }
+
+    /* ── responsive ─────────────────────────────────────────────────── */
+    @media (max-width:1100px) {
+      .panel.open { position:absolute; top:0; right:0; bottom:0; width:min(400px,84%); z-index:50; box-shadow:-26px 0 60px rgba(0,0,0,0.6); }
+    }
+    @media (max-width:860px) {
+      .shell { grid-template-columns:1fr; }
+      .hamburger { display:block; }
+      .side {
+        position:fixed; top:56px; bottom:0; left:0; width:280px; z-index:60;
+        transform:translateX(-100%); transition:transform .3s ease;
+      }
+      .side.open { transform:none; }
+      .thread { padding:24px 18px 16px; }
+      .composer { padding:13px 18px 15px; }
+      .tb-title { display:none; }
+    }
     @media (max-width:560px) {
-      nav { padding:16px 16px; gap:12px; }
-      .nav-logo { font-size:0.82rem; letter-spacing:0.14em; }
-      main { padding:48px 20px 110px; }
-      .readout { padding:18px 8px; }
-      .readout-value { font-size:1.5rem; }
-      .readout-label { font-size:0.48rem; letter-spacing:0.14em; }
-      .state-desc, .gate p { font-size:0.9rem; }
-      .iris-msg { font-size:1.05rem; }
+      .side-state { font-size:1.6rem; }
+      .iris-msg { font-size:1.04rem; }
       .user-msg { max-width:88%; }
-      .chat-send { padding:0 15px; }
+      .limits-grid { grid-template-columns:1fr; }
       .chat-input { font-size:16px; }
+      .chat-send { padding:0 15px; }
+      .nav-logo { font-size:0.8rem; letter-spacing:0.14em; }
     }
   </style>
 </head>
 <body>
-  <div id="chamber-bg"></div>
-  <nav>
-    <a href="/edgekeeper.html" class="nav-logo">Edge<span>K</span>eeper</a>
-    <div class="ek-pillars" role="navigation" aria-label="Spaces" style="--ek-pillar-active:var(--iris);">
-      <a href="/workspace.html" data-space="marcus" class="ek-pillar">Marcus</a>
-      <a href="/my-academy" data-space="theo" class="ek-pillar">Theo</a>
-      <a href="/chamber" data-space="iris" class="ek-pillar">Iris</a>
-    </div>
-  </nav>
+  <div class="shell">
+    <header class="topbar">
+      <div class="tb-left">
+        <button class="hamburger" id="burger" aria-label="Menu">☰</button>
+        <a href="/edgekeeper.html" class="nav-logo">Edge<span>K</span>eeper</a>
+        <span class="tb-title">Guardian · Iris's Chamber</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div class="ek-pillars" role="navigation" aria-label="Spaces" style="--ek-pillar-active:var(--iris);">
+          <a href="/workspace.html" data-space="marcus" class="ek-pillar">Marcus</a>
+          <a href="/my-academy" data-space="theo" class="ek-pillar">Theo</a>
+          <a href="/chamber" data-space="iris" class="ek-pillar">Iris</a>
+        </div>
+      </div>
+    </header>
 
-  <main>
-    <div class="eyebrow">Guardian · Iris's Chamber</div>
-    <div id="chamber"><div class="loading">Iris is reading the account…</div></div>
-    <div style="margin-top:48px;font-family:var(--mono);font-size:0.52rem;letter-spacing:0.04em;color:var(--muted);text-align:center;opacity:0.75;line-height:1.7;">
-      Behavioural risk monitoring only — not financial advice, and not a regulated risk-management system. Iris does not connect to or control your broker and cannot guarantee any trade is blocked or any loss prevented. Your trading decisions and outcomes are entirely your own.
-    </div>
-  </main>
+    <aside class="side" id="side">
+      <div class="side-status">
+        <div class="side-dot"></div>
+        <div class="side-state" id="side-state">—</div>
+        <div class="side-desc" id="side-desc">Reading the account…</div>
+      </div>
+      <div class="side-vitals">
+        <div class="sv"><div class="sv-label">Streak</div><div class="sv-val" id="sv-streak">—</div></div>
+        <div class="sv"><div class="sv-label">Day P&amp;L</div><div class="sv-val" id="sv-pnl">—</div></div>
+        <div class="sv"><div class="sv-label">Drawdown</div><div class="sv-val" id="sv-dd">—</div></div>
+      </div>
+      <nav class="side-nav" id="side-nav">
+        <div class="side-lbl">The Guardian</div>
+        <div class="nav-item" data-panel="readings">Readings</div>
+        <div class="nav-item" data-panel="account">The account<span class="nav-badge" id="badge-platform">—</span></div>
+        <div class="nav-item" data-panel="trend">Recent days</div>
+        <div class="nav-item" data-panel="ladder">How Iris responds<span class="nav-badge" id="badge-lvl">—</span></div>
+        <div class="nav-item" data-panel="limits">Your limits</div>
+      </nav>
+      <div class="side-foot">
+        Behavioural risk monitoring — not financial advice. By default Iris only watches and cannot act on your account. If you have explicitly consented to the Guardian lock, she may close open positions and cancel pending orders on a connected account when you breach your limits. She cannot prevent an order being sent to your broker, and cannot guarantee any loss is prevented. You can withdraw consent at any time, with immediate effect.
+      </div>
+    </aside>
 
-  <script>
-  // Iris's persona and Marcus's notebook are now fetched server-side in /api/chat.
-  // The client sends mentor:'iris' and a compact session_context only.
+    <div class="main">
+      <section class="chat">
+        <div class="chat-bg"></div>
+        <div class="thread" id="thread"><div class="thread-inner" id="thread-inner"></div></div>
+        <div class="composer">
+          <div class="composer-inner">
+            <textarea class="chat-input" id="iris-input" rows="1" placeholder="Ask Iris — a trade, your exposure, a decision…"></textarea>
+            <button class="chat-send" id="iris-send">Send</button>
+          </div>
+          <div class="composer-hint">Enter to send · Shift+Enter for a new line</div>
+        </div>
+      </section>
+
+      <aside class="panel" id="panel">
+        <div class="panel-head">
+          <span class="panel-title" id="panel-title">—</span>
+          <button class="panel-x" id="panel-x" aria-label="Close">&times;</button>
+        </div>
+        <div class="panel-body" id="panel-body"></div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="scrim" id="scrim"></div>
+  <div id="gate" class="show"><div class="gate-inner"><div class="loading">Iris is reading the account…</div></div></div>
+
+<script>
+  // Iris's persona is assembled server-side in /api/chat (mentor:'iris'), which
+  // also feeds her the trader's rules, journal and live account.
 
   const STATES = {
-    1: { name:'Stable',     dot:'var(--iris)',  desc:'The account is in order.', present:false },
-    2: { name:'Noted',      dot:'var(--amber)', desc:'Something is starting to move.', present:false },
-    3: { name:'Conversation', dot:'var(--amber)', desc:'Iris needs a word before you go further.', present:true,
+    1: { name:'Stable',       desc:'The account is in order.', present:false },
+    2: { name:'Noted',        desc:'Something is starting to move.', present:false },
+    3: { name:'Conversation', desc:'Iris needs a word before you go further.', present:true,
          open:'Three trades against you today. That is the line where judgment usually starts to slip. Before you take a fourth — talk to me. What happened?' },
-    4: { name:'Cooldown',   dot:'var(--red)',   desc:'Trading is paused. Iris is holding the line.', present:true,
+    4: { name:'Cooldown',     desc:'Trading is paused. Iris is holding the line.', present:true,
          open:'Trading is paused. You have reached the point where the next trade is usually the worst one of the day. You do not re-enter until this resets. Tell me what is driving the urge to keep going.' },
-    5: { name:'Stand down', dot:'var(--red)',   desc:'Risk threshold exceeded. You are done for the day.', present:true,
+    5: { name:'Stand down',   desc:'Risk threshold exceeded. You are done for the day.', present:true,
          open:'Risk threshold exceeded. You are done for the day — this is not a suggestion. Stand down. We will talk about what brought you here, but not another trade tonight.' },
   };
 
-  // When the account is calm she is not working — so she does not converse. But she
-  // notices you came to her. These are one-way, mysterious, rotating. Level 1 = calm,
-  // level 2 = she is starting to pay attention to you.
-  const IRIS_CALM = [
-    "So. You found my chamber. You don't need me yet, which is the only reason we meet like this. I will find you when the time comes.",
-    "You came looking. There is nothing here for you today: the account is clean, your hands are steady. Go. I will know when that changes.",
-    "Does Marcus know you are down here? This is not where the work happens. Not yet.",
-    "Most traders meet me on their worst day. You came on a calm one. Remember that you did.",
-    "I watch. That is all this is, for now. When you start to slip you will not have to come find me. I will already be here.",
-    "Curiosity is harmless. The day you actually need me, you will not feel curious. You will feel relief.",
-    "Theo teaches you. Marcus develops you. I am the one you hope you never have to speak to. Today, you don't."
+  // She is available, not eager. When calm she opens the door but keeps her hands
+  // in her pockets — you came to her, so she lets you say why.
+  const IRIS_CALM_OPEN = [
+    "The account is clean. You don't need me today — but you came anyway. What's sitting with you?",
+    "Quiet day. If you're weighing a trade, say it out loud before you take it. That's what I'm for.",
+    "Nothing to act on. But you're here, so something is. Go on.",
+    "You don't need me right now. Doesn't mean there's nothing to talk about. What is it?",
+    "Steady hands, clean book. If you want to think a decision through before you make it, I'll listen."
   ];
-  const IRIS_NOTICING = [
-    "Now you, I am watching more closely. Two have gone against you. Nothing I need to act on yet. But I am here, and I am paying attention.",
-    "You are closer to needing me than you were this morning. Steady your hands, and we never have to speak again today.",
-    "Something is beginning. I can see it from where I stand. Do not give me a reason to step in."
-  ];
+  const _pick = a => a[Math.floor(Math.random() * a.length)];
 
+  const LADDER = {
+    1: ['Observation',  'I watch. Nothing to act on.'],
+    2: ['Warning',      'Something is moving. I am paying attention.'],
+    3: ['Conversation', 'I need a word before you go further.'],
+    4: ['Cooldown',     'Trading pauses. You cool down before re-entry.'],
+    5: ['Stand down',   'Done for the day. Not a suggestion.'],
+  };
+
+  function esc(s){ const d=document.createElement('div'); d.textContent = s==null?'':s; return d.innerHTML; }
   function lockLevel(g) {
-    const losses = g.consecutive_losses || 0;
-    const pnl = g.daily_pnl_pct || 0;
-    const dd = g.max_drawdown_pct || 0;
+    const losses = g.consecutive_losses || 0, pnl = g.daily_pnl_pct || 0, dd = g.max_drawdown_pct || 0;
     if (losses >= 5 || pnl <= -5 || dd >= 5) return 5;
     if (losses >= 4 || pnl <= -3 || dd >= 4) return 4;
     if (losses >= 3 || pnl <= -2 || dd >= 3) return 3;
     if (losses >= 2 || pnl <= -1 || dd >= 2) return 2;
     return 1;
   }
+  // Prefer the server's lock_level — it respects the trader's custom limits.
+  function levelOf(g) { return (g && g.lock_level) ? g.lock_level : lockLevel(g); }
+  function prettyPlatform(p) {
+    return ({ metatrader4:'MT4', metatrader5:'MT5', ctrader:'cTrader', tradingview:'TradingView', manual:'Manual' })[p] || 'Live';
+  }
+  const money = v => v == null ? '—' : (v < 0 ? '-$' : '$') + Math.abs(Number(v)).toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
 
-  function esc(s){ const d=document.createElement('div'); d.textContent = s==null?'':s; return d.innerHTML; }
-
-  const root = document.getElementById('chamber');
-
-  // Guardian polling — refreshes account state every 30s when active (level ≥3),
-  // 60s when calm. Matches the EA's 60-second push cadence.
+  let _g = null;              // latest guardian snapshot
+  let _level = null;          // current level
   let _pollTimer = null;
-  let _lastLevel = null;
-  let _chatActive = false; // do not re-render while a chat session is open
+  let _seeded = false;        // has Iris opened the conversation
+  let _history = [];          // conversation for /api/chat
+  let _busy = false;
 
+  const threadEl = document.getElementById('thread');
+  const innerEl  = document.getElementById('thread-inner');
+  const gateEl   = document.getElementById('gate');
+
+  // While the gate overlay is up (loading / connect prompt / upsell) there is no
+  // chamber behind it, so hide the injected app-mode menu button — otherwise tapping
+  // it toggles the side panel behind the gate and looks like "the menu does nothing".
+  // Also close the side so it isn't left open underneath.
+  function setMenuBtn(show) {
+    const b = document.querySelector('.ek-menu');
+    if (b) b.style.display = show ? '' : 'none';
+  }
+  function showGate(html) {
+    gateEl.innerHTML = '<div class="gate-inner">' + html + '</div>';
+    gateEl.classList.add('show');
+    document.getElementById('side')?.classList.remove('open');
+    document.getElementById('scrim')?.classList.remove('show');
+    setMenuBtn(false);
+  }
+  function hideGate() { gateEl.classList.remove('show'); setMenuBtn(true); }
+
+  // ── thread ──────────────────────────────────────────────────────────
+  function addMsg(role, text, calm) {
+    const el = document.createElement('div');
+    el.className = role === 'user' ? 'user-msg' : role === 'sys' ? 'sys-msg' : ('iris-msg' + (calm ? ' calm' : ''));
+    el.textContent = text;
+    innerEl.appendChild(el);
+    threadEl.scrollTop = threadEl.scrollHeight;
+    return el;
+  }
+
+  // ── live state → sidebar, topbar, room colour ───────────────────────
+  function applyState(g) {
+    const lvl = levelOf(g);
+    const s = STATES[lvl] || STATES[1];
+    document.body.dataset.level = String(lvl);
+
+    document.getElementById('side-state').textContent = s.name;
+    document.getElementById('side-desc').textContent  = s.desc;
+
+    const losses = g.consecutive_losses || 0;
+    const pnl = (g.daily_pnl_pct != null) ? g.daily_pnl_pct : 0;
+    const dd  = g.max_drawdown_pct || 0;
+    const cls = v => v >= 4 ? 'alert' : v >= 2 ? 'warn' : '';
+    const set = (id, val, c) => { const el = document.getElementById(id); if (el) { el.textContent = val; el.className = 'sv-val ' + (c || ''); } };
+    set('sv-streak', losses, cls(losses));
+    set('sv-pnl', (pnl > 0 ? '+' : '') + pnl + '%', cls(pnl <= -2 ? 4 : pnl < 0 ? 2 : 0));
+    set('sv-dd', dd + '%', cls(dd));
+
+    document.getElementById('badge-lvl').textContent = 'L' + lvl;
+    document.getElementById('badge-platform').textContent = prettyPlatform(g.platform);
+
+    // Level changed while the room is open — she speaks up instead of the page
+    // silently rewriting itself. The conversation is never wiped.
+    if (_level !== null && lvl !== _level) {
+      const rising = lvl > _level;
+      addMsg('sys', rising ? '· Iris escalated to ' + s.name + ' ·' : '· Eased to ' + s.name + ' ·');
+      if (rising && s.present) { addMsg('iris', s.open); _history.push({ role:'assistant', content:s.open }); }
+    }
+    _level = lvl;
+    if (currentPanel) openPanel(currentPanel, true); // keep an open panel in sync
+  }
+
+  function seedOpening(g) {
+    if (_seeded) return;
+    const s = STATES[levelOf(g)] || STATES[1];
+    const opening = s.present ? s.open : _pick(IRIS_CALM_OPEN);
+    addMsg('iris', opening, !s.present);
+    _history = [{ role:'assistant', content:opening }];
+    // The long prompt wraps and clips in a one-row input on narrow screens.
+    const narrow = window.matchMedia('(max-width:560px)').matches;
+    document.getElementById('iris-input').placeholder =
+      s.present ? 'Speak to Iris…' : (narrow ? 'Ask Iris…' : 'Ask Iris — a trade, your exposure, a decision…');
+    _seeded = true;
+  }
+
+  // ── panels ──────────────────────────────────────────────────────────
+  let currentPanel = null;
+  const PANEL_TITLES = { readings:'The readings', account:'The account', trend:'Recent days', ladder:'How Iris responds', limits:'Your limits' };
+
+  function panelHtml(kind, g) {
+    const losses = g.consecutive_losses || 0;
+    const pnl = (g.daily_pnl_pct != null) ? g.daily_pnl_pct : 0;
+    const dd  = g.max_drawdown_pct || 0;
+    const cls = v => v >= 4 ? 'alert' : v >= 2 ? 'warn' : '';
+    const updated = g.last_updated ? new Date(g.last_updated).toLocaleString()
+                  : (g.updated_at ? new Date(g.updated_at).toLocaleString() : null);
+
+    if (kind === 'readings') {
+      return '<div class="readouts">'
+        + '<div class="readout"><div class="readout-label">Losing streak</div><div class="readout-value ' + cls(losses) + '">' + losses + '</div></div>'
+        + '<div class="readout"><div class="readout-label">Day P&L</div><div class="readout-value ' + cls(pnl <= -2 ? 4 : pnl < 0 ? 2 : 0) + '">' + (pnl > 0 ? '+' : '') + pnl + '%</div></div>'
+        + '<div class="readout"><div class="readout-label">Drawdown</div><div class="readout-value ' + cls(dd) + '">' + dd + '%</div></div>'
+        + '</div>' + (updated ? '<div class="meta-line">Last reading · ' + esc(updated) + '</div>' : '');
+    }
+    if (kind === 'account') {
+      const bal = g.balance, eq = g.equity;
+      const floating = (eq != null && bal != null) ? (eq - bal) : (g.daily_pnl != null ? g.daily_pnl : null);
+      const fCls = floating == null ? '' : floating < 0 ? 'alert' : floating > 0 ? 'pos' : '';
+      const fStr = floating == null ? '—' : (floating > 0 ? '+' : '') + money(floating);
+      return '<div class="readouts two">'
+        + '<div class="readout"><div class="readout-label">Balance</div><div class="readout-value">' + money(bal) + '</div></div>'
+        + '<div class="readout"><div class="readout-label">Equity</div><div class="readout-value">' + money(eq) + '</div></div>'
+        + '<div class="readout"><div class="readout-label">Open P&L</div><div class="readout-value ' + fCls + '">' + fStr + '</div></div>'
+        + '<div class="readout"><div class="readout-label">Open lots</div><div class="readout-value">' + Number(g.open_lots || 0).toFixed(2) + '</div></div>'
+        + '</div>'
+        + '<div class="meta-line">Watching · ' + esc(prettyPlatform(g.platform)) + (updated ? '<br>Last reading · ' + esc(updated) : '') + '</div>'
+        + '<div class="panel-actions"><a class="g-btn ghost" href="/integrations.html">Change account</a>'
+        + '<button class="g-btn danger" id="g-disconnect">Disconnect</button></div>';
+    }
+    if (kind === 'trend') return '<div id="trend-mount"><div class="trend-empty">Reading her memory…</div></div>';
+    if (kind === 'ladder') {
+      const active = levelOf(g);
+      let h = '<p class="panel-sub">Where you are now is lit. She moves up a step only when the account says so.</p><div class="ladder">';
+      for (let l = 1; l <= 5; l++) {
+        h += '<div class="ladder-row' + (l === active ? ' active' : '') + '">'
+          + '<div class="ladder-lvl">Lvl ' + l + '</div>'
+          + '<div><div class="ladder-name">' + LADDER[l][0] + '</div><div class="ladder-desc">' + LADDER[l][1] + '</div></div></div>';
+      }
+      return h + '</div>';
+    }
+    if (kind === 'limits') {
+      const f = (id, label, ph, step, min, max) =>
+        '<label class="lim-field"><span>' + label + '</span>'
+        + '<input id="' + id + '" type="number" step="' + step + '" min="' + min + '" max="' + max + '" placeholder="' + ph + '"></label>';
+      return '<p class="panel-sub">Iris escalates against these. Leave a field blank to use her defaults.</p>'
+        + '<div class="limits-grid">'
+        + f('lim-daily','Max daily loss %','e.g. 3','0.1','0.1','100')
+        + f('lim-dd','Max drawdown %','e.g. 5','0.1','0.1','100')
+        + f('lim-streak','Stop after N losses','e.g. 3','1','1','50')
+        + f('lim-lots','Max open lots','e.g. 0.5','0.01','0.01','1000')
+        + '</div><div class="panel-actions"><button class="g-btn" id="lim-save">Save limits</button></div>'
+        + '<span class="lim-status" id="lim-status"></span>';
+    }
+    return '';
+  }
+
+  function openPanel(kind, keepScroll) {
+    if (!_g) return;
+    currentPanel = kind;
+    const body = document.getElementById('panel-body');
+    const prev = keepScroll ? body.scrollTop : 0;
+    document.getElementById('panel-title').textContent = PANEL_TITLES[kind] || '';
+    body.innerHTML = panelHtml(kind, _g);
+    body.scrollTop = prev;
+    document.getElementById('panel').classList.add('open');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.panel === kind));
+
+    if (kind === 'limits') {
+      loadLimits();
+      const sv = document.getElementById('lim-save'); if (sv) sv.onclick = saveLimits;
+    }
+    if (kind === 'trend') loadTrend();
+    if (kind === 'account') {
+      const dc = document.getElementById('g-disconnect'); if (dc) dc.onclick = disconnectAccount;
+    }
+  }
+  function closePanel() {
+    currentPanel = null;
+    document.getElementById('panel').classList.remove('open');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  }
+
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.addEventListener('click', () => {
+      const k = n.dataset.panel;
+      if (currentPanel === k) { closePanel(); } else { openPanel(k); }
+      if (window.matchMedia('(max-width:860px)').matches) closeSide();
+    });
+  });
+  document.getElementById('panel-x').addEventListener('click', closePanel);
+
+  // mobile drawer
+  const sideEl = document.getElementById('side'), scrimEl = document.getElementById('scrim');
+  function openSide() { sideEl.classList.add('open'); scrimEl.classList.add('show'); }
+  function closeSide() { sideEl.classList.remove('open'); scrimEl.classList.remove('show'); }
+  document.getElementById('burger').addEventListener('click', () => sideEl.classList.contains('open') ? closeSide() : openSide());
+  scrimEl.addEventListener('click', () => { closeSide(); });
+
+  // ── guardian data ───────────────────────────────────────────────────
   async function fetchGuardianState() {
     try {
       const r = await fetch('/api/guardian', { credentials:'include' });
@@ -177,188 +524,215 @@
 
   function scheduleNextPoll(level) {
     clearTimeout(_pollTimer);
-    const interval = (level >= 3) ? 30000 : 60000;
     _pollTimer = setTimeout(async () => {
       const g = await fetchGuardianState();
-      if (!g) return scheduleNextPoll(_lastLevel || 1);
-      const newLevel = lockLevel(g);
-      if (!_chatActive && newLevel !== _lastLevel) {
-        _lastLevel = newLevel;
-        render(g);
-      } else {
-        _lastLevel = newLevel;
-      }
-      scheduleNextPoll(newLevel);
-    }, interval);
+      if (g) { _g = g; applyState(g); }
+      scheduleNextPoll(levelOf(_g || {}));
+    }, (level >= 3) ? 30000 : 60000);
   }
 
+  async function loadLimits() {
+    try {
+      const r = await fetch('/api/guardian/limits', { credentials:'include' });
+      if (!r.ok) return;
+      const { limits } = await r.json();
+      const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
+      set('lim-daily', limits.risk_max_daily_loss_pct);
+      set('lim-dd', limits.risk_max_drawdown_pct);
+      set('lim-streak', limits.risk_max_loss_streak);
+      set('lim-lots', limits.risk_max_lots);
+    } catch (_) {}
+  }
+
+  async function saveLimits() {
+    const status = document.getElementById('lim-status');
+    const val = id => { const el = document.getElementById(id); return el && el.value !== '' ? el.value : null; };
+    if (status) status.textContent = 'Saving…';
+    try {
+      const r = await fetch('/api/guardian/limits', {
+        method:'PUT', headers:{'Content-Type':'application/json'}, credentials:'include',
+        body: JSON.stringify({
+          risk_max_daily_loss_pct: val('lim-daily'),
+          risk_max_drawdown_pct:   val('lim-dd'),
+          risk_max_loss_streak:    val('lim-streak'),
+          risk_max_lots:           val('lim-lots'),
+        }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (status) status.textContent = r.ok ? 'Saved. Iris is holding these now.' : (d.error || 'Could not save.');
+    } catch (_) { if (status) status.textContent = 'Could not save.'; }
+  }
+
+  async function loadTrend() {
+    const mount = document.getElementById('trend-mount');
+    if (!mount) return;
+    try {
+      const r = await fetch('/api/guardian/history', { credentials:'include' });
+      if (!r.ok) { mount.innerHTML = '<div class="trend-empty">No history yet.</div>'; return; }
+      const { history } = await r.json();
+      if (!history || history.length < 2) {
+        mount.innerHTML = '<div class="trend-empty">Not enough history yet.<br>A few trading days and the pattern shows.</div>';
+        return;
+      }
+      const max = Math.max(1, ...history.map(h => Math.abs(h.daily_pnl_pct || 0)));
+      mount.innerHTML = '<div class="trend">' + history.map(h => {
+        const v = h.daily_pnl_pct || 0;
+        const hpct = Math.max(4, Math.round(Math.abs(v) / max * 100));
+        const cls = v > 0 ? 'up' : v < 0 ? 'down' : '';
+        return '<div class="trend-bar" title="' + esc(h.day_key + ' · ' + (v > 0 ? '+' : '') + v + '%') + '">'
+          + '<div class="trend-fill ' + cls + '" style="height:' + hpct + '%;"></div>'
+          + '<div class="trend-day">' + esc(String(h.day_key).slice(5)) + '</div></div>';
+      }).join('') + '</div>';
+    } catch (_) {}
+  }
+
+  async function disconnectAccount() {
+    if (!confirm('Disconnect this account? Iris stops watching until you reconnect.')) return;
+    try { await fetch('/api/guardian/disconnect', { method:'POST', credentials:'include' }); } catch (_) {}
+    location.reload();
+  }
+
+  // ── chat ────────────────────────────────────────────────────────────
+  const input = document.getElementById('iris-input');
+  const sendBtn = document.getElementById('iris-send');
+  input.addEventListener('input', () => { input.style.height='auto'; input.style.height=Math.min(input.scrollHeight,150)+'px'; });
+  input.addEventListener('keydown', e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); submit(); } });
+  sendBtn.addEventListener('click', submit);
+
+  function _extractReply(raw) {
+    const m = raw.match(/"reply"\s*:\s*"((?:[^"\\]|\\.)*)/);
+    if (!m) return null;
+    const cap = m[1];
+    try { return JSON.parse('"' + cap + '"'); }
+    catch (_) { try { return JSON.parse('"' + cap.replace(/\\+$/, '') + '"'); } catch (_) { return cap; } }
+  }
+
+  async function streamIris() {
+    const res = await fetch('/api/chat', {
+      method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
+      body: JSON.stringify({ mentor:'iris', messages: _history.slice(-16), stream: true }),
+    });
+    if (res.status === 401) { window.location.href = '/auth.html?next=' + encodeURIComponent('/chamber'); const e = new Error('401'); e.handled = true; throw e; }
+    if (!res.ok) { const e = new Error('http'); e.status = res.status; throw e; }
+    if (!res.body || !res.body.getReader) {
+      const d = await res.json(); document.getElementById('typing')?.remove();
+      const rep = (d.reply||d.content||'').trim();
+      addMsg('iris', rep || 'Stand down. We talk when you are steadier.'); return rep;
+    }
+    let el = null, target = '', shown = 0, raf = null;
+    const pump = () => {
+      if (!el) { raf = null; return; }
+      if (shown < target.length) {
+        const rem = target.length - shown;
+        shown += Math.max(1, Math.ceil(rem/9));
+        el.textContent = target.slice(0, shown);
+        threadEl.scrollTop = threadEl.scrollHeight;
+        raf = requestAnimationFrame(pump);
+      } else raf = null;
+    };
+    const onText = (r) => {
+      if (!el) { document.getElementById('typing')?.remove(); el = addMsg('iris', ''); }
+      target = r; if (raf == null) raf = requestAnimationFrame(pump);
+    };
+    const reader = res.body.getReader(); const dec = new TextDecoder(); let raw = '', buf = '';
+    for (;;) {
+      const { done, value } = await reader.read(); if (done) break;
+      buf += dec.decode(value, { stream:true });
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const line of lines) {
+        const t = line.trim(); if (!t.startsWith('data:')) continue;
+        const p = t.slice(5).trim(); if (p === '[DONE]') continue;
+        let j; try { j = JSON.parse(p); } catch (_) { continue; }
+        if (j.error) throw new Error(j.error);
+        if (j.delta) {
+          raw += j.delta;
+          const r = _extractReply(raw);
+          if (r !== null) onText(r); else if (!raw.trimStart().startsWith('{')) onText(raw);
+        }
+      }
+    }
+    let fin = _extractReply(raw);
+    if (fin === null) { try { fin = JSON.parse(raw).reply || raw; } catch (_) { fin = raw; } }
+    fin = (fin || '').trim();
+    if (!el) { document.getElementById('typing')?.remove(); el = addMsg('iris', fin || 'Stand down. We talk when you are steadier.'); }
+    else { target = fin; if (raf == null) { if (shown >= fin.length) el.textContent = fin; else raf = requestAnimationFrame(pump); } }
+    return fin;
+  }
+
+  async function submit() {
+    if (_busy) return;
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = ''; input.style.height = 'auto';
+    addMsg('user', text);
+    _history.push({ role:'user', content:text });
+    _busy = true; sendBtn.disabled = true;
+    const typing = document.createElement('div');
+    typing.className = 'typing'; typing.id = 'typing'; typing.textContent = 'Iris is considering';
+    innerEl.appendChild(typing); threadEl.scrollTop = threadEl.scrollHeight;
+    try {
+      const reply = await streamIris();
+      _history.push({ role:'assistant', content: reply });
+    } catch (streamErr) {
+      if (streamErr && streamErr.handled) return;
+      document.getElementById('typing')?.remove();
+      try {
+        const r = await fetch('/api/chat', {
+          method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
+          body: JSON.stringify({ mentor:'iris', messages: _history.slice(-16) }),
+        });
+        if (r.status === 401) { window.location.href = '/auth.html?next=' + encodeURIComponent('/chamber'); return; }
+        if (!r.ok) { addMsg('iris', r.status === 429 ? 'Not now. Give it a moment.' : 'Hold on. Try again.'); }
+        else {
+          const d = await r.json(); const reply = (d.reply || d.content || '').trim();
+          addMsg('iris', reply || 'Stand down. We talk when you are steadier.');
+          _history.push({ role:'assistant', content: reply });
+        }
+      } catch (_) { addMsg('iris', 'Connection dropped. Try again.'); }
+    }
+    _busy = false; sendBtn.disabled = false;
+    input.focus();
+  }
+
+  // ── boot ────────────────────────────────────────────────────────────
   async function boot() {
     let res;
     try { res = await fetch('/api/guardian', { credentials:'include' }); }
-    catch (_) { root.innerHTML = '<div class="loading">Iris is unreachable. Try again in a moment.</div>'; return; }
+    catch (_) { showGate('<div class="loading">Iris is unreachable. Try again in a moment.</div>'); return; }
 
     if (res.status === 401) { window.location.href = '/auth.html?next=' + encodeURIComponent('/chamber'); return; }
     if (res.status === 403) {
-      root.innerHTML = '<div class="gate"><h1>You don\'t have a guardian yet.</h1>'
+      showGate('<h1>You don\'t have a guardian yet.</h1>'
         + '<p>Iris protects capital on the Fellow plan. She watches your account, holds your limits, and steps in before a bad day becomes a worse one.</p>'
-        + '<a href="/pricing.html">Meet Iris — Fellow →</a></div>';
+        + '<a href="/pricing.html">Meet Iris — Fellow →</a>');
       return;
     }
     let data = {};
     try { data = await res.json(); } catch (_) {}
     const g = data.guardian;
 
-    // A guardian_data row can exist as an empty placeholder (created at onboarding
-    // with no real feed). Only treat the account as watched when there is genuine
-    // data — otherwise show the connect prompt rather than a misleading "Stable".
+    // A guardian_data row can exist as an empty placeholder. Only treat the account
+    // as watched when there is genuine data — otherwise show the connect prompt.
     const hasRealData = g && (
       g.balance != null || g.equity != null || g.daily_pnl_pct != null ||
       (g.consecutive_losses || 0) > 0 || (g.max_drawdown_pct || 0) > 0 || (g.open_lots || 0) > 0
     );
-
     if (!hasRealData) {
-      root.innerHTML = '<div class="gate"><h1>Iris is here. There is nothing to watch yet.</h1>'
+      showGate('<h1>Iris is here. There is nothing to watch yet.</h1>'
         + '<p>Connect a trading account and Iris begins watching it — drawdown, losing streaks, the moments discipline slips. She stays silent until something needs her.</p>'
-        + '<a href="/integrations.html">Connect an account →</a></div>';
-      return;
-    }
-    _lastLevel = lockLevel(g);
-    render(g);
-    scheduleNextPoll(_lastLevel);
-  }
-
-  function render(g) {
-    const level = lockLevel(g);
-    const s = STATES[level];
-    const losses = g.consecutive_losses || 0;
-    const pnl = (g.daily_pnl_pct != null) ? g.daily_pnl_pct : 0;
-    const dd = g.max_drawdown_pct || 0;
-    const cls = v => v >= 4 ? 'alert' : v >= 2 ? 'warn' : '';
-    const updated = g.updated_at ? new Date(g.updated_at).toLocaleString() : null;
-
-    let html = '<div class="monolith">'
-      + '<div class="status-dot" style="background:' + s.dot + ';"></div>'
-      + '<div class="state-name">' + s.name + '</div>'
-      + '<div class="state-desc">' + s.desc + '</div>'
-      + '</div>'
-      + '<div class="readouts">'
-      + '<div class="readout"><div class="readout-label">Losing streak</div><div class="readout-value ' + cls(losses) + '">' + losses + '</div></div>'
-      + '<div class="readout"><div class="readout-label">Day P&L</div><div class="readout-value ' + cls(pnl <= -2 ? 4 : pnl < 0 ? 2 : 0) + '">' + (pnl > 0 ? '+' : '') + pnl + '%</div></div>'
-      + '<div class="readout"><div class="readout-label">Drawdown</div><div class="readout-value ' + cls(dd) + '">' + dd + '%</div></div>'
-      + '</div>';
-    if (updated) html += '<div class="meta-line">Last reading · ' + esc(updated) + '</div>';
-
-    if (!s.present) {
-      const pool = level === 1 ? IRIS_CALM : IRIS_NOTICING;
-      const line = pool[Math.floor(Math.random() * pool.length)];
-      html += '<div class="dormant"><p class="iris-whisper">' + esc(line) + '</p></div>';
-      root.innerHTML = html;
+        + '<a href="/integrations.html">Connect an account →</a>');
       return;
     }
 
-    // Active protection: Iris is present and reachable.
-    html += '<div class="presence" id="presence">'
-      + '<div class="iris-msg">' + esc(s.open) + '</div>'
-      + '<div id="thread"></div>'
-      + '<div class="chat-input-wrap">'
-      + '<textarea class="chat-input" id="iris-input" rows="1" placeholder="Speak to Iris…"></textarea>'
-      + '<button class="chat-send" id="iris-send">Send</button>'
-      + '</div></div>';
-    root.innerHTML = html;
-    wireChat(s.open);
-  }
-
-  function wireChat(opening) {
-    _chatActive = true; // pause polling re-renders while Iris is mid-conversation
-    const thread = document.getElementById('thread');
-    const input  = document.getElementById('iris-input');
-    const send   = document.getElementById('iris-send');
-    const history = [{ role:'assistant', content: opening }];
-    let busy = false;
-
-    input.addEventListener('input', () => { input.style.height='auto'; input.style.height=Math.min(input.scrollHeight,140)+'px'; });
-    input.addEventListener('keydown', e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); submit(); } });
-    send.addEventListener('click', submit);
-
-    function add(role, text) {
-      const el = document.createElement('div');
-      el.className = role === 'assistant' ? 'iris-msg' : 'user-msg';
-      el.textContent = text;
-      thread.appendChild(el);
-      el.scrollIntoView({ behavior:'smooth', block:'end' });
-      return el;
-    }
-
-    // Progressive extraction of the "reply" field from a streaming JSON object.
-    function _extractReply(raw) {
-      const m = raw.match(/"reply"\s*:\s*"((?:[^"\\]|\\.)*)/);
-      if (!m) return null;
-      const cap = m[1];
-      try { return JSON.parse('"' + cap + '"'); }
-      catch (_) { try { return JSON.parse('"' + cap.replace(/\\+$/, '') + '"'); } catch (_) { return cap; } }
-    }
-
-    // Streams Iris's reply into an .iris-msg bubble with a smooth typewriter.
-    // Throws (with .handled / .status) so submit() can fall back to a plain request.
-    async function streamIris() {
-      const res = await fetch('/api/chat', {
-        method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
-        body: JSON.stringify({ mentor:'iris', messages: history.slice(-16), stream: true }),
-      });
-      if (res.status === 401) { window.location.href = '/auth.html?next=' + encodeURIComponent('/chamber'); const e = new Error('401'); e.handled = true; throw e; }
-      if (!res.ok) { const e = new Error('http'); e.status = res.status; throw e; }
-      if (!res.body || !res.body.getReader) { const d = await res.json(); document.getElementById('typing')?.remove(); const rep = (d.reply||d.content||'').trim(); add('assistant', rep || 'Stand down. We talk when you are steadier.'); return rep; }
-      let el = null, target = '', shown = 0, raf = null;
-      const pump = () => {
-        if (!el) { raf = null; return; }
-        if (shown < target.length) { const rem = target.length - shown; shown += Math.max(1, Math.ceil(rem/9)); el.textContent = target.slice(0, shown); el.scrollIntoView({ block:'end' }); raf = requestAnimationFrame(pump); }
-        else raf = null;
-      };
-      const onText = (r) => { if (!el) { document.getElementById('typing')?.remove(); el = add('assistant', ''); } target = r; if (raf == null) raf = requestAnimationFrame(pump); };
-      const reader = res.body.getReader(); const dec = new TextDecoder(); let raw = '', buf = '';
-      for (;;) { const { done, value } = await reader.read(); if (done) break; buf += dec.decode(value, { stream:true }); const lines = buf.split('\n'); buf = lines.pop(); for (const line of lines) { const t = line.trim(); if (!t.startsWith('data:')) continue; const p = t.slice(5).trim(); if (p === '[DONE]') continue; let j; try { j = JSON.parse(p); } catch (_) { continue; } if (j.error) throw new Error(j.error); if (j.delta) { raw += j.delta; const r = _extractReply(raw); if (r !== null) onText(r); else if (!raw.trimStart().startsWith('{')) onText(raw); } } }
-      let fin = _extractReply(raw); if (fin === null) { try { fin = JSON.parse(raw).reply || raw; } catch (_) { fin = raw; } }
-      fin = (fin || '').trim();
-      if (!el) { document.getElementById('typing')?.remove(); el = add('assistant', fin || 'Stand down. We talk when you are steadier.'); }
-      else { target = fin; if (raf == null) { if (shown >= fin.length) el.textContent = fin; else raf = requestAnimationFrame(pump); } }
-      return fin;
-    }
-
-    async function submit() {
-      if (busy) return;
-      const text = input.value.trim();
-      if (!text) return;
-      input.value = ''; input.style.height = 'auto';
-      add('user', text);
-      history.push({ role:'user', content:text });
-      busy = true; send.disabled = true;
-      const typing = document.createElement('div');
-      typing.className = 'typing'; typing.id = 'typing'; typing.textContent = 'Iris is considering';
-      thread.appendChild(typing);
-      try {
-        const reply = await streamIris();
-        history.push({ role:'assistant', content: reply });
-      } catch (streamErr) {
-        if (streamErr && streamErr.handled) return; // redirecting to auth
-        document.getElementById('typing')?.remove();
-        try {
-          const r = await fetch('/api/chat', {
-            method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
-            body: JSON.stringify({ mentor:'iris', messages: history.slice(-16) }),
-          });
-          if (r.status === 401) { window.location.href = '/auth.html?next=' + encodeURIComponent('/chamber'); return; }
-          if (!r.ok) { add('assistant', r.status === 429 ? 'Not now. Give it a moment.' : 'Hold on. Try again.'); }
-          else { const d = await r.json(); const reply = (d.reply || d.content || '').trim(); add('assistant', reply || 'Stand down. We talk when you are steadier.'); history.push({ role:'assistant', content: reply }); }
-        } catch (_) {
-          add('assistant', 'Connection dropped. Try again.');
-        }
-      }
-      busy = false; send.disabled = false;
-      input.focus();
-    }
+    _g = g;
+    hideGate();
+    applyState(g);
+    seedOpening(g);
+    scheduleNextPoll(levelOf(g));
+    input.focus();
   }
 
   boot();
-  </script>
+</script>
 </body>
 </html>

@@ -3469,8 +3469,9 @@ async function syncGuardianFromMetaApi(userId, accountId, region, platform) {
   const now = new Date();
   const dayKey = now.toISOString().slice(0, 10);
   const dayStartMs = new Date(dayKey + 'T00:00:00.000Z').getTime();
-  // Pull ~10 days of deals so a losing streak spanning days is still visible.
-  const streakSinceISO = new Date(now.getTime() - 10 * 864e5).toISOString();
+  // Pull ~3 days of deals — enough for a losing streak across a weekend gap while
+  // keeping each 1-min poll light (10 days per poll was an avoidable MetaApi cost).
+  const streakSinceISO = new Date(now.getTime() - 3 * 864e5).toISOString();
 
   const [info, positions, deals] = await Promise.all([
     metaapi.getAccountInformation(accountId, region),
@@ -3814,6 +3815,19 @@ async function reconcileGuardianLink(userId) {
   }
   const connState = gone ? 'DELETED' : (acct?.connectionStatus || acct?.state || 'UNKNOWN');
 
+  // Paused to save cost while the terminal was offline. This reconcile means a
+  // surface is being viewed — the trader is back — so resume: redeploy and let it
+  // reconnect (~1 min). The monitor sweep never hits this branch (it only sweeps
+  // 'connected'), so paused accounts stay paused until the trader actually returns.
+  if (!gone && acct && String(acct.state || '').toUpperCase() === 'UNDEPLOYED') {
+    await metaapi.deployAccount(row.metaapi_account_id).catch(() => {});
+    await supabaseAdmin.from('broker_connections').update({
+      status: 'connecting', status_detail: 'Resuming — reconnecting to your broker…',
+      updated_at: new Date().toISOString(),
+    }).eq('user_id', userId);
+    return { ...base, connected: false, status: 'connecting', detail: 'resuming' };
+  }
+
   if (connState === 'CONNECTED') {
     const region = acct?.region || row.region;
     const guardian = await syncGuardianFromMetaApi(userId, row.metaapi_account_id, region, row.platform).catch(() => null);
@@ -3860,6 +3874,17 @@ app.post('/api/guardian/link/start', requireAuthApi, apiLimiter, async (req, res
   const gate = await guardianGate(req, res);
   if (!gate) return;
   const { userId } = gate;
+
+  // Cost control: provisioning a MetaApi account deploys a billed cloud instance,
+  // so only Fellow+ (the plans that get the active Guardian) may connect a live
+  // account. Lower tiers are directed to upgrade instead of spinning one up.
+  const { data: depProfile } = await supabaseAdmin
+    .from('user_profiles')
+    .select('subscription_status, bypass_subscription')
+    .eq('id', userId).maybeSingle();
+  if (!can(depProfile, 'guardian')) {
+    return res.status(403).json({ error: 'Connecting a live account is part of the Fellow plan. Upgrade to have Iris watch your account.' });
+  }
 
   const platform = String(req.body?.platform || '').toLowerCase();
   const server   = String(req.body?.server || '').trim();
@@ -6792,7 +6817,29 @@ app.get('/api/cron/guardian-monitor', verifyCronSecret, async (req, res) => {
       await reconcileGuardianLink(l.user_id).catch(() => {});
       swept++;
     }
-    res.json({ ok: true, swept });
+
+    // Cost control: pause (undeploy) accounts whose broker terminal has been offline
+    // for 30+ minutes — the deployed instance is watching nothing but still billing.
+    // A brief blip stays deployed (MetaApi auto-reconnects); only sustained offline
+    // pauses. It auto-resumes when the trader next opens a Guardian surface.
+    let paused = 0;
+    const staleCutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    const { data: stale } = await supabaseAdmin
+      .from('broker_connections')
+      .select('user_id, metaapi_account_id')
+      .eq('status', 'disconnected')
+      .lt('updated_at', staleCutoff)
+      .not('metaapi_account_id', 'is', null);
+    for (const s of stale || []) {
+      try {
+        await metaapi.undeployAccount(s.metaapi_account_id);
+        await supabaseAdmin.from('broker_connections')
+          .update({ status: 'paused', status_detail: 'Paused while your terminal is offline — resumes when you return.', updated_at: new Date().toISOString() })
+          .eq('user_id', s.user_id);
+        paused++;
+      } catch (_) { /* leave it; next sweep retries */ }
+    }
+    res.json({ ok: true, swept, paused });
   } catch (err) {
     console.error('Guardian monitor cron error:', err.message);
     res.status(500).json({ error: err.message });
