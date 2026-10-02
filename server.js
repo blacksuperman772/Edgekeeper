@@ -5173,6 +5173,20 @@ app.delete('/api/push/subscribe', requireAuthApi, apiLimiter, async (req, res) =
   res.json({ ok: true });
 });
 
+// Send a test push to this user's own devices so they can confirm notifications
+// actually arrive on their phone (independent of a real breach). Returns the
+// delivery result, including the skip reason when nothing was sent.
+app.post('/api/push/test', requireAuthApi, apiLimiter, async (req, res) => {
+  if (!notifications.configured()) return res.status(503).json({ error: 'Push notifications are not configured on the server (VAPID keys missing).' });
+  const result = await notifications.sendToUser(supabaseAdmin, req.user.id, {
+    type:     'important',
+    title:    'Iris — test alert',
+    body:     'Notifications are working. This is how you\'ll hear from Iris when a limit is near.',
+    deepLink: '/chamber',
+  });
+  res.json({ ok: !result?.skipped, result });
+});
+
 app.get('/api/push/preferences', requireAuthApi, apiLimiter, async (req, res) => {
   const { data, error } = await supabaseAdmin.from('user_profiles')
     .select('push_notifications, push_important, push_messages, push_reminders, push_system, push_marketing')
@@ -6842,6 +6856,30 @@ app.get('/api/cron/guardian-monitor', verifyCronSecret, async (req, res) => {
     res.json({ ok: true, swept, paused });
   } catch (err) {
     console.error('Guardian monitor cron error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: fire a test push to a specific user (by id or email). Secret-protected,
+// benign fixed content — used to confirm the push pipeline reaches a device without
+// needing that user's login or a real breach.
+app.get('/api/cron/push-test', verifyCronSecret, async (req, res) => {
+  let userId = String(req.query.user_id || '').trim();
+  const email = String(req.query.email || '').trim().toLowerCase();
+  try {
+    if (!userId && email) {
+      const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
+      userId = (list?.users || []).find(u => (u.email || '').toLowerCase() === email)?.id || '';
+    }
+    if (!userId) return res.status(400).json({ error: 'Provide user_id or a known email.' });
+    const result = await notifications.sendToUser(supabaseAdmin, userId, {
+      type:     'important',
+      title:    'Iris — test alert',
+      body:     'Notifications are working. This is how Iris reaches you when a limit is near.',
+      deepLink: '/chamber',
+    });
+    res.json({ ok: !result?.skipped && (result?.delivered || 0) > 0, result });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });

@@ -465,6 +465,13 @@
         </label>
       </div>
       <div class="toggle-row">
+        <div class="toggle-info">
+          <div class="toggle-title">Test notification</div>
+          <div class="toggle-sub" id="push-test-status">Send one to this device to check it arrives</div>
+        </div>
+        <button type="button" class="plan-cta" id="push-test-btn" onclick="sendTestPush()">Send test</button>
+      </div>
+      <div class="toggle-row">
         <div class="toggle-info"><div class="toggle-title">Reminders</div></div>
         <label class="toggle"><input type="checkbox" id="push-reminders" /><span class="toggle-track"></span></label>
       </div>
@@ -763,6 +770,23 @@
       setStatus('delete-status', 'Network error. Please try again.', 'err');
       if (btn) { btn.disabled = false; btn.textContent = 'Delete Account'; }
     }
+  }
+
+  async function sendTestPush() {
+    const btn = document.getElementById('push-test-btn');
+    const status = document.getElementById('push-test-status');
+    if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+    try {
+      const r = await fetch('/api/push/test', { method: 'POST', credentials: 'include' });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && d.result && d.result.delivered > 0) {
+        if (status) status.textContent = 'Sent — check your lock screen.';
+      } else {
+        const reason = d.result?.reason || (d.result?.errors && d.result.errors[0] && ('error ' + d.result.errors[0].status)) || d.error || 'could not send';
+        if (status) status.textContent = 'Not delivered (' + reason + '). Make sure notifications are on above and the app is installed to your home screen.';
+      }
+    } catch (_) { if (status) status.textContent = 'Network error. Try again.'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Send test'; }
   }
 
   loadSettings();
