@@ -3541,19 +3541,32 @@ async function syncGuardianFromMetaApi(userId, accountId, region, platform) {
   const openLots  = positions.reduce((s, p) => s + (Number(p.volume) || 0), 0);
   const floating  = positions.reduce((s, p) => s + (Number(p.profit ?? p.unrealizedProfit) || 0), 0);
 
-  // Closed trades: a position-closing deal carries realized profit (+ swap + comm).
-  // ponytail: partial closes count as separate trades — acceptable approximation.
-  const closes = deals
+  // Closing deals: each carries realized profit (+ swap + comm) for the position
+  // (or the part of it) it closes.
+  const closeDeals = deals
     .filter(d => (d.entryType === 'DEAL_ENTRY_OUT' || d.entryType === 'DEAL_ENTRY_OUT_BY') && d.time)
     .map(d => ({ time: new Date(d.time).getTime(),
-                 pnl: (Number(d.profit) || 0) + (Number(d.swap) || 0) + (Number(d.commission) || 0) }))
-    .sort((a, b) => a.time - b.time);
+                 positionId: d.positionId || d.id,   // fall back to the deal itself
+                 pnl: (Number(d.profit) || 0) + (Number(d.swap) || 0) + (Number(d.commission) || 0) }));
 
-  // Consecutive losing closed trades, newest backward.
+  // A "trade" = one position, open to close. Group a position's closing deals so a
+  // scale-out (several partial closes of the SAME position) nets into ONE trade and
+  // counts as one win/loss — not several. Distinct positions remain distinct trades.
+  const posMap = new Map();
+  for (const c of closeDeals) {
+    const cur = posMap.get(c.positionId) || { time: 0, pnl: 0 };
+    cur.pnl += c.pnl;
+    cur.time = Math.max(cur.time, c.time);   // last close time orders the streak
+    posMap.set(c.positionId, cur);
+  }
+  const trades = [...posMap.values()].sort((a, b) => a.time - b.time);
+
+  // Consecutive losing trades, newest backward.
   let streak = 0;
-  for (let i = closes.length - 1; i >= 0; i--) { if (closes[i].pnl < 0) streak++; else break; }
+  for (let i = trades.length - 1; i >= 0; i--) { if (trades[i].pnl < 0) streak++; else break; }
 
-  const realizedToday = closes.filter(c => c.time >= dayStartMs).reduce((s, c) => s + c.pnl, 0);
+  // Daily realized P&L stays per-deal (every close booked today counts toward the day).
+  const realizedToday = closeDeals.filter(c => c.time >= dayStartMs).reduce((s, c) => s + c.pnl, 0);
 
   // Daily baseline: reset at rollover, else carry the anchor and track peak equity.
   const { data: prev } = await supabaseAdmin.from('guardian_data')
