@@ -132,6 +132,26 @@
     }
     .stat-value.gold { color: var(--gold); }
     .stat-value.green { color: #6ab87a; }
+    .stat-sub {
+      font-family: var(--mono, monospace);
+      font-size: 0.55rem;
+      letter-spacing: 0.06em;
+      color: var(--faint, #6b6b6b);
+      margin-top: 7px;
+      line-height: 1.4;
+    }
+    tr.is-test { opacity: 0.45; }
+    .test-tag {
+      font-family: var(--mono, monospace);
+      font-size: 0.48rem;
+      letter-spacing: 0.08em;
+      color: #8a7a4a;
+      border: 1px solid rgba(138,122,74,0.4);
+      border-radius: 3px;
+      padding: 1px 5px;
+      margin-left: 7px;
+      vertical-align: middle;
+    }
 
     /* ── TOOLBAR ─────────────────────────────────────────────────────── */
     .toolbar {
@@ -352,33 +372,89 @@
 
 <main>
 
+  <!-- SITE TRAFFIC -->
+  <div class="toolbar">
+    <span class="toolbar-title">Site Traffic</span>
+    <span id="live-badge" style="display:inline-flex;align-items:center;gap:7px;font-family:var(--mono,monospace);font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:#6b8c6b;margin-left:14px;">
+      <span id="live-dot" style="width:6px;height:6px;border-radius:50%;background:#6b8c6b;box-shadow:0 0 8px rgba(107,140,107,0.7);"></span>
+      <span id="live-text">Live</span>
+    </span>
+    <select class="plan-select" id="traffic-range" onchange="loadFunnel()">
+      <option value="7">Last 7 days</option>
+      <option value="30">Last 30 days</option>
+      <option value="90">Last 90 days</option>
+    </select>
+  </div>
+  <div class="stats-row" id="traffic-row">
+    <div class="stat-card">
+      <div class="stat-label">Visitors</div>
+      <div class="stat-value gold" id="tr-visitors">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Page Views</div>
+      <div class="stat-value" id="tr-views">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Signups</div>
+      <div class="stat-value green" id="tr-signups">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Checkout Clicks</div>
+      <div class="stat-value" id="tr-checkout">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Onboarded</div>
+      <div class="stat-value" id="tr-onboarded">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Visitor → Signup</div>
+      <div class="stat-value" id="tr-conv">—</div>
+    </div>
+  </div>
+
+  <!-- MEMBERS OVERVIEW -->
+  <div class="toolbar"><span class="toolbar-title">Members Overview</span></div>
   <!-- STATS -->
   <div class="stats-row" id="stats-row">
     <div class="stat-card">
-      <div class="stat-label">Total Users</div>
+      <div class="stat-label">Real Users</div>
       <div class="stat-value" id="stat-total">—</div>
+      <div class="stat-sub" id="stat-total-sub">—</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Paying</div>
       <div class="stat-value gold" id="stat-paying">—</div>
+      <div class="stat-sub" id="stat-paying-sub">excludes comped &amp; test</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Free Access</div>
+      <div class="stat-label">MRR</div>
+      <div class="stat-value gold" id="stat-mrr">—</div>
+      <div class="stat-sub" id="stat-mrr-sub">recurring revenue</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Free</div>
       <div class="stat-value" id="stat-free">—</div>
+      <div class="stat-sub">on free trial</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Bypass Active</div>
+      <div class="stat-label">Comped (Bypass)</div>
       <div class="stat-value green" id="stat-bypass">—</div>
+      <div class="stat-sub">full access, $0</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Onboarded</div>
       <div class="stat-value" id="stat-onboarded">—</div>
+      <div class="stat-sub" id="stat-onboarded-sub">—</div>
     </div>
   </div>
 
   <!-- USER TABLE -->
   <div class="toolbar">
     <span class="toolbar-title">Members</span>
+    <label style="display:inline-flex;align-items:center;gap:7px;font-family:var(--mono,monospace);font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--faint,#6b6b6b);margin-left:14px;cursor:pointer;">
+      <input type="checkbox" id="hide-test" onchange="renderAll()" style="accent-color:#8a7a4a;" />
+      Hide test accounts
+    </label>
     <input
       type="text"
       class="search-input"
@@ -415,6 +491,19 @@
 <script>
   let allUsers = [];
 
+  // Automated accounts (smoke tests, e2e runs, generated fixtures). They inflate
+  // every number on this page, so real metrics exclude them.
+  const TEST_RE = /mx-mailsrv|@example\.|^smoke\d|^ek\.e2e|^fs\d{10,}|^vb\d{10,}/i;
+  const isTest  = u => TEST_RE.test(u.email || '');
+
+  // Monthly price per plan. institutional is custom-priced → not counted in MRR.
+  const PLAN_PRICE = { free: 0, starter: 99, pro: 249, professional: 599, institutional: 0 };
+
+  // Genuinely paying = a paid plan, NOT comped via bypass, and not a test account.
+  const isPaying = u =>
+    u.subscription_status && u.subscription_status !== 'free' &&
+    !u.bypass_subscription && !isTest(u);
+
   // ── LOAD USERS ────────────────────────────────────────────────────────────────
   async function loadUsers() {
     try {
@@ -425,20 +514,41 @@
       }
       const data = await res.json();
       allUsers = data.users || [];
-      renderStats(allUsers);
-      renderTable(allUsers);
+      renderAll();
     } catch (err) {
       showToast('Failed to load users', 'error');
     }
   }
 
+  // Re-render stats + table from the current data (also used by the test toggle).
+  function renderAll() {
+    renderStats(allUsers);
+    const hide = document.getElementById('hide-test')?.checked;
+    renderTable(hide ? allUsers.filter(u => !isTest(u)) : allUsers);
+    filterTable();
+  }
+
   // ── STATS ─────────────────────────────────────────────────────────────────────
   function renderStats(users) {
-    document.getElementById('stat-total').textContent     = users.length;
-    document.getElementById('stat-paying').textContent    = users.filter(u => u.subscription_status !== 'free').length;
-    document.getElementById('stat-free').textContent      = users.filter(u => u.subscription_status === 'free').length;
-    document.getElementById('stat-bypass').textContent    = users.filter(u => u.bypass_subscription).length;
-    document.getElementById('stat-onboarded').textContent = users.filter(u => u.onboarding_complete).length;
+    const real     = users.filter(u => !isTest(u));
+    const testN    = users.length - real.length;
+    const paying   = users.filter(isPaying);
+    const mrr      = paying.reduce((s, u) => s + (PLAN_PRICE[u.subscription_status] || 0), 0);
+    const comped   = real.filter(u => u.bypass_subscription).length;
+    const freeN    = real.filter(u => !u.subscription_status || u.subscription_status === 'free').length;
+    const onboard  = real.filter(u => u.onboarding_complete).length;
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+
+    set('stat-total',       real.length);
+    set('stat-total-sub',   testN ? `${testN} test account${testN === 1 ? '' : 's'} excluded` : 'no test accounts');
+    set('stat-paying',      paying.length);
+    set('stat-paying-sub',  comped ? `${comped} comped separately` : 'excludes comped & test');
+    set('stat-mrr',         '$' + mrr.toLocaleString());
+    set('stat-mrr-sub',     paying.length ? 'from real subscriptions' : 'no paid subscriptions yet');
+    set('stat-free',        freeN);
+    set('stat-bypass',      comped);
+    set('stat-onboarded',   onboard);
+    set('stat-onboarded-sub', real.length ? Math.round((onboard / real.length) * 100) + '% of real users' : '—');
   }
 
   // ── TABLE RENDER ──────────────────────────────────────────────────────────────
@@ -452,8 +562,8 @@
     }
 
     tbody.innerHTML = users.map(u => `
-      <tr data-id="${u.id}" data-email="${(u.email || '').toLowerCase()}">
-        <td class="td-email" title="${u.email}">${u.email}</td>
+      <tr data-id="${u.id}" data-email="${(u.email || '').toLowerCase()}" class="${isTest(u) ? 'is-test' : ''}">
+        <td class="td-email" title="${u.email}">${u.email}${isTest(u) ? '<span class="test-tag">TEST</span>' : ''}</td>
         <td style="text-transform:capitalize;color:var(--faint)">${u.mentor || '—'}</td>
         <td>
           <span class="plan-badge plan-${u.subscription_status || 'free'}">
@@ -564,8 +674,68 @@
     return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
+  // ── SITE TRAFFIC (first-party ek_events → /api/admin/funnel) ────────────────────
+  function setTxt(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
+
+  async function loadFunnel() {
+    const days  = parseInt(document.getElementById('traffic-range').value || '7', 10);
+    const since = Date.now() - days * 864e5;
+    try {
+      const res = await fetch('/api/admin/funnel?days=' + days);
+      const d   = res.ok ? await res.json() : { events: {} };
+      const e   = d.events || {};
+      const g   = (name, key) => (e[name] && e[name][key]) || 0;
+      const visitors = g('page_view', 'unique_sessions');
+
+      // Signups/onboarded are derived from actual user records, not the beacon:
+      // those events were only wired recently, and the user rows are the ground
+      // truth regardless of whether a browser beacon fired. Test accounts excluded.
+      const real     = allUsers.filter(u => !isTest(u));
+      const inWindow = u => u.created_at && new Date(u.created_at).getTime() >= since;
+      const signups   = real.filter(inWindow).length;
+      const onboarded = real.filter(u => inWindow(u) && u.onboarding_complete).length;
+
+      setTxt('tr-visitors',  visitors.toLocaleString());
+      setTxt('tr-views',     g('page_view', 'count').toLocaleString());
+      setTxt('tr-signups',   signups.toLocaleString());
+      setTxt('tr-checkout',  g('checkout_click', 'count').toLocaleString());
+      setTxt('tr-onboarded', onboarded.toLocaleString());
+      setTxt('tr-conv',      visitors ? ((signups / visitors) * 100).toFixed(1) + '%' : '—');
+    } catch (_) {}
+  }
+
+  // ── LIVE AUTO-REFRESH ─────────────────────────────────────────────────────────
+  let _lastUpdate = 0, _pollTimer = null, _tickTimer = null;
+
+  async function refreshAll() {
+    await loadUsers();    // must land first — the funnel derives signups from it
+    await loadFunnel();
+    _lastUpdate = Date.now();
+    paintFreshness();
+  }
+
+  function paintFreshness() {
+    const t = document.getElementById('live-text');
+    const dot = document.getElementById('live-dot');
+    if (!t || !_lastUpdate) return;
+    const secs = Math.max(0, Math.round((Date.now() - _lastUpdate) / 1000));
+    t.textContent = secs < 5 ? 'Live · just now' : `Live · ${secs}s ago`;
+    if (dot) dot.style.opacity = secs < 3 ? '1' : '0.55';
+  }
+
+  function startPolling() {
+    clearInterval(_pollTimer); clearInterval(_tickTimer);
+    // Don't poll a hidden tab — no point burning queries while it's in the background.
+    _pollTimer = setInterval(() => { if (!document.hidden) refreshAll(); }, 30000);
+    _tickTimer = setInterval(paintFreshness, 1000);
+  }
+
+  // Coming back to the tab should show current data immediately, not 30s-stale.
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshAll(); });
+
   // ── INIT ──────────────────────────────────────────────────────────────────────
-  loadUsers();
+  refreshAll();
+  startPolling();
 </script>
 </body>
 </html>

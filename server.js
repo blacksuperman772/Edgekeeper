@@ -3769,14 +3769,33 @@ async function enforceLockViaMetaApi(userId, accountId, region, lockLevel, profi
   return { enforced: true, closed, cancelled };
 }
 
-// Email the user once when their Guardian loses sight of an account.
+// Alert the user once when their Guardian loses sight of an account — push + email.
 async function notifyGuardianDisconnected(userId, row, reason) {
+  const label = row.account_name || row.server || 'your trading account';
+  // Live push: reconnecting needs an action, so this is 'important'.
+  await notifications.sendToUser(supabaseAdmin, userId, {
+    type:     'important',
+    title:    'Iris lost sight of your account',
+    body:     `Connection to ${label} dropped. Reconnect so Iris can keep watching.`,
+    deepLink: '/integrations.html',
+  }).catch(e => console.error('Guardian disconnect push error:', e && e.message));
+
   const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId);
   const email = authUser?.user?.email;
   if (!email) return;
-  const label = row.account_name || row.server || 'your trading account';
   await sendEmail(email, `Your Guardian stopped watching ${label}`,
     guardianDisconnectedEmailHtml(label, reason));
+}
+
+// Push once when a broker link comes (back) online and the first snapshot lands.
+async function notifyGuardianConnected(userId, row) {
+  const label = row.account_name || row.server || 'your trading account';
+  await notifications.sendToUser(supabaseAdmin, userId, {
+    type:     'system',
+    title:    'Iris is watching your account',
+    body:     `${label} is connected. Iris sees your trades live from here.`,
+    deepLink: '/chamber',
+  }).catch(e => console.error('Guardian connect push error:', e && e.message));
 }
 
 // Reconcile a user's Guardian link against MetaApi's LIVE state — the single
@@ -3836,6 +3855,9 @@ async function reconcileGuardianLink(userId) {
         status: 'connected', status_detail: null, region,
         last_sync_at: new Date().toISOString(), updated_at: new Date().toISOString(),
       }).eq('user_id', userId);
+      // Fresh connect (or recovery from down) — tell them once. The status flip to
+      // 'connected' makes the next reconcile see wasConnected=true, so it won't repeat.
+      if (!wasConnected) await notifyGuardianConnected(userId, row).catch(() => {});
       return { ...base, connected: true, status: 'connected', guardian };
     }
     // Live but the first snapshot hasn't landed — keep the client polling.
@@ -5712,6 +5734,13 @@ app.post(
             await supabaseAdmin.from('subscriptions').upsert({
               user_id: userId, payment_subscription_id: obj.subscription || obj.id, payment_customer_code: obj.customer || null, plan, status: 'active',
             }, { onConflict: 'user_id' });
+            const PLAN_DISPLAY = { starter: 'Resident', pro: 'Fellow', professional: 'Private Office', institutional: 'Institution' };
+            notifications.sendToUser(supabaseAdmin, userId, {
+              type:     'system',
+              title:    `Welcome to ${PLAN_DISPLAY[plan] || plan}`,
+              body:     'Your membership is active. Everything it unlocks is ready for you.',
+              deepLink: '/app',
+            }).catch(e => console.error('Checkout push error:', e && e.message));
           }
         } else if (event.type === 'customer.subscription.updated') {
           const plan = meta.plan, status = obj.status;
@@ -5731,12 +5760,21 @@ app.post(
             const { data: sub } = await supabaseAdmin.from('subscriptions')
               .select('user_id, plan').eq('payment_customer_code', customer).maybeSingle();
             if (sub?.user_id) {
+              const PLAN_DISPLAY = { starter: 'Resident', pro: 'Fellow', professional: 'Private Office', institutional: 'Institution' };
+              const planName = PLAN_DISPLAY[sub.plan] || sub.plan || 'membership';
+              // Live push — a declined renewal needs action before access lapses.
+              notifications.sendToUser(supabaseAdmin, sub.user_id, {
+                type:     'important',
+                title:    'Your EdgeKeeper payment failed',
+                body:     `We couldn't renew your ${planName}. Update your card to keep your access.`,
+                deepLink: '/settings.html',
+              }).catch(e => console.error('Payment-failed push error:', e && e.message));
+
               const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(sub.user_id);
               const toEmail = authUser?.user?.email;
               if (toEmail) {
-                const PLAN_DISPLAY = { starter: 'Resident', pro: 'Fellow', professional: 'Private Office', institutional: 'Institution' };
                 sendEmail(toEmail, 'Action needed: your EdgeKeeper payment failed',
-                  paymentFailedEmailHtml(PLAN_DISPLAY[sub.plan] || sub.plan || 'membership', obj.hosted_invoice_url)).catch(() => {});
+                  paymentFailedEmailHtml(planName, obj.hosted_invoice_url)).catch(() => {});
               }
             }
           }
@@ -6369,14 +6407,22 @@ Journal excerpts:\n${journalExcerpts || '(no entries this month)'}`;
       },
     }, { onConflict: 'user_id,report_month' });
 
-    // Notify user their report is ready
+    // Notify user their report is ready — push + email.
+    const monthLabel = new Date(reportMonth + '-02').toLocaleString('en-US', { month: 'long', year: 'numeric' });
+    const mentorName = mentor === 'iris' ? 'Iris' : 'Marcus';
+    await notifications.sendToUser(supabaseAdmin, userId, {
+      type:     'message',
+      title:    `Your ${monthLabel} report is ready`,
+      body:     `${mentorName} wrote up how your month went. Have a read.`,
+      deepLink: '/reports.html',
+    }).catch(e => console.error('Report push error:', e && e.message));
+
     const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId);
     const userEmail = authUser?.user?.email;
     if (userEmail) {
-      const mentorName = mentor === 'iris' ? 'Iris' : 'Marcus';
       await sendEmail(
         userEmail,
-        `Your ${new Date(reportMonth + '-02').toLocaleString('en-US', { month: 'long', year: 'numeric' })} report is ready`,
+        `Your ${monthLabel} report is ready`,
         reportEmailHtml(mentorName, reportMonth)
       );
     }

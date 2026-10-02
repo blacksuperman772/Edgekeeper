@@ -80,19 +80,19 @@ const templates = {
     ctaText: 'Sign in to EdgeKeeper', ctaUrl: CONFIRM, footnote: "This link expires in one hour and works once. If you didn't request it, ignore this email." }),
   email_change: shell({ preheader: 'Confirm your new email address.', headline: 'Confirm your new email.',
     intro: 'Confirm {{ .NewEmail }} as the new email for your EdgeKeeper account.',
-    ctaText: 'Confirm new email', ctaUrl: CONFIRM, footnote: "If you didn't request this change, contact us at hello@edgekeeper.org right away." }),
+    ctaText: 'Confirm new email', ctaUrl: CONFIRM, footnote: "If you didn't request this change, contact us at support@edgekeeper.org right away." }),
   invite: shell({ preheader: "You've been invited to EdgeKeeper.", headline: "You've been invited.",
     intro: "You've been invited to EdgeKeeper — a place traders come to become someone they can trust under pressure. Accept below to set up your account.",
     ctaText: 'Accept invitation', ctaUrl: CONFIRM }),
   reauthentication: shell({ preheader: 'Your verification code.', headline: "Verify it's you.",
     intro: 'Enter this code to continue. It expires shortly.', tokenBlock: '{{ .Token }}',
-    footnote: "If you didn't request this, someone may have your password — reset it and contact hello@edgekeeper.org." }),
+    footnote: "If you didn't request this, someone may have your password — reset it and contact support@edgekeeper.org." }),
   password_changed_notification: shell({ preheader: 'Your EdgeKeeper password was changed.', headline: 'Your password was changed.',
     intro: 'This confirms the password for your EdgeKeeper account ({{ .Email }}) was just changed.',
-    footnote: "Didn't do this? Reset your password immediately from the sign-in page and contact hello@edgekeeper.org." }),
+    footnote: "Didn't do this? Reset your password immediately from the sign-in page and contact support@edgekeeper.org." }),
   email_changed_notification: shell({ preheader: 'Your EdgeKeeper email was changed.', headline: 'Your email was changed.',
     intro: 'The email address on your EdgeKeeper account was changed to {{ .NewEmail }}.',
-    footnote: "Didn't do this? Contact hello@edgekeeper.org right away so we can secure your account." }),
+    footnote: "Didn't do this? Contact support@edgekeeper.org right away so we can secure your account." }),
 };
 
 const subjects = {
