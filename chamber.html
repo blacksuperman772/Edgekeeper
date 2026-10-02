@@ -74,8 +74,8 @@
     /* ── CHAT — the room itself ─────────────────────────────────────── */
     .main { display:flex; overflow:hidden; position:relative; min-width:0; }
     .chat { flex:1; display:flex; flex-direction:column; min-width:0; position:relative; overflow:hidden; }
-    .chat-bg { position:absolute; inset:0; background:url('/assets/chamber-ambient.webp') center/cover no-repeat; opacity:0.05; pointer-events:none; filter:blur(1px); }
-    .chat-bg::after { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at center, transparent 8%, var(--black) 78%); }
+    .chat-bg { position:absolute; inset:0; background:url('/assets/chamber-ambient.webp') center/cover no-repeat; opacity:0.18; pointer-events:none; filter:blur(0.5px); }
+    .chat-bg::after { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at center, transparent 32%, var(--black) 94%); }
     /* flex column + margin-top:auto anchors a short conversation to the bottom
        (near the composer, like a real chat app); it scrolls from the top only
        once the thread is tall enough to overflow. */
@@ -147,12 +147,29 @@
     .ladder-row.active .ladder-name { color:var(--bright); }
     .ladder-desc { font-size:0.76rem; color:var(--muted); margin-top:3px; line-height:1.5; }
 
-    .limits-grid { display:grid; grid-template-columns:1fr 1fr; gap:13px; }
-    .lim-field { display:flex; flex-direction:column; gap:6px; }
-    .lim-field span { font-family:var(--mono); font-size:0.5rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); }
-    .lim-field input { background:var(--surface); border:1px solid var(--border); color:var(--text); font-family:var(--mono); font-size:0.86rem; padding:10px 11px; }
-    .lim-field input:focus { outline:none; border-color:var(--accent); }
-    .lim-status { display:block; font-family:var(--mono); font-size:0.52rem; letter-spacing:0.06em; color:var(--accent); margin-top:13px; min-height:13px; }
+    /* Redesigned limits configurator */
+    .lim-row { margin-bottom:17px; }
+    .lim-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
+    .lim-name { font-family:var(--mono); font-size:0.52rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--faint); }
+    .lim-unit { display:inline-flex; border:1px solid var(--border); background:var(--black); }
+    .lim-u { background:none; border:none; color:var(--muted); font-family:var(--mono); font-size:0.62rem; line-height:1; padding:5px 11px; cursor:pointer; transition:background .15s, color .15s; }
+    .lim-u + .lim-u { border-left:1px solid var(--border); }
+    .lim-u.on { background:var(--iris-bg); color:var(--accent); }
+    .lim-ctl { display:flex; align-items:stretch; background:var(--surface); border:1px solid var(--border); transition:border-color .15s; }
+    .lim-ctl:focus-within { border-color:var(--accent); }
+    .lim-ctl input { flex:1; min-width:0; background:none; border:none; color:var(--text); font-family:var(--mono); font-size:0.95rem; padding:11px 13px; }
+    .lim-ctl input:focus { outline:none; }
+    .lim-ctl input::placeholder { color:var(--muted); opacity:0.7; }
+    .lim-adorn { display:flex; align-items:center; padding:0 14px; color:var(--faint); font-family:var(--mono); font-size:0.82rem; border-left:1px solid var(--border); }
+    .lim-hint { font-size:0.68rem; color:var(--muted); line-height:1.5; margin-top:6px; }
+    .lim-lock { display:flex; gap:11px; align-items:flex-start; border:1px solid rgba(184,146,74,0.32); background:rgba(184,146,74,0.06); padding:12px 14px; margin-bottom:20px; }
+    .lim-lock svg { width:15px; height:15px; color:var(--amber); flex-shrink:0; margin-top:1px; }
+    .lim-lock-txt { font-size:0.74rem; color:var(--faint); line-height:1.55; }
+    .lim-lock-txt b { color:var(--amber); font-weight:400; }
+    .g-btn:disabled { opacity:0.4; cursor:not-allowed; }
+    .g-btn:disabled:hover { background:var(--iris-bg); }
+    .lim-status { display:block; font-family:var(--mono); font-size:0.56rem; letter-spacing:0.05em; line-height:1.6; color:var(--accent); margin-top:14px; min-height:14px; }
+    .lim-status.err { color:var(--red); }
 
     .g-btn { background:var(--iris-bg); border:1px solid var(--accent); color:var(--accent); font-family:var(--mono); font-size:0.54rem; letter-spacing:0.14em; text-transform:uppercase; padding:11px 20px; cursor:pointer; transition:background .2s; text-decoration:none; display:inline-block; }
     .g-btn:hover { background:color-mix(in srgb, var(--accent) 12%, transparent); }
@@ -454,17 +471,30 @@
       return h + '</div>';
     }
     if (kind === 'limits') {
-      const f = (id, label, ph, step, min, max) =>
-        '<label class="lim-field"><span>' + label + '</span>'
-        + '<input id="' + id + '" type="number" step="' + step + '" min="' + min + '" max="' + max + '" placeholder="' + ph + '"></label>';
-      return '<p class="panel-sub">Iris escalates against these. Leave a field blank to use her defaults.</p>'
-        + '<div class="limits-grid">'
-        + f('lim-daily','Max daily loss %','e.g. 3','0.1','0.1','100')
-        + f('lim-dd','Max drawdown %','e.g. 5','0.1','0.1','100')
-        + f('lim-streak','Stop after N losses','e.g. 3','1','1','50')
-        + f('lim-lots','Max open lots','e.g. 0.5','0.01','0.01','1000')
-        + '</div><div class="panel-actions"><button class="g-btn" id="lim-save">Save limits</button></div>'
-        + '<span class="lim-status" id="lim-status"></span>';
+      // A row with a %/$ unit toggle (daily loss, drawdown).
+      const unitRow = (id, name, hint) =>
+        '<div class="lim-row" data-field="' + id + '">'
+        + '<div class="lim-head"><span class="lim-name">' + name + '</span>'
+        + '<div class="lim-unit" role="group" aria-label="Unit">'
+        + '<button type="button" class="lim-u on" data-u="pct">%</button>'
+        + '<button type="button" class="lim-u" data-u="amt">$</button></div></div>'
+        + '<div class="lim-ctl"><input id="' + id + '" type="number" inputmode="decimal" placeholder="—">'
+        + '<span class="lim-adorn" data-adorn>%</span></div>'
+        + '<div class="lim-hint">' + hint + '</div></div>';
+      // A plain row with a fixed unit (streak, lots).
+      const plain = (id, name, unit, ph, step, min, max, hint) =>
+        '<div class="lim-row"><div class="lim-head"><span class="lim-name">' + name + '</span></div>'
+        + '<div class="lim-ctl"><input id="' + id + '" type="number" inputmode="decimal" step="' + step + '" min="' + min + '" max="' + max + '" placeholder="' + ph + '">'
+        + '<span class="lim-adorn">' + unit + '</span></div>'
+        + '<div class="lim-hint">' + hint + '</div></div>';
+      return '<p class="panel-sub">The lines Iris holds you to. Leave one blank to use her defaults.</p>'
+        + '<div id="lim-lock-mount"></div>'
+        + unitRow('lim-daily', 'Max daily loss', "She steps in as the day's loss nears this.")
+        + unitRow('lim-dd', 'Max drawdown', 'Measured from your account peak.')
+        + plain('lim-streak', 'Stop after N losses', 'losses', 'e.g. 3', '1', '1', '50', 'Consecutive losing trades before she calls a halt.')
+        + plain('lim-lots', 'Max open lots', 'lots', 'e.g. 0.5', '0.01', '0.01', '1000', "Total size she'll let you carry at once.")
+        + '<div class="panel-actions"><button class="g-btn" id="lim-save">Save limits</button></div>'
+        + '<span class="lim-status" id="lim-status">Once saved, you can tighten anytime — loosening is held 24h.</span>';
     }
     return '';
   }
@@ -483,6 +513,9 @@
     if (kind === 'limits') {
       loadLimits();
       const sv = document.getElementById('lim-save'); if (sv) sv.onclick = saveLimits;
+      document.querySelectorAll('.lim-row[data-field] .lim-u').forEach(btn => {
+        btn.onclick = () => setFieldMode(btn.closest('.lim-row').dataset.field, btn.dataset.u);
+      });
     }
     if (kind === 'trend') loadTrend();
     if (kind === 'account') {
@@ -530,36 +563,83 @@
     }, (level >= 3) ? 30000 : 60000);
   }
 
+  // Switch a %/$ field's unit — moves the toggle, the adornment, and the input step.
+  function setFieldMode(field, modeU) {
+    const row = document.querySelector('.lim-row[data-field="' + field + '"]');
+    if (!row) return;
+    row.querySelectorAll('.lim-u').forEach(b => b.classList.toggle('on', b.dataset.u === modeU));
+    const adorn = row.querySelector('[data-adorn]');
+    if (adorn) adorn.textContent = modeU === 'amt' ? '$' : '%';
+    const input = row.querySelector('input');
+    if (input) {
+      input.step = modeU === 'amt' ? '1' : '0.1';
+      input.placeholder = modeU === 'amt' ? 'e.g. 300' : 'e.g. 3';
+    }
+  }
+  const fieldMode = field => {
+    const on = document.querySelector('.lim-row[data-field="' + field + '"] .lim-u.on');
+    return on ? on.dataset.u : 'pct';
+  };
+  function fmtCountdown(iso) {
+    const ms = new Date(iso).getTime() - Date.now();
+    if (ms <= 0) return 'now';
+    const h = Math.floor(ms / 3600000), m = Math.round((ms % 3600000) / 60000);
+    return h > 0 ? (h + 'h ' + m + 'm') : (m + 'm');
+  }
+  function renderLimitLock(iso) {
+    const mount = document.getElementById('lim-lock-mount');
+    if (!mount) return;
+    if (!iso || new Date(iso).getTime() <= Date.now()) { mount.innerHTML = ''; return; }
+    mount.innerHTML = '<div class="lim-lock">'
+      + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4.5" y="10.5" width="15" height="10" rx="1.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>'
+      + '<div class="lim-lock-txt">Rules locked for <b>' + fmtCountdown(iso) + '</b>. You can still tighten them — loosening or removing a limit resumes then.</div></div>';
+  }
+
   async function loadLimits() {
     try {
       const r = await fetch('/api/guardian/limits', { credentials:'include' });
       if (!r.ok) return;
-      const { limits } = await r.json();
+      const { limits, locked_until } = await r.json();
       const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
+      setFieldMode('lim-daily', limits.risk_max_daily_loss_mode || 'pct');
+      setFieldMode('lim-dd',    limits.risk_max_drawdown_mode || 'pct');
       set('lim-daily', limits.risk_max_daily_loss_pct);
       set('lim-dd', limits.risk_max_drawdown_pct);
       set('lim-streak', limits.risk_max_loss_streak);
       set('lim-lots', limits.risk_max_lots);
+      renderLimitLock(locked_until);
     } catch (_) {}
   }
 
   async function saveLimits() {
     const status = document.getElementById('lim-status');
     const val = id => { const el = document.getElementById(id); return el && el.value !== '' ? el.value : null; };
-    if (status) status.textContent = 'Saving…';
+    if (!confirm('Save these limits?\n\nOnce saved, you can tighten them anytime, but loosening or removing a limit is locked for 24 hours.')) return;
+    if (status) { status.classList.remove('err'); status.textContent = 'Saving…'; }
     try {
       const r = await fetch('/api/guardian/limits', {
         method:'PUT', headers:{'Content-Type':'application/json'}, credentials:'include',
         body: JSON.stringify({
-          risk_max_daily_loss_pct: val('lim-daily'),
-          risk_max_drawdown_pct:   val('lim-dd'),
-          risk_max_loss_streak:    val('lim-streak'),
-          risk_max_lots:           val('lim-lots'),
+          risk_max_daily_loss_pct:  val('lim-daily'),
+          risk_max_drawdown_pct:    val('lim-dd'),
+          risk_max_loss_streak:     val('lim-streak'),
+          risk_max_lots:            val('lim-lots'),
+          risk_max_daily_loss_mode: fieldMode('lim-daily'),
+          risk_max_drawdown_mode:   fieldMode('lim-dd'),
         }),
       });
       const d = await r.json().catch(() => ({}));
-      if (status) status.textContent = r.ok ? 'Saved. Iris is holding these now.' : (d.error || 'Could not save.');
-    } catch (_) { if (status) status.textContent = 'Could not save.'; }
+      if (!status) return;
+      if (r.ok) {
+        status.classList.remove('err');
+        status.textContent = 'Saved. Iris is holding these now.';
+        renderLimitLock(d.locked_until);
+      } else {
+        status.classList.add('err');
+        status.textContent = d.error || 'Could not save.';
+        if (d.locked_until) renderLimitLock(d.locked_until);
+      }
+    } catch (_) { if (status) { status.classList.add('err'); status.textContent = 'Could not save.'; } }
   }
 
   async function loadTrend() {

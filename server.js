@@ -3157,7 +3157,19 @@ function calcLockLevel(data, limits = null) {
   const losses = data.consecutive_losses || 0;
   const pnlPct = data.daily_pnl_pct || 0;      // negative = loss
   const drawdown = data.max_drawdown_pct || 0;
+  const balance = Number(data.balance) || 0;
   const L = limits || {};
+
+  // Daily-loss and drawdown can be stored as a percent or a money amount. The
+  // ladder works in %, so a money limit is converted to % of the live balance.
+  // If a money limit is set but balance is unknown, it can't be evaluated yet (0).
+  const asPct = (val, mode) => {
+    if (val == null) return 0;
+    if (mode === 'amt') return balance > 0 ? (Number(val) / balance) * 100 : 0;
+    return Number(val);
+  };
+  const dailyLimitPct = asPct(L.risk_max_daily_loss_pct, L.risk_max_daily_loss_mode);
+  const ddLimitPct    = asPct(L.risk_max_drawdown_pct,   L.risk_max_drawdown_mode);
 
   const byLimit = (val, limit) => {
     // Round to kill FP boundary artefacts (2.4/3 = 0.7999… would slip a tier).
@@ -3167,12 +3179,12 @@ function calcLockLevel(data, limits = null) {
   const lossLvl = L.risk_max_loss_streak > 0
     ? byLimit(losses, L.risk_max_loss_streak)
     : (losses >= 5 ? 5 : losses >= 4 ? 4 : losses >= 3 ? 3 : losses >= 2 ? 2 : 1);
-  const ddLvl = L.risk_max_drawdown_pct > 0
-    ? byLimit(drawdown, L.risk_max_drawdown_pct)
+  const ddLvl = ddLimitPct > 0
+    ? byLimit(drawdown, ddLimitPct)
     : (drawdown >= 5 ? 5 : drawdown >= 4 ? 4 : drawdown >= 3 ? 3 : drawdown >= 2 ? 2 : 1);
   const lossMag = Math.max(0, -pnlPct);
-  const pnlLvl = L.risk_max_daily_loss_pct > 0
-    ? byLimit(lossMag, L.risk_max_daily_loss_pct)
+  const pnlLvl = dailyLimitPct > 0
+    ? byLimit(lossMag, dailyLimitPct)
     : (pnlPct <= -5 ? 5 : pnlPct <= -3 ? 4 : pnlPct <= -2 ? 3 : pnlPct <= -1 ? 2 : 1);
 
   return Math.max(lossLvl, ddLvl, pnlLvl);
@@ -3182,7 +3194,7 @@ function calcLockLevel(data, limits = null) {
 async function getRiskLimits(userId) {
   const { data } = await supabaseAdmin
     .from('user_profiles')
-    .select('risk_max_daily_loss_pct, risk_max_drawdown_pct, risk_max_loss_streak, risk_max_lots')
+    .select('risk_max_daily_loss_pct, risk_max_drawdown_pct, risk_max_loss_streak, risk_max_lots, risk_max_daily_loss_mode, risk_max_drawdown_mode')
     .eq('id', userId).maybeSingle();
   return data || {};
 }
@@ -3266,21 +3278,33 @@ app.put('/api/guardian/consent', requireAuthApi, apiLimiter, async (req, res) =>
 // GET /api/guardian/limits — the trader's custom risk limits (Fellow+).
 app.get('/api/guardian/limits', requireAuthApi, apiLimiter, async (req, res) => {
   const { data: profile } = await supabaseAdmin.from('user_profiles')
-    .select('subscription_status, bypass_subscription, risk_max_daily_loss_pct, risk_max_drawdown_pct, risk_max_loss_streak, risk_max_lots')
+    .select('subscription_status, bypass_subscription, risk_max_daily_loss_pct, risk_max_drawdown_pct, risk_max_loss_streak, risk_max_lots, risk_max_daily_loss_mode, risk_max_drawdown_mode, rules_locked_until')
     .eq('id', req.user.id).maybeSingle();
   if (!can(profile, 'guardian')) return res.status(403).json({ error: 'Custom limits are available on the Fellow plan and above.' });
-  res.json({ limits: {
-    risk_max_daily_loss_pct: profile.risk_max_daily_loss_pct ?? null,
-    risk_max_drawdown_pct:   profile.risk_max_drawdown_pct ?? null,
-    risk_max_loss_streak:    profile.risk_max_loss_streak ?? null,
-    risk_max_lots:           profile.risk_max_lots ?? null,
-  } });
+  const lu = profile.rules_locked_until;
+  res.json({
+    limits: {
+      risk_max_daily_loss_pct:  profile.risk_max_daily_loss_pct ?? null,
+      risk_max_drawdown_pct:    profile.risk_max_drawdown_pct ?? null,
+      risk_max_loss_streak:     profile.risk_max_loss_streak ?? null,
+      risk_max_lots:            profile.risk_max_lots ?? null,
+      risk_max_daily_loss_mode: profile.risk_max_daily_loss_mode || 'pct',
+      risk_max_drawdown_mode:   profile.risk_max_drawdown_mode || 'pct',
+    },
+    locked_until: (lu && new Date(lu).getTime() > Date.now()) ? lu : null,
+  });
 });
 
 // PUT /api/guardian/limits — set custom risk limits (Fellow+). Empty/null clears a limit.
+// Commitment lock: once saved, a rule set is locked for 24h. Tightening (a stricter
+// limit, or adding one) is always allowed; loosening or clearing a limit is refused
+// until the lock expires — that's the whole point, so you can't revenge-loosen after
+// a bad session. A new accepted save starts a fresh 24h lock.
+const RULES_LOCK_MS = 24 * 60 * 60 * 1000;
 app.put('/api/guardian/limits', requireAuthApi, apiLimiter, async (req, res) => {
   const { data: profile } = await supabaseAdmin.from('user_profiles')
-    .select('subscription_status, bypass_subscription').eq('id', req.user.id).maybeSingle();
+    .select('subscription_status, bypass_subscription, risk_max_daily_loss_pct, risk_max_drawdown_pct, risk_max_loss_streak, risk_max_lots, risk_max_daily_loss_mode, risk_max_drawdown_mode, rules_locked_until')
+    .eq('id', req.user.id).maybeSingle();
   if (!can(profile, 'guardian')) return res.status(403).json({ error: 'Custom limits are available on the Fellow plan and above.' });
 
   // Returns a number, null (cleared), or undefined (invalid → reject).
@@ -3289,20 +3313,53 @@ app.put('/api/guardian/limits', requireAuthApi, apiLimiter, async (req, res) => 
     const n = Number(v);
     return (!Number.isFinite(n) || n < min || n > max) ? undefined : n;
   };
-  const dl   = clamp(req.body?.risk_max_daily_loss_pct, 0.1, 100);
-  const dd   = clamp(req.body?.risk_max_drawdown_pct,   0.1, 100);
+  const mode = v => (v === 'amt' ? 'amt' : 'pct');
+  const dlMode = mode(req.body?.risk_max_daily_loss_mode);
+  const ddMode = mode(req.body?.risk_max_drawdown_mode);
+  // A money limit allows a far larger range than a percent.
+  const dl   = clamp(req.body?.risk_max_daily_loss_pct, dlMode === 'amt' ? 1 : 0.1, dlMode === 'amt' ? 1e7 : 100);
+  const dd   = clamp(req.body?.risk_max_drawdown_pct,   ddMode === 'amt' ? 1 : 0.1, ddMode === 'amt' ? 1e7 : 100);
   const ls   = clamp(req.body?.risk_max_loss_streak,    1,   50);
   const lots = clamp(req.body?.risk_max_lots,           0.01, 1000);
   if ([dl, dd, ls, lots].some(v => v === undefined)) return res.status(400).json({ error: 'A limit is out of range.' });
 
+  // Enforce the lock: while locked, every field must be tighter-or-equal.
+  const lockedUntil = profile.rules_locked_until ? new Date(profile.rules_locked_until).getTime() : 0;
+  if (lockedUntil > Date.now()) {
+    // smaller number = stricter. Adding a limit (old null → new value) is stricter.
+    // Clearing one (old value → null) is looser. A unit change can't be compared, so
+    // it counts as looser while locked.
+    const tighter = (nv, ov, modeChanged) => {
+      if (ov == null) return true;          // no prior guardrail — adding is tightening
+      if (nv == null) return false;         // removing a guardrail — looser
+      if (modeChanged) return false;        // % ↔ $ not comparable — treat as looser
+      return Number(nv) <= Number(ov);
+    };
+    const ok =
+      tighter(dl, profile.risk_max_daily_loss_pct, dlMode !== (profile.risk_max_daily_loss_mode || 'pct')) &&
+      tighter(dd, profile.risk_max_drawdown_pct,   ddMode !== (profile.risk_max_drawdown_mode || 'pct')) &&
+      tighter(ls, profile.risk_max_loss_streak, false) &&
+      tighter(lots, profile.risk_max_lots, false);
+    if (!ok) {
+      return res.status(423).json({
+        error: 'Your rules are locked. You can tighten them anytime, but loosening or removing a limit is held until the cooldown ends.',
+        locked_until: profile.rules_locked_until,
+      });
+    }
+  }
+
+  const nextLock = new Date(Date.now() + RULES_LOCK_MS).toISOString();
   const { error } = await supabaseAdmin.from('user_profiles').update({
-    risk_max_daily_loss_pct: dl,
-    risk_max_drawdown_pct:   dd,
-    risk_max_loss_streak:    ls == null ? null : Math.round(ls),
-    risk_max_lots:           lots,
+    risk_max_daily_loss_pct:  dl,
+    risk_max_drawdown_pct:    dd,
+    risk_max_loss_streak:     ls == null ? null : Math.round(ls),
+    risk_max_lots:            lots,
+    risk_max_daily_loss_mode: dlMode,
+    risk_max_drawdown_mode:   ddMode,
+    rules_locked_until:       nextLock,
   }).eq('id', req.user.id);
   if (error) return res.status(500).json({ error: 'Database error' });
-  res.json({ ok: true });
+  res.json({ ok: true, locked_until: nextLock });
 });
 
 // GET /api/guardian/history — recent daily snapshots for the chamber trend (Fellow+).
