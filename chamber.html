@@ -143,6 +143,8 @@
     .readout-value { font-family:var(--serif); font-size:1.6rem; font-weight:300; color:var(--text); line-height:1; }
     .readout-value.warn { color:var(--amber); } .readout-value.alert { color:var(--red); } .readout-value.pos { color:var(--iris); }
     .meta-line { text-align:center; font-family:var(--mono); font-size:0.52rem; letter-spacing:0.1em; color:var(--muted); margin-top:16px; line-height:1.7; }
+    .readout-grp { font-family:var(--mono); font-size:0.5rem; letter-spacing:0.18em; text-transform:uppercase; color:var(--muted); margin:22px 0 10px; }
+    .nostop-warn { margin-top:14px; padding:11px 13px; border:1px solid rgba(168,90,74,0.35); background:rgba(168,90,74,0.07); color:var(--red); font-size:0.76rem; line-height:1.5; }
     .panel-sub { font-size:0.8rem; color:var(--muted); line-height:1.65; margin-bottom:18px; }
 
     .ladder { border:1px solid var(--border); }
@@ -446,11 +448,22 @@
                   : (g.updated_at ? new Date(g.updated_at).toLocaleString() : null);
 
     if (kind === 'readings') {
+      const allowance = g.risk_allowance_usd, atRisk = g.open_risk_usd, noStop = g.positions_no_stop || 0;
+      const over = (allowance != null && atRisk != null && atRisk > allowance);
+      const usd = v => v == null ? '—' : '$' + Math.abs(Number(v)).toLocaleString('en-US', { maximumFractionDigits: 0 });
       return '<div class="readouts">'
         + '<div class="readout"><div class="readout-label">Losing streak</div><div class="readout-value ' + cls(losses) + '">' + losses + '</div></div>'
         + '<div class="readout"><div class="readout-label">Day P&L</div><div class="readout-value ' + cls(pnl <= -2 ? 4 : pnl < 0 ? 2 : 0) + '">' + (pnl > 0 ? '+' : '') + pnl + '%</div></div>'
         + '<div class="readout"><div class="readout-label">Drawdown</div><div class="readout-value ' + cls(dd) + '">' + dd + '%</div></div>'
-        + '</div>' + (updated ? '<div class="meta-line">Last reading · ' + esc(updated) + '</div>' : '');
+        + '</div>'
+        + '<div class="readout-grp">The next trade</div>'
+        + '<div class="readouts two">'
+        + '<div class="readout"><div class="readout-label">Risk allowance</div><div class="readout-value ' + (allowance != null ? 'pos' : '') + '">' + usd(allowance) + '</div></div>'
+        + '<div class="readout"><div class="readout-label">At risk now</div><div class="readout-value ' + (over ? 'alert' : '') + '">' + usd(atRisk) + '</div></div>'
+        + '</div>'
+        + (allowance == null ? '<div class="meta-line">Set your risk per trade in Your limits and Iris will size your allowance.</div>' : '')
+        + (noStop ? '<div class="nostop-warn">' + noStop + ' open position' + (noStop > 1 ? 's' : '') + ' with no stop loss — Iris can\'t see where that risk ends.</div>' : '')
+        + (updated ? '<div class="meta-line">Last reading · ' + esc(updated) + '</div>' : '');
     }
     if (kind === 'account') {
       const bal = g.balance, eq = g.equity;
@@ -497,6 +510,7 @@
         + '<div class="lim-hint">' + hint + '</div></div>';
       return '<p class="panel-sub">The lines Iris holds you to. Leave one blank to use her defaults.</p>'
         + '<div id="lim-lock-mount"></div>'
+        + unitRow('lim-rpt', 'Risk per trade', 'What you may lose on a single trade. Iris sizes your allowance from this.')
         + unitRow('lim-daily', 'Max daily loss', "She steps in as the day's loss nears this.")
         + unitRow('lim-dd', 'Max drawdown', 'Measured from your account peak.')
         + plain('lim-streak', 'Stop after N losses', 'losses', 'e.g. 3', '1', '1', '50', 'Consecutive losing trades before she calls a halt.')
@@ -609,8 +623,10 @@
       if (!r.ok) return;
       const { limits, locked_until } = await r.json();
       const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
+      setFieldMode('lim-rpt',   limits.risk_per_trade_mode || 'pct');
       setFieldMode('lim-daily', limits.risk_max_daily_loss_mode || 'pct');
       setFieldMode('lim-dd',    limits.risk_max_drawdown_mode || 'pct');
+      set('lim-rpt', limits.risk_per_trade_pct);
       set('lim-daily', limits.risk_max_daily_loss_pct);
       set('lim-dd', limits.risk_max_drawdown_pct);
       set('lim-streak', limits.risk_max_loss_streak);
@@ -628,6 +644,8 @@
       const r = await fetch('/api/guardian/limits', {
         method:'PUT', headers:{'Content-Type':'application/json'}, credentials:'include',
         body: JSON.stringify({
+          risk_per_trade_pct:       val('lim-rpt'),
+          risk_per_trade_mode:      fieldMode('lim-rpt'),
           risk_max_daily_loss_pct:  val('lim-daily'),
           risk_max_drawdown_pct:    val('lim-dd'),
           risk_max_loss_streak:     val('lim-streak'),

@@ -1892,6 +1892,9 @@ async function buildMentorLiveContext(userId) {
       + `• Balance ${money(g.balance)} · Equity ${money(g.equity)}`
       + (floating != null ? ` · Open P&L ${floating >= 0 ? '+' : ''}${money(floating)}` : '')
       + ` · Open lots ${Number(g.open_lots || 0).toFixed(2)}`
+      + (g.risk_allowance_usd != null ? ` · Allowed to risk on the next trade ${money(g.risk_allowance_usd)}` : '')
+      + (g.open_risk_usd != null ? ` · Money at risk on the book right now ${money(g.open_risk_usd)}` : '')
+      + (g.positions_no_stop ? ` · ${g.positions_no_stop} OPEN POSITION(S) WITH NO STOP LOSS (unbounded risk — raise this)` : '')
       + ` · Drawdown ${g.max_drawdown_pct || 0}% · Losing streak ${g.consecutive_losses || 0}`
       + (g.lock_level ? ` · Guardian level ${g.lock_level}` : ''));
   }
@@ -3194,9 +3197,32 @@ function calcLockLevel(data, limits = null) {
 async function getRiskLimits(userId) {
   const { data } = await supabaseAdmin
     .from('user_profiles')
-    .select('risk_max_daily_loss_pct, risk_max_drawdown_pct, risk_max_loss_streak, risk_max_lots, risk_max_daily_loss_mode, risk_max_drawdown_mode')
+    .select('risk_max_daily_loss_pct, risk_max_drawdown_pct, risk_max_loss_streak, risk_max_lots, risk_max_daily_loss_mode, risk_max_drawdown_mode, risk_per_trade_pct, risk_per_trade_mode')
     .eq('id', userId).maybeSingle();
   return data || {};
+}
+
+// Per-trade risk allowance: what the trader is permitted to risk on the NEXT trade,
+// in account currency. Base = their risk-per-trade rule; capped by what's left of the
+// daily loss budget, so it shrinks through a losing day and reaches $0 at the daily
+// limit. Returns null when they haven't set a per-trade risk (nothing to show yet).
+function computeRiskAllowance(balance, limits, dailyPnl) {
+  const L = limits || {};
+  const rpt = L.risk_per_trade_pct;
+  if (rpt == null) return null;
+  const perTrade = (L.risk_per_trade_mode === 'amt')
+    ? Number(rpt)
+    : (balance > 0 ? balance * Number(rpt) / 100 : 0);
+  let allow = perTrade;
+  const dl = L.risk_max_daily_loss_pct;
+  if (dl != null) {
+    const budget = (L.risk_max_daily_loss_mode === 'amt')
+      ? Number(dl)
+      : (balance > 0 ? balance * Number(dl) / 100 : 0);
+    const lossSoFar = Math.max(0, -(Number(dailyPnl) || 0));
+    allow = Math.min(perTrade, Math.max(0, budget - lossSoFar));
+  }
+  return Math.round(Math.max(0, allow) * 100) / 100;
 }
 
 // GET /api/guardian — current account state (Resident+ only)
@@ -3278,12 +3304,14 @@ app.put('/api/guardian/consent', requireAuthApi, apiLimiter, async (req, res) =>
 // GET /api/guardian/limits — the trader's custom risk limits (Fellow+).
 app.get('/api/guardian/limits', requireAuthApi, apiLimiter, async (req, res) => {
   const { data: profile } = await supabaseAdmin.from('user_profiles')
-    .select('subscription_status, bypass_subscription, risk_max_daily_loss_pct, risk_max_drawdown_pct, risk_max_loss_streak, risk_max_lots, risk_max_daily_loss_mode, risk_max_drawdown_mode, rules_locked_until')
+    .select('subscription_status, bypass_subscription, risk_max_daily_loss_pct, risk_max_drawdown_pct, risk_max_loss_streak, risk_max_lots, risk_max_daily_loss_mode, risk_max_drawdown_mode, risk_per_trade_pct, risk_per_trade_mode, rules_locked_until')
     .eq('id', req.user.id).maybeSingle();
   if (!can(profile, 'guardian')) return res.status(403).json({ error: 'Custom limits are available on the Fellow plan and above.' });
   const lu = profile.rules_locked_until;
   res.json({
     limits: {
+      risk_per_trade_pct:       profile.risk_per_trade_pct ?? null,
+      risk_per_trade_mode:      profile.risk_per_trade_mode || 'pct',
       risk_max_daily_loss_pct:  profile.risk_max_daily_loss_pct ?? null,
       risk_max_drawdown_pct:    profile.risk_max_drawdown_pct ?? null,
       risk_max_loss_streak:     profile.risk_max_loss_streak ?? null,
@@ -3303,7 +3331,7 @@ app.get('/api/guardian/limits', requireAuthApi, apiLimiter, async (req, res) => 
 const RULES_LOCK_MS = 24 * 60 * 60 * 1000;
 app.put('/api/guardian/limits', requireAuthApi, apiLimiter, async (req, res) => {
   const { data: profile } = await supabaseAdmin.from('user_profiles')
-    .select('subscription_status, bypass_subscription, risk_max_daily_loss_pct, risk_max_drawdown_pct, risk_max_loss_streak, risk_max_lots, risk_max_daily_loss_mode, risk_max_drawdown_mode, rules_locked_until')
+    .select('subscription_status, bypass_subscription, risk_max_daily_loss_pct, risk_max_drawdown_pct, risk_max_loss_streak, risk_max_lots, risk_max_daily_loss_mode, risk_max_drawdown_mode, risk_per_trade_pct, risk_per_trade_mode, rules_locked_until')
     .eq('id', req.user.id).maybeSingle();
   if (!can(profile, 'guardian')) return res.status(403).json({ error: 'Custom limits are available on the Fellow plan and above.' });
 
@@ -3314,14 +3342,16 @@ app.put('/api/guardian/limits', requireAuthApi, apiLimiter, async (req, res) => 
     return (!Number.isFinite(n) || n < min || n > max) ? undefined : n;
   };
   const mode = v => (v === 'amt' ? 'amt' : 'pct');
+  const rptMode = mode(req.body?.risk_per_trade_mode);
   const dlMode = mode(req.body?.risk_max_daily_loss_mode);
   const ddMode = mode(req.body?.risk_max_drawdown_mode);
   // A money limit allows a far larger range than a percent.
+  const rpt  = clamp(req.body?.risk_per_trade_pct,      rptMode === 'amt' ? 1 : 0.1, rptMode === 'amt' ? 1e7 : 100);
   const dl   = clamp(req.body?.risk_max_daily_loss_pct, dlMode === 'amt' ? 1 : 0.1, dlMode === 'amt' ? 1e7 : 100);
   const dd   = clamp(req.body?.risk_max_drawdown_pct,   ddMode === 'amt' ? 1 : 0.1, ddMode === 'amt' ? 1e7 : 100);
   const ls   = clamp(req.body?.risk_max_loss_streak,    1,   50);
   const lots = clamp(req.body?.risk_max_lots,           0.01, 1000);
-  if ([dl, dd, ls, lots].some(v => v === undefined)) return res.status(400).json({ error: 'A limit is out of range.' });
+  if ([rpt, dl, dd, ls, lots].some(v => v === undefined)) return res.status(400).json({ error: 'A limit is out of range.' });
 
   // Enforce the lock: while locked, every field must be tighter-or-equal.
   const lockedUntil = profile.rules_locked_until ? new Date(profile.rules_locked_until).getTime() : 0;
@@ -3336,6 +3366,7 @@ app.put('/api/guardian/limits', requireAuthApi, apiLimiter, async (req, res) => 
       return Number(nv) <= Number(ov);
     };
     const ok =
+      tighter(rpt, profile.risk_per_trade_pct,     rptMode !== (profile.risk_per_trade_mode || 'pct')) &&
       tighter(dl, profile.risk_max_daily_loss_pct, dlMode !== (profile.risk_max_daily_loss_mode || 'pct')) &&
       tighter(dd, profile.risk_max_drawdown_pct,   ddMode !== (profile.risk_max_drawdown_mode || 'pct')) &&
       tighter(ls, profile.risk_max_loss_streak, false) &&
@@ -3350,6 +3381,8 @@ app.put('/api/guardian/limits', requireAuthApi, apiLimiter, async (req, res) => 
 
   const nextLock = new Date(Date.now() + RULES_LOCK_MS).toISOString();
   const { error } = await supabaseAdmin.from('user_profiles').update({
+    risk_per_trade_pct:       rpt,
+    risk_per_trade_mode:      rptMode,
     risk_max_daily_loss_pct:  dl,
     risk_max_drawdown_pct:    dd,
     risk_max_loss_streak:     ls == null ? null : Math.round(ls),
@@ -3541,6 +3574,25 @@ async function syncGuardianFromMetaApi(userId, accountId, region, platform) {
   const openLots  = positions.reduce((s, p) => s + (Number(p.volume) || 0), 0);
   const floating  = positions.reduce((s, p) => s + (Number(p.profit ?? p.unrealizedProfit) || 0), 0);
 
+  // Money at risk per open position (the loss if its stop hits), derived WITHOUT any
+  // symbol spec or currency math: the broker's own `profit` over the price it has
+  // moved already encodes lot size, contract size and account-currency conversion,
+  // so money-per-point = |profit| / |current - open|, and risk = |open - stop| × that.
+  // A position with no stop has unbounded risk — counted, never valued.
+  // ponytail: at the exact tick of open (current == open) risk is uncomputable; it
+  // lands on the next poll once price has moved a tick.
+  let openRisk = 0, positionsNoStop = 0;
+  for (const p of positions) {
+    const sl = Number(p.stopLoss) || 0;
+    if (!sl) { positionsNoStop++; continue; }
+    const entry = Number(p.openPrice), cur = Number(p.currentPrice);
+    const prof = Number(p.profit ?? p.unrealizedProfit) || 0;
+    const dPrice = Math.abs(cur - entry);
+    if (dPrice < 1e-9 || prof === 0) continue;         // just opened — value it next poll
+    openRisk += Math.abs(entry - sl) * (Math.abs(prof) / dPrice);
+  }
+  openRisk = Math.round(openRisk * 100) / 100;
+
   // Closing deals: each carries realized profit (+ swap + comm) for the position
   // (or the part of it) it closes.
   const closeDeals = deals
@@ -3592,6 +3644,7 @@ async function syncGuardianFromMetaApi(userId, accountId, region, platform) {
   const limits = await getRiskLimits(userId);
   const snap = { consecutive_losses: streak, daily_pnl_pct: dailyPct, max_drawdown_pct: drawdown };
   const lockLevel = calcLockLevel(snap, limits);
+  const allowance = computeRiskAllowance(balance, limits, dailyPnl);
 
   await supabaseAdmin.from('guardian_data').upsert({
     user_id:            userId,
@@ -3609,6 +3662,9 @@ async function syncGuardianFromMetaApi(userId, accountId, region, platform) {
     day_start_balance:  dayStartBalance,
     day_peak_equity:    dayPeakEquity,
     day_realized_pnl:   Math.round(realizedToday * 100) / 100,
+    risk_allowance_usd: allowance,
+    open_risk_usd:      openRisk,
+    positions_no_stop:  positionsNoStop,
     last_updated:       new Date().toISOString(),
   }, { onConflict: 'user_id' });
 
@@ -3617,6 +3673,7 @@ async function syncGuardianFromMetaApi(userId, accountId, region, platform) {
     max_drawdown_pct: drawdown, consecutive_losses: streak, lock_level: lockLevel,
   }).catch(() => {});
   await maybeAlertGuardianBreach(userId, lockLevel, { drawdown, dailyPct, losses: streak }).catch(() => {});
+  await maybeAlertTradeRisk(userId, { openRisk, positionsNoStop, allowance }).catch(() => {});
 
   // Hard lock on a MetaApi-linked account. Gated on recorded 'protect' consent —
   // shouldEnforceLock() decides; this path only carries it out. Never allowed to
@@ -3634,7 +3691,8 @@ async function syncGuardianFromMetaApi(userId, accountId, region, platform) {
   }
 
   return { balance, equity, daily_pnl: dailyPnl, daily_pnl_pct: dailyPct,
-           consecutive_losses: streak, open_lots: openLots, lock_level: lockLevel };
+           consecutive_losses: streak, open_lots: openLots, lock_level: lockLevel,
+           risk_allowance_usd: allowance, open_risk_usd: openRisk, positions_no_stop: positionsNoStop };
 }
 
 // Roll the day's Guardian snapshot into history (Iris's memory + the trend line).
@@ -3697,6 +3755,37 @@ async function maybeAlertGuardianBreach(userId, level, snap) {
     const email = authUser?.user?.email;
     if (email) await sendEmail(email, `Iris flagged your account — ${label}`, guardianBreachEmailHtml(level, snap));
   }
+}
+
+// The live trade watch: Iris speaks up when a position has no stop, or when the money
+// at risk on the book runs past the per-trade allowance. Advisory for every guardian
+// mode (even 'observe' asked to be told what she sees); enforcement stays separate and
+// 'protect'-gated. Deduped on guardian_data.last_trade_alert_key so each distinct
+// condition pushes once and re-arms only after it clears.
+async function maybeAlertTradeRisk(userId, { openRisk, positionsNoStop, allowance }) {
+  const overRisk = allowance != null && allowance > 0 && openRisk > allowance;
+  const condition = positionsNoStop > 0 ? ('nostop:' + positionsNoStop) : (overRisk ? 'over' : '');
+
+  const { data: gd } = await supabaseAdmin.from('guardian_data')
+    .select('last_trade_alert_key').eq('user_id', userId).maybeSingle();
+  if ((gd?.last_trade_alert_key || '') === condition) return;   // unchanged — no repeat
+  await supabaseAdmin.from('guardian_data').update({ last_trade_alert_key: condition }).eq('user_id', userId);
+  if (!condition) return;                                       // cleared — just re-arm
+
+  const usd = v => '$' + Math.abs(Number(v) || 0).toFixed(0);
+  let title, body;
+  if (positionsNoStop > 0) {
+    title = 'Iris — a trade with no stop';
+    body = positionsNoStop === 1
+      ? "I see a position with no stop loss. Where does the risk end? That's outside your plan."
+      : `I see ${positionsNoStop} positions with no stop loss. Where does the risk end?`;
+  } else {
+    title = 'Iris — past your risk line';
+    body = `You're risking about ${usd(openRisk)} on the book — past your ${usd(allowance)} line for a single trade.`;
+  }
+  await notifications.sendToUser(supabaseAdmin, userId, {
+    type: 'important', title, body, deepLink: '/chamber',
+  }).catch(e => console.error('Trade-risk push error:', e && e.message));
 }
 
 // Outbound breach call. Real only when TWILIO_* env + the trader's guardian_phone
