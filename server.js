@@ -237,7 +237,18 @@ function serveInjectedHtml(filePath) {
           + '<script>(function(){var s=document.getElementById("ek-splash");try{if(sessionStorage.getItem("ek_splash")){s.classList.add("done");return}sessionStorage.setItem("ek_splash","1")}catch(e){s.classList.add("done");return}setTimeout(function(){s.classList.add("done")},1000)})()</script></body>');
       }
 
-      const isAppMode = req.cookies?.ek_app === '1' && req.user && !filePath.endsWith('app.html');
+      // App chrome shows when the ek_app cookie is set (home sets it). But a logged-in
+      // trader who lands directly on a core app page (e.g. Settings) without that cookie
+      // would get the website nav instead of the app tab bar — an inconsistency with
+      // Home. So on any core app page, set the cookie and treat this render as app mode
+      // too, so the nav is identical everywhere once you're signed in. Marketing/auth
+      // pages are deliberately excluded and keep the website chrome.
+      const CORE_APP_PAGE = /(?:workspace|chamber|study|settings|profile|reports|reviews|integrations|network|research|assessment|academy|academy-onboarding|onboarding)\.html$/;
+      let isAppMode = req.cookies?.ek_app === '1' && req.user && !filePath.endsWith('app.html');
+      if (!isAppMode && req.user && CORE_APP_PAGE.test(filePath)) {
+        res.cookie('ek_app', '1', { path: '/', sameSite: 'lax', maxAge: 365 * 24 * 60 * 60 * 1000 });
+        isAppMode = true;
+      }
       if (isAppMode) {
         if (/<html[^>]*class="/.test(html)) {
           html = html.replace(/<html([^>]*?)class="([^"]*)"/, '<html$1class="$2 ek-app"');
@@ -381,7 +392,14 @@ function serveInjectedHtml(filePath) {
       // inline scripts and event handlers this page relies on. No per-page CSP
       // override or nonce injection — that approach breaks inline event handlers.
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      // App pages: a short PRIVATE cache so a prefetched page is actually kept and the
+      // next navigation is instant. Private = this browser only, never shared; 15s is
+      // long enough to cover a tap-through and short enough that content stays fresh
+      // (the real data loads from the API after render anyway). Everything else — auth,
+      // public, logged-out — stays no-store.
+      res.setHeader('Cache-Control', isAppMode
+        ? 'private, max-age=15'
+        : 'no-cache, no-store, must-revalidate');
       res.send(html);
     } catch (err) {
       console.error('serveInjectedHtml error:', err.message);

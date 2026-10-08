@@ -171,6 +171,20 @@
 
     /* ── FORM FIELDS ── */
     .field { margin-bottom: 24px; }
+    .coach-box {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      background: var(--stone); border: 1px solid var(--border); border-radius: 6px;
+      padding: 13px 16px;
+    }
+    .coach-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .coach-name { font-family: var(--mono); font-size: 0.92rem; color: var(--text); }
+    .coach-desc { font-size: 0.72rem; color: var(--faint); }
+    .coach-change {
+      flex-shrink: 0; background: none; border: 1px solid var(--border); color: var(--faint);
+      font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 7px 14px; border-radius: 5px; cursor: pointer; transition: color .15s, border-color .15s;
+    }
+    .coach-change:hover { color: var(--text); border-color: var(--gold-dim); }
     .field label {
       display: block;
       font-family: var(--mono);
@@ -401,8 +415,15 @@
         <input type="text" id="display-name" maxlength="60" placeholder="How your mentor addresses you" />
       </div>
       <div class="field">
-        <label for="mentor-select">Your Coach</label>
-        <select id="mentor-select">
+        <label>Your Coach</label>
+        <div class="coach-box" id="coach-box">
+          <div class="coach-info">
+            <span class="coach-name" id="coach-name">—</span>
+            <span class="coach-desc" id="coach-desc"></span>
+          </div>
+          <button type="button" class="coach-change" id="coach-change">Change</button>
+        </div>
+        <select id="mentor-select" style="display:none;">
           <option value="marcus">Marcus — Direct, analytical, no-nonsense</option>
           <option value="iris">Iris — Warm, perceptive, behavioral</option>
         </select>
@@ -578,6 +599,20 @@
       // has marcus/iris, so map legacy → canonical or the dropdown renders blank.
       const MENTOR_CANON = { mike: 'marcus', marcus: 'marcus', ashley: 'iris', iris: 'iris' };
       document.getElementById('mentor-select').value    = MENTOR_CANON[settings.mentor] || 'marcus';
+      // Show the trader's CURRENT coach, not a bare pick-one-of-two dropdown. "Change"
+      // reveals the selector for the rare switch.
+      const COACH_INFO = { marcus: ['Marcus', 'Direct, analytical, no-nonsense'], iris: ['Iris', 'Warm, perceptive, behavioral'] };
+      const paintCoach = v => {
+        const c = COACH_INFO[v] || COACH_INFO.marcus;
+        document.getElementById('coach-name').textContent = c[0];
+        document.getElementById('coach-desc').textContent = c[1];
+      };
+      paintCoach(document.getElementById('mentor-select').value);
+      document.getElementById('coach-change').onclick = () => {
+        document.getElementById('coach-box').style.display = 'none';
+        document.getElementById('mentor-select').style.display = '';
+      };
+      document.getElementById('mentor-select').addEventListener('change', e => paintCoach(e.target.value));
       document.getElementById('timezone-select').value  = settings.timezone || 'UTC';
       document.getElementById('email-notifs').checked   = settings.email_notifications !== false;
       document.getElementById('proactive-msgs').checked = settings.proactive_messages !== false;
