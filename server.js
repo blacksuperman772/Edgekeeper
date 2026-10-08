@@ -250,6 +250,23 @@ function serveInjectedHtml(filePath) {
         );
 
         const isImmersive = /workspace\.html|chamber\.html|study\.html|onboarding\.html|academy-onboarding\.html|academy\.html/.test(filePath);
+
+        // Perceived-speed layer injected on every app page: prefetch an internal link
+        // the instant a finger lands on it (a head start before the tap even releases),
+        // and show a top progress bar immediately on navigation so a click never feels
+        // dead while the next page loads.
+        const PERF = '<div id="ek-prog"></div>'
+          + '<style>#ek-prog{position:fixed;top:0;left:0;height:2px;width:0;background:var(--accent,#b8a06a);z-index:100000;opacity:0;transition:width .2s ease,opacity .3s ease;pointer-events:none}#ek-prog.go{opacity:1}</style>'
+          + '<script>(function(){var bar=document.getElementById("ek-prog"),t;'
+          + 'function start(){if(!bar)return;bar.classList.add("go");bar.style.width="0";requestAnimationFrame(function(){bar.style.width="72%"});clearTimeout(t);t=setTimeout(function(){bar.style.width="90%"},600)}'
+          + 'function done(){if(!bar)return;bar.style.width="100%";setTimeout(function(){bar.classList.remove("go");bar.style.width="0"},300)}'
+          + 'var pre={};function prefetch(h){if(pre[h])return;pre[h]=1;var l=document.createElement("link");l.rel="prefetch";l.href=h;document.head.appendChild(l)}'
+          + 'function internal(a){try{if(!a||!a.getAttribute("href"))return null;var u=new URL(a.href);if(u.origin!==location.origin)return null;if(a.target==="_blank"||a.hasAttribute("download"))return null;var h=a.getAttribute("href");if(h.charAt(0)==="#"||h.indexOf("javascript:")===0)return null;if(u.pathname===location.pathname)return null;return u}catch(e){return null}}'
+          + 'document.addEventListener("pointerdown",function(e){var a=e.target.closest&&e.target.closest("a[href]");var u=internal(a);if(u)prefetch(u.href)},{passive:true});'
+          + 'document.addEventListener("click",function(e){if(e.defaultPrevented||e.button||e.metaKey||e.ctrlKey||e.shiftKey)return;var a=e.target.closest&&e.target.closest("a[href]");if(internal(a))start()},true);'
+          + 'window.addEventListener("pageshow",done);window.addEventListener("load",done);'
+          + '})();</script>';
+
         let css = 'html.ek-app .topbar,html.ek-app #main-nav,html.ek-app #nav,html.ek-app #top-bar,html.ek-app #top-label,html.ek-app body>nav:not(.ek-appnav),html.ek-app body>footer,html.ek-app .page-header,html.ek-app .ek-pillars{display:none!important}'
           + 'html.ek-app .page-wrap,html.ek-app .page-inner{padding-top:16px!important}'
           + 'html.ek-app #cursor,html.ek-app #cursor-ring{display:none!important}'
@@ -315,7 +332,7 @@ function serveInjectedHtml(filePath) {
 
           html = html.replace(/<\/head>/i, '<style>' + css + '</style></head>');
           html = html.replace(/<\/body>/i,
-            '<header class="ek-back"><a href="' + backUrl + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 19l-7-7 7-7"/></svg>' + title + '</a>' + menuBtn + '</header></body>');
+            '<header class="ek-back"><a href="' + backUrl + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 19l-7-7 7-7"/></svg>' + title + '</a>' + menuBtn + '</header>' + PERF + '</body>');
         } else {
           css += 'html.ek-app body{padding-top:env(safe-area-inset-top,0px)!important;padding-bottom:calc(54px + env(safe-area-inset-bottom,0px))!important}'
             + '.ek-appnav{position:fixed!important;top:auto!important;bottom:0!important;left:0!important;right:0!important;height:auto!important;display:grid!important;grid-template-columns:repeat(5,1fr);border-top:1px solid rgba(232,228,220,.1);background:rgba(4,4,4,.92);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);padding-bottom:env(safe-area-inset-bottom,0px);z-index:9999;font-family:"Inter",-apple-system,sans-serif}'
@@ -356,7 +373,7 @@ function serveInjectedHtml(filePath) {
             + '</div>'
             + '<script>(function(){var p=location.pathname,t="";if(p==="/app"||p==="/app.html")t="home";else if(p==="/workspace.html")t="marcus";else if(p==="/my-academy"||p==="/study.html"||p==="/study"||p==="/academy.html")t="theo";else if(p==="/chamber"||p==="/chamber.html")t="iris";else t="more";var e=document.querySelector(".ek-nav-"+t);if(e)e.classList.add("ek-on")})()</script>';
 
-          html = html.replace(/<\/body>/i, navHtml + '</body>');
+          html = html.replace(/<\/body>/i, navHtml + PERF + '</body>');
         }
       }
 
