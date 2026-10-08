@@ -482,6 +482,11 @@ let _jurisdictionInit = false;
 function showAccountOverlay() {
   document.getElementById('account-overlay').classList.add('active');
   if (!_jurisdictionInit) { _jurisdictionInit = true; initJurisdiction(); }
+  // Prefill the name the mentor already asked for in the intake — confirm, don't re-type.
+  let nm = window.ekIntakeName;
+  if (!nm) { try { nm = localStorage.getItem('ek_intake_name') || ''; } catch (_) {} }
+  const nameEl = document.getElementById('acc-name');
+  if (nameEl && nm && !nameEl.value) nameEl.value = nm;
   setTimeout(() => {
     const emailEl = document.getElementById('acc-email');
     if (emailEl) emailEl.focus();
@@ -641,6 +646,7 @@ const MENTORS = {
   marcus: {
     key: 'marcus', name: 'Marcus', initial: 'M',
     color: '#b8a06a', colorDim: '#7a6a45', colorBg: 'rgba(184,160,106,0.05)',
+    nameQuestion: "Before we get into it — what should I call you?",
     fallbackQuestions: [
       "Before we get into anything — what's the trade you keep making that you already know you shouldn't?",
       "Walk me through your worst trading day. Not the loss. The decision that caused it.",
@@ -664,6 +670,7 @@ const MENTORS = {
   iris: {
     key: 'iris', name: 'Iris', initial: 'I',
     color: '#6b8c6b', colorDim: '#4a5c4a', colorBg: 'rgba(107,140,107,0.05)',
+    nameQuestion: "Before we start — what do I call you?",
     fallbackQuestions: [
       "Before we get into trading — tell me how you've been feeling lately, outside the markets.",
       "When did you first start trading, and what were you hoping it would give you?",
@@ -817,6 +824,7 @@ async function bootstrapNotebook() {
 let mentor = null;
 let exchangeCount = 0;
 let awaitingReply = false;
+let awaitingName = false;   // the deterministic first step: mentor asks the trader's name
 const history = []; // {role, content}
 
 
@@ -896,6 +904,20 @@ async function startIntake() {
   buildDots();
   await sleep(900);
 
+  // The mentor asks the trader's name first — deterministic so it's always captured,
+  // and it makes the intake feel like a conversation, not a form. Skip only if already
+  // answered in THIS page session (not from storage — a shared device must re-ask).
+  if (window.ekIntakeName) return beginAIIntake();
+
+  await showQuestion(mentor.nameQuestion || 'Before we begin — what should I call you?', STAGES[0]);
+  setState('Listening');
+  awaitingName = true;
+  showInput();
+  document.getElementById('user-input').focus();
+}
+
+// The AI-led body of the intake (the original flow), reached once we have the name.
+async function beginAIIntake() {
   setState(presenceCue('thinking'));
   showThinking();
 
@@ -961,10 +983,26 @@ function hideInput()  { document.getElementById('input-zone').classList.add('hid
 
 // ── SEND ──────────────────────────────────────────────────────────────
 async function sendMessage() {
-  if (!awaitingReply || !mentor) return;
+  if (!mentor) return;
   const inp  = document.getElementById('user-input');
   const text = inp.value.trim();
   if (!text) return;
+
+  // First step: the answer to the name question. Capture it, hand it to the mentor as
+  // context, then begin the AI intake. Doesn't count as an exchange.
+  if (awaitingName) {
+    awaitingName = false;
+    inp.value = '';
+    hideInput();
+    const nm = text.replace(/\s+/g, ' ').slice(0, 60);
+    window.ekIntakeName = nm;
+    try { localStorage.setItem('ek_intake_name', nm); } catch (_) {}
+    history.push({ role:'user', content: 'My name is ' + nm + '. Use it naturally from here.' });
+    await fadeOutQuestion();
+    return beginAIIntake();
+  }
+
+  if (!awaitingReply) return;
   inp.value = '';
   awaitingReply = false;
   hideInput();
