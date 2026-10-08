@@ -1897,6 +1897,15 @@ async function buildMentorLiveContext(userId) {
       + (g.positions_no_stop ? ` · ${g.positions_no_stop} OPEN POSITION(S) WITH NO STOP LOSS (unbounded risk — raise this)` : '')
       + ` · Drawdown ${g.max_drawdown_pct || 0}% · Losing streak ${g.consecutive_losses || 0}`
       + (g.lock_level ? ` · Guardian level ${g.lock_level}` : ''));
+
+    // Per-position breakdown so she can give volatility-aware, per-instrument advice.
+    const ps = Array.isArray(g.positions_summary) ? g.positions_summary : [];
+    if (ps.length) {
+      parts.push('THEIR OPEN POSITIONS — judge each against how that instrument normally moves (gold and indices are wide and fast; major FX is tamer). A stop only a fraction of a percent away on a volatile instrument sits inside the noise and will get wicked out; heavy size on a fast instrument is where accounts bleed. When it fits, advise a lighter size or a wider, more sensible stop — in your own words, not a lecture:\n'
+        + ps.map(p => `• ${p.sym} ${p.dir} ${p.lots} lots · ` + (p.hasStop
+            ? `stop ${p.stopPct != null ? p.stopPct + '% away' : 'set'}${p.risk != null ? ', risking ' + money(p.risk) : ''}`
+            : 'NO STOP (unbounded)')).join('\n'));
+    }
   }
 
   // Recent history — Iris's memory. Lets a mentor say "third red day this week"
@@ -3582,14 +3591,29 @@ async function syncGuardianFromMetaApi(userId, accountId, region, platform) {
   // ponytail: at the exact tick of open (current == open) risk is uncomputable; it
   // lands on the next poll once price has moved a tick.
   let openRisk = 0, positionsNoStop = 0;
+  const positionsSummary = [];
   for (const p of positions) {
+    const entry = Number(p.openPrice) || 0, cur = Number(p.currentPrice) || 0;
     const sl = Number(p.stopLoss) || 0;
-    if (!sl) { positionsNoStop++; continue; }
-    const entry = Number(p.openPrice), cur = Number(p.currentPrice);
-    const prof = Number(p.profit ?? p.unrealizedProfit) || 0;
-    const dPrice = Math.abs(cur - entry);
-    if (dPrice < 1e-9 || prof === 0) continue;         // just opened — value it next poll
-    openRisk += Math.abs(entry - sl) * (Math.abs(prof) / dPrice);
+    const lots = Number(p.volume) || 0;
+    const dir = String(p.type || '').toUpperCase().includes('SELL') ? 'sell' : 'buy';
+    // How tight the stop is as a % of price — the volatility-relevant number: a very
+    // small % on a wide instrument means the stop sits inside the noise.
+    const stopPct = (sl && entry) ? Math.round(Math.abs(entry - sl) / entry * 10000) / 100 : null;
+    let risk = null;
+    if (!sl) {
+      positionsNoStop++;
+    } else {
+      const prof = Number(p.profit ?? p.unrealizedProfit) || 0;
+      const dPrice = Math.abs(cur - entry);
+      if (dPrice >= 1e-9 && prof !== 0) {                // uncomputable at the open tick
+        risk = Math.round(Math.abs(entry - sl) * (Math.abs(prof) / dPrice) * 100) / 100;
+        openRisk += risk;
+      }
+    }
+    if (positionsSummary.length < 12 && p.symbol) {
+      positionsSummary.push({ sym: String(p.symbol).slice(0, 16), dir, lots, stopPct, risk, hasStop: !!sl });
+    }
   }
   openRisk = Math.round(openRisk * 100) / 100;
 
@@ -3665,6 +3689,7 @@ async function syncGuardianFromMetaApi(userId, accountId, region, platform) {
     risk_allowance_usd: allowance,
     open_risk_usd:      openRisk,
     positions_no_stop:  positionsNoStop,
+    positions_summary:  positionsSummary,
     last_updated:       new Date().toISOString(),
   }, { onConflict: 'user_id' });
 
