@@ -276,25 +276,20 @@
       text-transform: uppercase;
       color: var(--faint);
     }
-    /* Grouped card — same surface language as the action cards above */
-    .act-list {
-      background: var(--surface);
-      border: 1px solid var(--line-2);
-      border-radius: 8px;
-      overflow: hidden;
-    }
+    /* Open list — sits on the screen, no box; a hairline separates each entry */
+    .act-list { }
     .act-row {
       display: flex;
       align-items: flex-start;
-      gap: 12px;
-      padding: 14px 16px;
+      gap: 13px;
+      padding: 15px 2px;
       border-top: 1px solid var(--line);
       cursor: pointer;
       text-decoration: none;
       color: inherit;
     }
     .act-row:first-child { border-top: none; }
-    .act-row:active { background: var(--surface-2); }
+    .act-row:active { opacity: .6; }
     .act-ava {
       width: 26px; height: 26px;
       border-radius: 50%;
