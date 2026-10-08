@@ -33,8 +33,8 @@ function findChrome() {
 }
 
 const GUEST_ROUTES = [
-  '/edgekeeper.html', '/pricing.html', '/method.html', '/mike.html', '/theo.html',
-  '/ashley.html', '/paths.html', '/academy-public.html', '/integrations.html',
+  '/edgekeeper.html', '/pricing.html', '/method.html', '/marcus', '/theo.html',
+  '/iris', '/paths.html', '/academy-public.html', '/integrations.html',
   '/privacy.html', '/terms.html', '/auth.html',
 ];
 const AUTHED_ROUTES = [

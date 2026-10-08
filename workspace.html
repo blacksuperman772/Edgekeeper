@@ -2696,7 +2696,7 @@ async function renderMentorIntro(text) {
   removeTyping();
 
   const key      = mentor?.key || 'marcus';
-  const portrait = key === 'iris' ? '/assets/iris-portrait.webp' : '/assets/mike-portrait.webp';
+  const portrait = key === 'iris' ? '/assets/iris-portrait.webp' : '/assets/marcus-portrait.webp';
   const initial  = mentor?.name ? mentor.name.charAt(0) : 'M';
 
   const msgs = document.getElementById('chat-messages');
@@ -3910,8 +3910,8 @@ const INTERCEPT_SCENARIOS = [
     lots: 0.50,
     reason: '2 consecutive losses · Daily P&L −$420 · Revenge pattern detected',
     narration: {
-      mike: "That was a 0.50 lot on gold after two losses and a red day. Six times your suggested maximum. I've seen this exact sequence before. You haven't.",
-      ashley: "You were trying to make the day mean something different than it was. The 0.50 lot wasn't a trade — it was a response to feeling behind. I understand that. And I still stopped it."
+      marcus: "That was a 0.50 lot on gold after two losses and a red day. Six times your suggested maximum. I've seen this exact sequence before. You haven't.",
+      iris: "You were trying to make the day mean something different than it was. The 0.50 lot wasn't a trade — it was a response to feeling behind. I understand that. And I still stopped it."
     }
   },
   {
@@ -3925,8 +3925,8 @@ const INTERCEPT_SCENARIOS = [
     lots: 0.30,
     reason: 'Revenge entry 4 min after SL hit · No journal · Rule bypass signal',
     narration: {
-      mike: "Four minutes after a stop loss hit, no journal entry, no pause. That's not analysis — that's a reaction. Your own rule says thirty minutes minimum. I held you to your word.",
-      ashley: "You needed the market to be wrong about you. I understand that feeling. But that entry wasn't about the setup — it was about the loss. Those are different trades."
+      marcus: "Four minutes after a stop loss hit, no journal entry, no pause. That's not analysis — that's a reaction. Your own rule says thirty minutes minimum. I held you to your word.",
+      iris: "You needed the market to be wrong about you. I understand that feeling. But that entry wasn't about the setup — it was about the loss. Those are different trades."
     }
   },
   {
@@ -3940,8 +3940,8 @@ const INTERCEPT_SCENARIOS = [
     lots: 0.20,
     reason: 'First 12 min of open · Pre-market tension · 1W/9L historical rate',
     narration: {
-      mike: "Twelve minutes into the open. You wrote that rule yourself — no trading in the first fifteen minutes. You wrote it after last month. One for nine isn't a coincidence.",
-      ashley: "I noticed you opened three charts before the open. That's not preparation — that's searching for permission. The rule exists for exactly that kind of morning."
+      marcus: "Twelve minutes into the open. You wrote that rule yourself — no trading in the first fifteen minutes. You wrote it after last month. One for nine isn't a coincidence.",
+      iris: "I noticed you opened three charts before the open. That's not preparation — that's searching for permission. The rule exists for exactly that kind of morning."
     }
   }
 ];

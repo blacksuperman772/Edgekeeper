@@ -874,9 +874,10 @@ app.get(['/favicon.ico', '/favicon.svg'], (req, res) => {
 });
 // ── Mentor + Method pages (public) ───────────────────────────────────────────
 // Public URLs use display names. Internal slugs are canonical (marcus|iris|theo).
-app.get('/marcus',  serveInjectedHtml(path.join(__dirname, 'mike.html')));
-app.get('/iris',    serveInjectedHtml(path.join(__dirname, 'ashley.html')));
+app.get('/marcus',  serveInjectedHtml(path.join(__dirname, 'marcus.html')));
+app.get('/iris',    serveInjectedHtml(path.join(__dirname, 'iris.html')));
 app.get(['/theo', '/theo.html'], serveInjectedHtml(path.join(__dirname, 'theo.html')));
+// Legacy mentor URLs (the pages were once mike.html / ashley.html) → permanent redirect.
 app.get(['/mike', '/mike.html'],     (req, res) => res.redirect(301, '/marcus'));
 app.get(['/ashley', '/ashley.html'], (req, res) => res.redirect(301, '/iris'));
 app.get('/method',  serveInjectedHtml(path.join(__dirname, 'method.html')));

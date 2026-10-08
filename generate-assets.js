@@ -79,11 +79,11 @@ const ASSETS = [
     prompt: 'A cinematic wide photograph of an empty, dimly lit private trading room at 4am. Mahogany desk, multiple dark monitors with subtle amber glows showing price charts, no people. Floor-to-ceiling windows revealing a dark city skyline with faint lights. Deep blacks, warm amber accent lighting from desk lamp. Institutional, serious, private. Shot on medium format film. Extremely high detail. Atmosphere of focused discipline and solitude. No text.',
   },
   {
-    filename: 'mike-portrait.webp',
+    filename: 'marcus-portrait.webp',
     prompt: 'A professional portrait photograph of a 52-year-old man who is a former professional trader turned performance coach. Strong, composed face. Salt and pepper short hair, clean shaven. Wearing a dark navy dress shirt, no tie. Sitting at a desk in a dim private office, bookshelves behind. Direct eye contact with camera. Expression: calm, observant, slightly guarded. Not smiling but not cold. Institutional. Shot on 85mm portrait lens, shallow depth of field. Cinematic lighting, dramatic shadows. No text, no graphics.',
   },
   {
-    filename: 'ashley-portrait.webp',
+    filename: 'iris-portrait.webp',
     prompt: 'A professional portrait photograph of a 42-year-old woman who is a performance psychologist. Intelligent, composed face. Dark hair pulled back simply. Wearing a dark charcoal blazer over a simple black top. Seated in a clean, minimalist office. Expression: warm but professional, attentive, thoughtful. Direct eye contact. Shot on 85mm portrait lens, shallow depth of field. Soft cinematic lighting. Atmosphere of trust and expertise. No text, no graphics.',
   },
   {
@@ -140,8 +140,8 @@ async function generateWithRetry(prompt, filename, size, attempts = 3) {
   console.log('\n✓ All assets generated in /assets/');
   console.log('\nNext: reference these in edgekeeper.html:');
   console.log('  Hero:      /assets/hero-landing.webp');
-  console.log('  Marcus:      /assets/mike-portrait.webp');
-  console.log('  Iris:    /assets/ashley-portrait.webp');
+  console.log('  Marcus:      /assets/marcus-portrait.webp');
+  console.log('  Iris:    /assets/iris-portrait.webp');
   console.log('  Workspace: /assets/workspace-ambient.webp');
   console.log('  Mobile:    /assets/hero-mobile.webp');
 })();
