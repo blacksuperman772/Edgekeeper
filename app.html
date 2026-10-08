@@ -326,6 +326,14 @@
       font: 300 .64rem var(--mono);
       color: var(--faint);
     }
+    .act-loading {
+      text-transform: uppercase;
+      letter-spacing: .18em;
+      font-size: .56rem;
+      animation: ek-breathe 2.4s ease-in-out infinite;
+    }
+    @keyframes ek-breathe { 0%,100% { opacity: .4; } 50% { opacity: .85; } }
+    @media (prefers-reduced-motion: reduce) { .act-loading { animation: none; } }
 
     /* ── Nav ── */
     .nav {
@@ -463,7 +471,7 @@
         <div class="act-head">
           <span class="act-label">Recent</span>
         </div>
-        <div id="activity"><div class="act-empty">Restoring your record...</div></div>
+        <div id="activity"><div class="act-empty act-loading">Restoring your record…</div></div>
       </div>
 
     </div>

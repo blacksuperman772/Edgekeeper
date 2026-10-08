@@ -204,7 +204,8 @@
     .gate-inner p { color:var(--faint); line-height:1.8; margin-bottom:26px; }
     .gate-inner a { display:inline-block; font-family:var(--mono); font-size:0.58rem; letter-spacing:0.16em; text-transform:uppercase; color:var(--iris); border:1px solid var(--iris-dim); padding:12px 26px; text-decoration:none; }
     .gate-inner a:hover { background:var(--iris-bg); }
-    .loading { font-family:var(--mono); font-size:0.58rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); }
+    .loading { font-family:var(--mono); font-size:0.58rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--faint); animation:ek-breathe 2.4s ease-in-out infinite; }
+    @media (prefers-reduced-motion: reduce) { .loading { animation:none; opacity:0.55; } }
 
     .scrim { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:45; }
     .scrim.show { display:block; }

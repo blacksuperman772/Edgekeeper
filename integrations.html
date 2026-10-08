@@ -103,9 +103,12 @@
     }
     #loading-shield.hidden { opacity: 0; pointer-events: none; }
     .loading-dot {
-      width: 5px; height: 5px; border-radius: 50%;
+      width: 7px; height: 7px; border-radius: 50%;
       background: var(--gold-dim);
+      animation: ek-dotpulse 1.4s ease-in-out infinite;
     }
+    @keyframes ek-dotpulse { 0%,100% { transform: scale(1); opacity: 0.4; } 50% { transform: scale(1.5); opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { .loading-dot { animation: none; opacity: 0.7; } }
 
     /* ── PAGE LAYOUT ── */
     .page-inner {
