@@ -4991,7 +4991,7 @@ function _emailShell(accentColor, body) {
     <tr><td style="padding:0 8px 26px;text-align:center;">
       <span style="font-family:Georgia,'Times New Roman',serif;font-size:18px;letter-spacing:0.28em;color:#8a8a82;">EDGE<span style="color:${accentColor};">K</span>EEPER</span>
     </td></tr>
-    <tr><td bgcolor="#0f0f0f" style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:8px;padding:42px 38px;">
+    <tr><td bgcolor="#0f0f0f" style="background:#0f0f0f;border:1px solid #1e1e1e;border-top:3px solid ${accentColor};border-radius:8px;padding:42px 38px;">
       ${body}
     </td></tr>
     <tr><td style="padding:26px 8px 0;text-align:center;">
@@ -5016,15 +5016,50 @@ function _cta(text, url, color) {
       <a href="${url}" target="_blank" style="display:inline-block;padding:14px 32px;font-family:Helvetica,Arial,sans-serif;font-size:12px;font-weight:bold;letter-spacing:0.09em;text-transform:uppercase;color:#0a0a0a;text-decoration:none;border-radius:4px;">${text}</a>
     </td></tr></table>`;
 }
+// A serif sign-off that gives the mentor emails a human close and some vertical weight.
+function _signoff(name, color, role) {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:34px 0 0;border-top:1px solid #1e1e1e;"><tr><td style="padding-top:22px;">
+    <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:17px;color:${color};">— ${name}</p>
+    <p style="margin:5px 0 0;font-family:Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#55554f;">${role || 'Your mentor at EdgeKeeper'}</p>
+  </td></tr></table>`;
+}
+// A quiet readings/summary panel: rows of [label, value]. value can be a string or
+// { text, color } to tint a number.
+function _detailBox(rows) {
+  const line = ([l, v]) => {
+    const val = (v && typeof v === 'object') ? v : { text: v };
+    return `<tr>
+      <td style="font-family:Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#7a7a72;padding:7px 0;">${l}</td>
+      <td align="right" style="font-family:Georgia,'Times New Roman',serif;font-size:17px;color:${val.color || '#ece6db'};padding:7px 0;">${val.text}</td>
+    </tr>`;
+  };
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 20px;background:#0a0a0a;border:1px solid #1e1e1e;border-radius:6px;"><tr><td style="padding:14px 20px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows.map(line).join('')}</table>
+  </td></tr></table>`;
+}
+// A small "what's inside / what happens next" list for substance.
+function _list(items, color) {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:2px 0 18px;">`
+    + items.map(it => `<tr><td valign="top" style="width:18px;font-family:Helvetica,Arial,sans-serif;font-size:15px;color:${color};line-height:1.7;">&bull;</td>
+       <td style="font-family:Helvetica,Arial,sans-serif;font-size:14px;line-height:1.7;color:#c4c0b8;padding-bottom:4px;">${it}</td></tr>`).join('')
+    + `</table>`;
+}
 
 function welcomeEmailHtml(mentorName) {
   const color = mentorName === 'Iris' ? '#6b8c6b' : '#b8a06a';
   return _emailShell(color,
     _eyebrow(mentorName + ' · EdgeKeeper', color) +
     _headline('Your seat is ready.') +
-    _p('Your intake is saved, and ' + mentorName + ' has already started building your profile.') +
+    _p('Your intake is saved, and I\'ve already started building a picture of how you trade — your patterns, your tells, the places discipline tends to slip.') +
+    _p('This isn\'t a dashboard you check. It\'s a room you come back to. Here\'s what\'s waiting:') +
+    _list([
+      'A private journal that only you and I can read.',
+      'Trading rules we set together, and a Guardian that holds you to them.',
+      'A check-in from me when you go quiet for too long.',
+    ], color) +
     _p('The conversation picks up exactly where you left off — no re-introduction needed.') +
-    _cta('Enter the workspace', APP_URL + '/workspace.html', color));
+    _cta('Enter the workspace', APP_URL + '/workspace.html', color) +
+    _signoff(mentorName, color));
 }
 
 function outreachEmailHtml(mentorName, messageContent) {
@@ -5032,8 +5067,9 @@ function outreachEmailHtml(mentorName, messageContent) {
   const safe  = String(messageContent || '').replace(/[<>]/g, '').replace(/\n/g, '<br>').slice(0, 1200);
   return _emailShell(color,
     _eyebrow(mentorName + ' · Checking in', color) +
-    `<p style="margin:0 0 16px;font-family:Georgia,'Times New Roman',serif;font-size:17px;line-height:1.9;color:#ece6db;">${safe}</p>` +
-    _cta('Resume your session', APP_URL + '/workspace.html', color));
+    `<p style="margin:0 0 16px;font-family:Georgia,'Times New Roman',serif;font-size:18px;line-height:1.9;color:#ece6db;">${safe}</p>` +
+    _cta('Resume your session', APP_URL + '/workspace.html', color) +
+    _signoff(mentorName, color));
 }
 
 function billingEmailHtml(mentorName, planLabel) {
@@ -5041,8 +5077,10 @@ function billingEmailHtml(mentorName, planLabel) {
   return _emailShell(color,
     _eyebrow(mentorName + ' · Plan confirmed', color) +
     _headline('Your ' + planLabel + ' plan is active.') +
-    _p('Everything you\'ve unlocked is ready in the workspace. ' + mentorName + ' will pick up from where you left off.') +
-    _cta('Open your workspace', APP_URL + '/workspace.html', color));
+    _p('Thank you for backing your own discipline — that decision tends to matter more than any single trade.') +
+    _p('Everything the ' + planLabel + ' plan unlocks is live in your workspace now, and I\'ll pick up exactly where we left off.') +
+    _cta('Open your workspace', APP_URL + '/workspace.html', color) +
+    _signoff(mentorName, color));
 }
 
 function reportEmailHtml(mentorName, reportMonth) {
@@ -5051,8 +5089,15 @@ function reportEmailHtml(mentorName, reportMonth) {
   return _emailShell(color,
     _eyebrow(mentorName + ' · Monthly report', color) +
     _headline('Your ' + label + ' report is ready.') +
-    _p(mentorName + ' has gone through your journal entries, rule violations, and discipline scores for the month.') +
-    _cta('Read your report', APP_URL + '/reports.html', color));
+    _p('I\'ve gone back through your whole month — every journal entry, every rule violation, your discipline scores day by day — and written up what I see. Inside:') +
+    _list([
+      'The patterns that showed up more than once, named plainly.',
+      'Where your discipline held, and where it slipped and why.',
+      'The one or two things worth working on before next month.',
+    ], color) +
+    _p('It\'s honest, and it\'s specific to you — not generic advice.') +
+    _cta('Read your report', APP_URL + '/reports.html', color) +
+    _signoff(mentorName, color));
 }
 
 function paymentFailedEmailHtml(planLabel, updateUrl) {
@@ -5060,8 +5105,13 @@ function paymentFailedEmailHtml(planLabel, updateUrl) {
   return _emailShell(color,
     _eyebrow('EdgeKeeper · Payment issue', color) +
     _headline('We couldn’t process your ' + planLabel + ' payment.') +
-    _p('Your card was declined on the latest renewal. Your access stays on for now, but it will pause if the payment isn’t updated.') +
-    _p('Update your payment method and we’ll retry automatically — there’s nothing else to do.') +
+    _p('Your card was declined on the latest renewal. Nothing is lost yet — here’s exactly where things stand:') +
+    _list([
+      'Your ' + planLabel + ' access is still on right now.',
+      'We’ll retry the charge automatically over the next few days.',
+      'If it keeps failing, the plan pauses — your journal and history stay safe either way.',
+    ], color) +
+    _p('Updating your card is the only thing needed, and the retry takes care of the rest.') +
     _cta('Update payment method', updateUrl || (APP_URL + '/settings.html'), color));
 }
 
@@ -5070,24 +5120,27 @@ function cancellationEmailHtml(mentorName, planLabel) {
   return _emailShell(color,
     _eyebrow('EdgeKeeper · Membership', color) +
     _headline('Your ' + planLabel + ' plan is set to end.') +
-    _p('Your cancellation is confirmed. You keep full access until the end of your current billing period — nothing changes before then.') +
-    _p('If you change your mind, you can resume any time and pick up exactly where you left off.') +
-    _cta('Manage membership', APP_URL + '/settings.html', color));
+    _p('Your cancellation is confirmed. You keep full access until the end of your current billing period — nothing changes before then, and you won’t be charged again.') +
+    _p('Your journal, your rules and everything ' + mentorName + ' has learned about you stay saved. If you come back, you pick up exactly where you left off — no re-introduction, no reset.') +
+    _cta('Manage membership', APP_URL + '/settings.html', color) +
+    _signoff(mentorName, color));
 }
 
 function guardianBreachEmailHtml(level, snap) {
   const color = level >= 5 ? '#a8524a' : '#c08a3e';
   const label = (INTERVENTION_LADDER[level] && INTERVENTION_LADDER[level].label) || `Level ${level}`;
-  const bits = [];
-  if (snap && snap.drawdown)  bits.push(`Drawdown ${snap.drawdown}%`);
-  if (snap && snap.dailyPct != null && snap.dailyPct < 0) bits.push(`Day P&L ${snap.dailyPct}%`);
-  if (snap && snap.losses)    bits.push(`Losing streak ${snap.losses}`);
+  const rows = [];
+  if (snap && snap.dailyPct != null && snap.dailyPct < 0) rows.push(['Day P&L', { text: snap.dailyPct + '%', color }]);
+  if (snap && snap.drawdown)  rows.push(['Drawdown', { text: snap.drawdown + '%', color }]);
+  if (snap && snap.losses)    rows.push(['Losing streak', { text: String(snap.losses), color }]);
   return _emailShell(color,
     _eyebrow('EdgeKeeper · Guardian', color) +
-    _headline('Iris stepped in — ' + label + '.') +
-    _p('Your account crossed a limit' + (bits.length ? ' — ' + bits.join(' · ') + '.' : '.') + ' This is the point where a bad day usually becomes a worse one.') +
-    _p('Come talk to me before the next decision.') +
-    _cta('Open the Guardian', APP_URL + '/chamber', color));
+    _headline('I stepped in — ' + label + '.') +
+    _p('Your account crossed one of your limits. Here\'s what I\'m seeing right now:') +
+    (rows.length ? _detailBox(rows) : '') +
+    _p('This is the point where a bad day usually becomes a worse one — not because of the market, but because of the next decision. So before you make it, come talk to me.') +
+    _cta('Open the Guardian', APP_URL + '/chamber', color) +
+    _signoff('Iris', color));
 }
 
 function guardianDisconnectedEmailHtml(accountLabel, reason) {
@@ -5098,9 +5151,11 @@ function guardianDisconnectedEmailHtml(accountLabel, reason) {
   return _emailShell(color,
     _eyebrow('EdgeKeeper · Guardian', color) +
     _headline('Your Guardian stopped watching ' + accountLabel + '.') +
-    _p(why + ' While it’s disconnected, nothing is watching your drawdown or losing streaks.') +
-    _p('Reconnect and your Guardian picks up right where it left off.') +
-    _cta('Reconnect account', APP_URL + '/integrations.html', color));
+    _p(why) +
+    _p('While it’s disconnected, nothing is tracking your drawdown, your losing streaks, or whether a trade goes out without a stop. That blind spot is exactly where a bad day slips through.') +
+    _p('Reconnecting takes under a minute, and your Guardian picks up right where it left off.') +
+    _cta('Reconnect account', APP_URL + '/integrations.html', color) +
+    _signoff('Iris', color));
 }
 
 // ── Decision Passport ─────────────────────────────────────────────────────────
