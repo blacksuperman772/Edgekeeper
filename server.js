@@ -108,7 +108,16 @@ app.use((req, res, next) => {
 });
 
 // ── Body + cookie parsing ─────────────────────────────────────────────────────
-app.use(express.json({ limit: '64kb' }));
+// Webhooks verify an HMAC over the exact bytes received, so they must reach their
+// own express.raw() with the stream untouched. The global json parser would
+// otherwise consume it first (leaving req.body a parsed object, breaking the
+// signature check). Skip json for those paths.
+const RAW_BODY_PATHS = new Set(['/api/billing/webhook', '/api/ig/webhook']);
+const jsonParser = express.json({ limit: '64kb' });
+app.use((req, res, next) => {
+  if (RAW_BODY_PATHS.has(req.path)) return next();
+  jsonParser(req, res, next);
+});
 app.use(cookieParser());
 
 // ── Startup HTML cache ────────────────────────────────────────────────────────
@@ -6156,6 +6165,106 @@ app.post(
     }
   }
 );
+
+// ── Instagram — comment → auto-DM funnel (production webhook) ─────────────────
+// Meta POSTs here when someone comments on @edge.keeper media. We read the
+// comment, and if it matches the keyword we (1) post a public reply and (2) send
+// the commenter a one-time private reply (DM) with the resource link — the
+// comment-to-DM feature. Always-on: survives restarts, no polling, works for the
+// public once the app has Advanced Access on manage_comments + manage_messages.
+//
+// Env: IG_USER_ID, IG_ACCESS_TOKEN (long-lived), IG_APP_SECRET (payload HMAC),
+//      IG_VERIFY_TOKEN (GET handshake), optional IG_API_VERSION (default v23.0),
+//      optional IG_KEYWORDS (comma-separated; "*" = reply to every comment).
+const IG_GRAPH   = 'https://graph.instagram.com';
+const IG_VER     = process.env.IG_API_VERSION || 'v23.0';
+const IG_KEYWORDS = (process.env.IG_KEYWORDS || 'guardian')
+  .toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+const IG_DM_TEXT =
+  "You said the word, so here it is. The account doesn't blow up on the bad setup. " +
+  "It blows up in the ten seconds after a loss, when the revenge trade goes on. Iris is the " +
+  "Guardian that watches your live account and steps in right there, before you click. " +
+  "See how it works: https://edgekeeper.org";
+const IG_PUBLIC_REPLY = "Sent it to your DMs.";
+
+function igKeywordHit(text) {
+  if (IG_KEYWORDS.includes('*')) return true;
+  const t = (text || '').toLowerCase();
+  return IG_KEYWORDS.some(k => t.includes(k));
+}
+async function igPost(path, params) {
+  const r = await fetch(`${IG_GRAPH}/${IG_VER}/${path}`, { method: 'POST', body: new URLSearchParams(params) });
+  const j = await r.json().catch(() => ({}));
+  if (j.error) throw new Error(j.error.message || JSON.stringify(j.error));
+  return j;
+}
+// Private reply to a comment (the DM). Uses the JSON messages endpoint.
+async function igPrivateReply(commentId, text) {
+  const r = await fetch(`${IG_GRAPH}/${IG_VER}/${process.env.IG_USER_ID}/messages?access_token=${encodeURIComponent(process.env.IG_ACCESS_TOKEN)}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recipient: { comment_id: commentId }, message: { text } }),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (j.error) throw new Error(j.error.message || JSON.stringify(j.error));
+  return j;
+}
+
+// GET — Meta's subscription handshake (echo hub.challenge when the token matches).
+app.get('/api/ig/webhook', (req, res) => {
+  const mode      = req.query['hub.mode'];
+  const token     = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+  if (mode === 'subscribe' && token && token === process.env.IG_VERIFY_TOKEN) {
+    return res.status(200).send(String(challenge));
+  }
+  return res.sendStatus(403);
+});
+
+// POST — comment notifications. Raw body (RAW_BODY_PATHS) so the HMAC matches.
+app.post('/api/ig/webhook', express.raw({ type: '*/*', limit: '512kb' }), async (req, res) => {
+  const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body || '');
+  // Verify X-Hub-Signature-256: sha256=<hmac(app_secret, raw)>
+  const secret = process.env.IG_APP_SECRET;
+  const sigHeader = req.headers['x-hub-signature-256'] || '';
+  if (secret) {
+    const expected = 'sha256=' + crypto.createHmac('sha256', secret).update(raw).digest('hex');
+    const a = Buffer.from(sigHeader), b = Buffer.from(expected);
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+      return res.sendStatus(403);
+    }
+  }
+  res.sendStatus(200); // ACK fast; Meta retries on non-200. Process async below.
+
+  let body;
+  try { body = JSON.parse(raw.toString('utf8')); } catch (_) { return; }
+  if (body.object !== 'instagram') return;
+
+  const myId = String(process.env.IG_USER_ID || '');
+  for (const entry of body.entry || []) {
+    for (const change of entry.changes || []) {
+      if (change.field !== 'comments') continue;
+      const v = change.value || {};
+      const commentId = v.id;
+      const fromId    = String(v.from?.id || '');
+      const username  = v.from?.username || '';
+      if (!commentId) continue;
+      if (fromId === myId || username.toLowerCase() === 'edge.keeper') continue; // skip our own
+      if (!igKeywordHit(v.text)) continue;
+
+      // Dedup on comment id (Meta can redeliver). Reuse the shared webhook_events table.
+      try {
+        const { error } = await supabaseAdmin.from('webhook_events')
+          .insert({ event_id: 'ig:' + commentId, event_type: 'ig_comment' });
+        if (error) continue; // already handled
+      } catch (_) { /* if the dedup insert fails, still try to reply once */ }
+
+      try { await igPrivateReply(commentId, IG_DM_TEXT); console.log(`[ig] DM → @${username}`); }
+      catch (e) { console.error('[ig] DM failed:', e.message); }
+      try { await igPost(`${commentId}/replies`, { message: IG_PUBLIC_REPLY, access_token: process.env.IG_ACCESS_TOKEN }); }
+      catch (e) { console.error('[ig] public reply failed:', e.message); }
+    }
+  }
+});
 
 // ── Billing — cancel subscription ────────────────────────────────────────────
 app.delete('/api/billing/cancel', requireAuthApi, async (req, res) => {
