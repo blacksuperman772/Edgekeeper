@@ -26,9 +26,9 @@
     var s = document.createElement('style');
     s.id = 'ek-shell-style';
     s.textContent = [
-      '#eks-scrim{position:fixed;inset:0;z-index:8800;background:rgba(3,4,3,0.55);opacity:0;pointer-events:none;transition:opacity .25s;}',
+      '#eks-scrim{position:fixed;inset:0;z-index:10000;background:rgba(3,4,3,0.6);opacity:0;pointer-events:none;transition:opacity .25s;}',
       '#eks-scrim.open{opacity:1;pointer-events:auto;}',
-      '#eks-menu{--eks:#6b8c6b;position:fixed;top:0;left:0;bottom:0;z-index:8900;width:278px;max-width:86vw;background:#0c0f0c;border-right:1px solid #1a201a;',
+      '#eks-menu{--eks:#6b8c6b;position:fixed;top:0;left:0;bottom:0;z-index:10001;width:278px;max-width:86vw;background:#0c0f0c;border-right:1px solid #1a201a;',
       'display:flex;flex-direction:column;transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);font-family:var(--sans,Inter,sans-serif);}',
       '#eks-menu.open{transform:translateX(0);}',
       '@media (max-width:640px){#eks-menu{width:100%;max-width:100%;}}',

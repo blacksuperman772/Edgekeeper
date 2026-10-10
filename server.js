@@ -331,16 +331,19 @@ function serveInjectedHtml(filePath) {
             + 'html.ek-app #intake-room{top:' + hdrH + '!important;bottom:env(safe-area-inset-bottom,0px)!important;left:0!important;right:0!important;overflow:hidden!important;border:1px solid rgba(232,228,220,.15)!important;border-top:none!important;opacity:1!important}'
             + 'html.ek-app .ambient{display:none!important}';
 
-          let backUrl = '/app', title = '', menuBtn = '';
+          // A kebab "tools" button that toggles this space's own panel (Guardian,
+          // office nav, lesson modules) — reused as the secondary button in the bar.
+          const toolsSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="18" r="2" fill="currentColor" stroke="none"/></svg>';
+          let backUrl = '/app', title = '', menuBtn = '', mentorKey = null;
           if (filePath.endsWith('workspace.html')) {
-            title = 'Marcus';
-            menuBtn = '<button class="ek-menu" onclick="toggleOfficeNav()" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>';
+            title = 'Marcus'; mentorKey = 'marcus';
+            menuBtn = '<button class="ek-menu" onclick="toggleOfficeNav()" aria-label="This space&#39;s tools">' + toolsSvg + '</button>';
           } else if (filePath.endsWith('chamber.html')) {
-            title = 'Iris';
-            menuBtn = '<button class="ek-menu" onclick="var s=document.getElementById(\'side\'),c=document.getElementById(\'scrim\');s.classList.toggle(\'open\');c.classList.toggle(\'show\')" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>';
+            title = 'Iris'; mentorKey = 'iris';
+            menuBtn = '<button class="ek-menu" onclick="var s=document.getElementById(\'side\'),c=document.getElementById(\'scrim\');s&&s.classList.toggle(\'open\');c&&c.classList.toggle(\'show\')" aria-label="Guardian tools">' + toolsSvg + '</button>';
           } else if (filePath.endsWith('study.html')) {
-            title = 'Lesson'; backUrl = '/my-academy';
-            menuBtn = '<button class="ek-menu" onclick="toggleModulePanel()" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>';
+            title = 'Theo'; backUrl = '/my-academy'; mentorKey = 'theo';
+            menuBtn = '<button class="ek-menu" onclick="toggleModulePanel()" aria-label="Lesson modules">' + toolsSvg + '</button>';
           } else if (filePath.endsWith('academy-onboarding.html')) {
             title = 'Academy'; css += 'html.ek-app body{overflow-y:auto!important}';
           } else if (filePath.endsWith('onboarding.html')) {
@@ -350,9 +353,46 @@ function serveInjectedHtml(filePath) {
             css += 'html.ek-app body{overflow-y:auto!important}';
           }
 
+          // New app-shell bar styles (used on the three mentor pages).
+          css += '.ek-bar{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;background:#050505;border-bottom:1px solid rgba(232,228,220,.08);z-index:9999;font-family:Inter,-apple-system,sans-serif}'
+            + '.ek-bar-l{display:flex;align-items:center;gap:2px}'
+            + '.ek-ham{background:none;border:none;color:#bfbab2;padding:9px 10px;cursor:pointer;-webkit-tap-highlight-color:transparent}'
+            + '.ek-ham svg{width:20px;height:20px;display:block}.ek-ham:active{opacity:.6}'
+            + '.ek-call{display:flex;align-items:center;gap:7px;background:color-mix(in srgb,var(--accent,#b8a06a) 10%,transparent);border:1px solid var(--accent,#b8a06a);color:var(--accent,#b8a06a);font:500 .6rem "DM Mono",monospace;letter-spacing:.12em;text-transform:uppercase;padding:8px 13px;border-radius:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}'
+            + '.ek-call svg{width:14px;height:14px}.ek-call:active{opacity:.7}';
+
           html = html.replace(/<\/head>/i, '<style>' + css + '</style></head>');
-          html = html.replace(/<\/body>/i,
-            '<header class="ek-back"><a href="' + backUrl + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 19l-7-7 7-7"/></svg>' + title + '</a>' + menuBtn + '</header>' + PERF + '</body>');
+
+          if (mentorKey) {
+            const NAME   = { marcus: 'Marcus', iris: 'Iris', theo: 'Theo' }[mentorKey];
+            const ACCENT = { marcus: '#b8a06a', iris: '#6b8c6b', theo: '#6b82a0' }[mentorKey];
+            const scripts =
+              '<script src="https://cdn.jsdelivr.net/npm/livekit-client@2.19.2/dist/livekit-client.umd.js" defer></script>'
+              + '<script src="https://cdn.jsdelivr.net/npm/@11labs/client@0.2.0/dist/lib.umd.js" defer></script>'
+              + '<script src="/assets/ek-voice.js" defer></script>'
+              + '<script src="/assets/ek-shell.js" defer></script>';
+            html = html.replace(/<\/head>/i, scripts + '</head>');
+
+            const bar = '<header class="ek-bar" style="--accent:' + ACCENT + '">'
+              + '<div class="ek-bar-l">'
+              + '<button class="ek-ham" onclick="window.EKShell&&EKShell.openMenu()" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>'
+              + menuBtn
+              + '</div>'
+              + '<button class="ek-call" onclick="window.EKShell&&EKShell.call()" aria-label="Call ' + NAME + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg> Call ' + NAME + '</button>'
+              + '</header>';
+
+            const toolsJs = mentorKey === 'iris'
+              ? 'tools={save_rule:async function(a){try{var r=await fetch("/api/rules",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({rule_text:a.rule_text,category:a.category||"General",rationale:a.rationale||null,origin_mentor:"ashley"})});if(r.status===403)return "Setting personal laws needs a Resident plan or above.";if(!r.ok){var e=await r.json().catch(function(){return{};});return "I could not save that: "+(e.error||"try again");}window.ekToast&&ekToast("New law set");return "Done. That is law now.";}catch(_){return "Something went wrong saving that.";}}};'
+              : '';
+            const initJs = '<script>'
+              + 'function ekToast(m){var t=document.getElementById("ek-toast");if(!t){t=document.createElement("div");t.id="ek-toast";t.style.cssText="position:fixed;left:50%;bottom:30px;transform:translateX(-50%);z-index:9500;background:#0c0f0c;border:1px solid ' + ACCENT + ';color:#eef2ec;font:400 .82rem Inter,sans-serif;padding:13px 20px;max-width:88vw;border-radius:3px";document.body.appendChild(t);}t.textContent=m;clearTimeout(ekToast._t);ekToast._t=setTimeout(function(){t.remove();},4200);}'
+              + 'window.addEventListener("load",function(){if(!window.EKShell)return;var tools={};' + toolsJs + 'try{EKShell.init({mentor:"' + mentorKey + '",voice:{clientTools:tools}});}catch(e){}});'
+              + '</script>';
+            html = html.replace(/<\/body>/i, bar + initJs + PERF + '</body>');
+          } else {
+            html = html.replace(/<\/body>/i,
+              '<header class="ek-back"><a href="' + backUrl + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 19l-7-7 7-7"/></svg>' + title + '</a>' + menuBtn + '</header>' + PERF + '</body>');
+          }
         } else {
           css += 'html.ek-app body{padding-top:env(safe-area-inset-top,0px)!important;padding-bottom:calc(54px + env(safe-area-inset-bottom,0px))!important}'
             + '.ek-appnav{position:fixed!important;top:auto!important;bottom:0!important;left:0!important;right:0!important;height:auto!important;display:grid!important;grid-template-columns:repeat(5,1fr);border-top:1px solid rgba(232,228,220,.1);background:rgba(4,4,4,.92);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);padding-bottom:env(safe-area-inset-bottom,0px);z-index:9999;font-family:"Inter",-apple-system,sans-serif}'
