@@ -5989,7 +5989,8 @@ app.post(
         console.error('Stripe webhook signature failed:', err.message);
         return res.status(400).json({ error: 'Invalid signature' });
       }
-      res.json({ received: true });
+      // Process BEFORE acking — on Vercel the function is frozen once the
+      // response is sent, so awaited work placed after res.json() never runs.
 
       const UUID_RE     = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       const VALID_PLANS = ['free', 'starter', 'pro', 'professional', 'institutional'];
@@ -6004,12 +6005,12 @@ app.post(
       try {
         // Dedup on Stripe event id
         const { error: dedupErr } = await supabaseAdmin.from('webhook_events').insert({ event_id: event.id, event_type: event.type || 'unknown' });
-        if (dedupErr) { console.log('Stripe webhook already processed:', event.id); return; }
+        if (dedupErr) { console.log('Stripe webhook already processed:', event.id); return res.json({ received: true }); }
 
         const obj    = event.data?.object || {};
         const meta   = obj.metadata || {};
         const userId = meta.user_id;
-        if (userId && !UUID_RE.test(userId)) { console.error('Stripe webhook: invalid user_id', { userId }); return; }
+        if (userId && !UUID_RE.test(userId)) { console.error('Stripe webhook: invalid user_id', { userId }); return res.json({ received: true }); }
 
         if (event.type === 'checkout.session.completed') {
           const plan = meta.plan;
@@ -6066,6 +6067,7 @@ app.post(
       } catch (err) {
         console.error('Stripe webhook processing error:', err.message);
       }
+      res.json({ received: true });
       return;
     }
 
@@ -6099,9 +6101,8 @@ app.post(
       return res.status(400).json({ error: 'Invalid JSON' });
     }
 
-    // Acknowledge immediately — process async
-    res.json({ status: true });
-
+    // Process BEFORE acking — on Vercel the function is frozen once the
+    // response is sent, so awaited work placed after res.json() never runs.
     const UUID_RE   = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const VALID_PLANS = ['free', 'starter', 'pro', 'professional', 'institutional'];
 
@@ -6114,7 +6115,7 @@ app.post(
           .insert({ event_id: eventId, event_type: event.type || 'unknown' });
         if (dedupErr) {
           console.log('Webhook already processed, skipping:', eventId, event.type);
-          return;
+          return res.json({ status: true });
         }
       }
 
@@ -6124,7 +6125,7 @@ app.post(
 
       if (userId && !UUID_RE.test(userId)) {
         console.error('Webhook: invalid user_id shape — ignoring', { userId });
-        return;
+        return res.json({ status: true });
       }
 
       // Polar webhook events: subscription.created/updated/active → activate
@@ -6163,6 +6164,7 @@ app.post(
     } catch (err) {
       console.error('Webhook processing error:', err.message);
     }
+    res.json({ status: true });
   }
 );
 
