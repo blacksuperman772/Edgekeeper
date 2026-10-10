@@ -3139,6 +3139,9 @@ A CHECK QUESTION TO WORK TOWARD (adapt it): ${spec.check}`;
   } else if (safeMentor === 'marcus') {
     firstMessage = buildMarcusOpener(timeOfDay);
   } else if (safeMentor === 'iris') {
+    // Iris can set the trader's Personal Laws by voice. The save_rule client tool
+    // is declared on her agent; this tells her WHEN to use it — always confirm first.
+    voicePrompt += `\n\nSETTING RULES BY VOICE: The trader can set their Personal Laws just by talking to you. When they state a rule they want to live by, read it back to them in one clean sentence and ask them to confirm it. Only once they clearly agree, call the save_rule tool with their exact wording and a fitting category. Never save a rule they are only mulling over, and never save one without reading it back first. After it saves, tell them plainly that it is now one of their laws.`;
     firstMessage = buildIrisOpener(timeOfDay);
   }
 
@@ -4762,18 +4765,22 @@ app.post('/api/rules', requireAuthApi, apiLimiter, async (req, res) => {
   if (!bypass && !['starter', 'pro', 'professional', 'institutional'].includes(plan)) {
     return res.status(403).json({ error: 'Upgrade to Resident plan or above to add personal laws.' });
   }
-  const { rule_text, category = 'General', rationale } = req.body;
+  const { rule_text, category = 'General', rationale, origin_mentor } = req.body;
   if (!rule_text || rule_text.trim().length < 5) {
     return res.status(400).json({ error: 'Rule must be at least 5 characters.' });
   }
+  // Who surfaced this rule: a mentor creating it by voice/chat stamps their slug;
+  // anything else is the trader writing it themselves.
+  const origin = ['mike', 'ashley', 'self'].includes(origin_mentor) ? origin_mentor : 'self';
   const { data, error } = await supabaseAdmin
     .from('trading_rules')
     .insert({
-      user_id:    req.user.id,
-      rule_text:  rule_text.trim().slice(0, 500),
-      category:   (category || 'General').slice(0, 60),
-      rationale:  rationale ? rationale.slice(0, 1000) : null,
-      is_active:  true,
+      user_id:       req.user.id,
+      rule_text:     rule_text.trim().slice(0, 500),
+      category:      (category || 'General').slice(0, 60),
+      rationale:     rationale ? rationale.slice(0, 1000) : null,
+      origin_mentor: origin,
+      is_active:     true,
     })
     .select()
     .single();

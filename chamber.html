@@ -10,6 +10,10 @@
   <link rel="stylesheet" href="/assets/shared.css" />
   <script src="/assets/analytics.js" defer></script>
   <script src="/assets/pillars.js" defer></script>
+  <!-- In-app voice (ElevenLabs Conversational AI) — same build Marcus's Office uses -->
+  <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.19.2/dist/livekit-client.umd.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@11labs/client@0.2.0/dist/lib.umd.js" defer></script>
+  <script src="/assets/ek-voice.js" defer></script>
   <style>
     :root {
       --black:#040504; --stone:#0c0f0c; --surface:#10140f; --border:#1a201a;
@@ -182,6 +186,11 @@
     .lim-status.err { color:var(--red); }
 
     .g-btn { background:var(--iris-bg); border:1px solid var(--accent); color:var(--accent); font-family:var(--mono); font-size:0.54rem; letter-spacing:0.14em; text-transform:uppercase; padding:11px 20px; cursor:pointer; transition:background .2s; text-decoration:none; display:inline-block; }
+    .call-iris-btn { display:flex; align-items:center; gap:8px; background:var(--iris-bg); border:1px solid var(--iris); color:var(--iris); font-family:var(--mono); font-size:0.56rem; letter-spacing:0.14em; text-transform:uppercase; padding:9px 15px; cursor:pointer; transition:background .2s; white-space:nowrap; }
+    .call-iris-btn:hover { background:rgba(107,140,107,0.12); }
+    .call-iris-btn svg { width:13px; height:13px; }
+    #ekv-toast { position:fixed; left:50%; bottom:30px; transform:translateX(-50%); z-index:9500; background:var(--stone); border:1px solid var(--iris); color:var(--bright); font-size:0.82rem; line-height:1.5; padding:13px 20px; max-width:88vw; opacity:0; transition:opacity .3s, transform .3s; pointer-events:none; }
+    #ekv-toast.show { opacity:1; transform:translateX(-50%) translateY(-5px); }
     .g-btn:hover { background:color-mix(in srgb, var(--accent) 12%, transparent); }
     .g-btn.ghost { background:none; border-color:var(--border); color:var(--faint); }
     .g-btn.ghost:hover { border-color:var(--iris-dim); color:var(--text); }
@@ -246,6 +255,10 @@
         <span class="tb-title">Guardian · Iris's Chamber</span>
       </div>
       <div style="display:flex;align-items:center;gap:16px;">
+        <button id="call-iris-btn" class="call-iris-btn" aria-label="Call Iris">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+          Call Iris
+        </button>
         <div class="ek-pillars" role="navigation" aria-label="Spaces" style="--ek-pillar-active:var(--iris);">
           <a href="/workspace.html" data-space="marcus" class="ek-pillar">Marcus</a>
           <a href="/my-academy" data-space="theo" class="ek-pillar">Theo</a>
@@ -704,6 +717,39 @@
   input.addEventListener('input', () => { input.style.height='auto'; input.style.height=Math.min(input.scrollHeight,150)+'px'; });
   input.addEventListener('keydown', e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); submit(); } });
   sendBtn.addEventListener('click', submit);
+
+  // ── voice call (shared EKVoice widget) ───────────────────────────────
+  function chamberToast(msg) {
+    let t = document.getElementById('ekv-toast');
+    if (!t) { t = document.createElement('div'); t.id = 'ekv-toast'; document.body.appendChild(t); }
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(chamberToast._t); chamberToast._t = setTimeout(() => t.classList.remove('show'), 4200);
+  }
+  function irisVoiceContext() {
+    const recent = _history.slice(-6).map(m => (m.role === 'assistant' ? 'Iris' : 'You') + ': ' + m.content).join('\n');
+    return recent ? 'Recent text-session context:\n' + recent : '';
+  }
+  const irisClientTools = {
+    // Iris calls this when the trader confirms a rule out loud — a spoken
+    // conversation sets a real Personal Law, origin stamped as hers (ashley).
+    save_rule: async ({ rule_text, category, rationale }) => {
+      if (!rule_text || String(rule_text).trim().length < 5) return 'That rule is too short to save.';
+      try {
+        const r = await fetch('/api/rules', {
+          method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rule_text: String(rule_text).trim(), category: category || 'General', rationale: rationale || null, origin_mentor: 'ashley' }),
+        });
+        if (r.status === 403) return 'Setting personal laws needs a Resident plan or above.';
+        if (!r.ok) { const e = await r.json().catch(() => ({})); return 'I could not save that: ' + (e.error || 'try again'); }
+        chamberToast('New law set — "' + String(rule_text).trim() + '"');
+        return 'Done. That is law now.';
+      } catch (_) { return 'Something went wrong saving that. Try again.'; }
+    },
+  };
+  document.getElementById('call-iris-btn')?.addEventListener('click', () => {
+    if (!window.EKVoice) { chamberToast('Voice is still loading — one moment.'); return; }
+    window.EKVoice.start({ mentor: 'iris', getContext: irisVoiceContext, clientTools: irisClientTools });
+  });
 
   function _extractReply(raw) {
     const m = raw.match(/"reply"\s*:\s*"((?:[^"\\]|\\.)*)/);
