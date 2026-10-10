@@ -6233,37 +6233,41 @@ app.post('/api/ig/webhook', express.raw({ type: '*/*', limit: '512kb' }), async 
       return res.sendStatus(403);
     }
   }
-  res.sendStatus(200); // ACK fast; Meta retries on non-200. Process async below.
-
+  // Process BEFORE acking. On Vercel the function is frozen the moment the
+  // response is sent, so any awaited work after res.send() silently never runs.
+  // The two Graph calls finish well within Meta's delivery window, and the
+  // dedup below makes a retried delivery idempotent.
   let body;
-  try { body = JSON.parse(raw.toString('utf8')); } catch (_) { return; }
-  if (body.object !== 'instagram') return;
+  try { body = JSON.parse(raw.toString('utf8')); } catch (_) { return res.sendStatus(200); }
 
-  const myId = String(process.env.IG_USER_ID || '');
-  for (const entry of body.entry || []) {
-    for (const change of entry.changes || []) {
-      if (change.field !== 'comments') continue;
-      const v = change.value || {};
-      const commentId = v.id;
-      const fromId    = String(v.from?.id || '');
-      const username  = v.from?.username || '';
-      if (!commentId) continue;
-      if (fromId === myId || username.toLowerCase() === 'edge.keeper') continue; // skip our own
-      if (!igKeywordHit(v.text)) continue;
+  if (body.object === 'instagram') {
+    const myId = String(process.env.IG_USER_ID || '');
+    for (const entry of body.entry || []) {
+      for (const change of entry.changes || []) {
+        if (change.field !== 'comments') continue;
+        const v = change.value || {};
+        const commentId = v.id;
+        const fromId    = String(v.from?.id || '');
+        const username  = v.from?.username || '';
+        if (!commentId) continue;
+        if (fromId === myId || username.toLowerCase() === 'edge.keeper') continue; // skip our own
+        if (!igKeywordHit(v.text)) continue;
 
-      // Dedup on comment id (Meta can redeliver). Reuse the shared webhook_events table.
-      try {
-        const { error } = await supabaseAdmin.from('webhook_events')
-          .insert({ event_id: 'ig:' + commentId, event_type: 'ig_comment' });
-        if (error) continue; // already handled
-      } catch (_) { /* if the dedup insert fails, still try to reply once */ }
+        // Dedup on comment id (Meta can redeliver). Reuse the shared webhook_events table.
+        try {
+          const { error } = await supabaseAdmin.from('webhook_events')
+            .insert({ event_id: 'ig:' + commentId, event_type: 'ig_comment' });
+          if (error) continue; // already handled
+        } catch (_) { /* if the dedup insert fails, still try to reply once */ }
 
-      try { await igPrivateReply(commentId, IG_DM_TEXT); console.log(`[ig] DM → @${username}`); }
-      catch (e) { console.error('[ig] DM failed:', e.message); }
-      try { await igPost(`${commentId}/replies`, { message: IG_PUBLIC_REPLY, access_token: process.env.IG_ACCESS_TOKEN }); }
-      catch (e) { console.error('[ig] public reply failed:', e.message); }
+        try { await igPrivateReply(commentId, IG_DM_TEXT); console.log(`[ig] DM -> @${username || commentId}`); }
+        catch (e) { console.error('[ig] DM failed:', e.message); }
+        try { await igPost(`${commentId}/replies`, { message: IG_PUBLIC_REPLY, access_token: process.env.IG_ACCESS_TOKEN }); console.log('[ig] public reply posted'); }
+        catch (e) { console.error('[ig] public reply failed:', e.message); }
+      }
     }
   }
+  res.sendStatus(200);
 });
 
 // ── Billing — cancel subscription ────────────────────────────────────────────
