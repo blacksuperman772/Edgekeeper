@@ -14,6 +14,7 @@
   <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.19.2/dist/livekit-client.umd.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@11labs/client@0.2.0/dist/lib.umd.js" defer></script>
   <script src="/assets/ek-voice.js" defer></script>
+  <script src="/assets/ek-shell.js" defer></script>
   <style>
     :root {
       --black:#040504; --stone:#0c0f0c; --surface:#10140f; --border:#1a201a;
@@ -186,6 +187,11 @@
     .lim-status.err { color:var(--red); }
 
     .g-btn { background:var(--iris-bg); border:1px solid var(--accent); color:var(--accent); font-family:var(--mono); font-size:0.54rem; letter-spacing:0.14em; text-transform:uppercase; padding:11px 20px; cursor:pointer; transition:background .2s; text-decoration:none; display:inline-block; }
+    .eks-ham { display:flex; align-items:center; justify-content:center; width:36px; height:36px; background:none; border:1px solid var(--border); color:var(--faint); cursor:pointer; border-radius:2px; transition:border-color .2s,color .2s; }
+    .eks-ham:hover { border-color:var(--iris); color:var(--iris); }
+    .eks-ham svg { width:17px; height:17px; }
+    .hamburger svg { width:16px; height:16px; }
+    .hamburger:hover { border-color:var(--iris); color:var(--iris); }
     .call-iris-btn { display:flex; align-items:center; gap:8px; background:var(--iris-bg); border:1px solid var(--iris); color:var(--iris); font-family:var(--mono); font-size:0.56rem; letter-spacing:0.14em; text-transform:uppercase; padding:9px 15px; cursor:pointer; transition:background .2s; white-space:nowrap; }
     .call-iris-btn:hover { background:rgba(107,140,107,0.12); }
     .call-iris-btn svg { width:13px; height:13px; }
@@ -225,7 +231,7 @@
     }
     @media (max-width:860px) {
       .shell { grid-template-columns:1fr; }
-      .hamburger { display:block; }
+      .hamburger { display:flex; align-items:center; justify-content:center; }
       .side {
         position:fixed; top:56px; bottom:0; left:0; width:280px; z-index:60;
         transform:translateX(-100%); transition:transform .3s ease;
@@ -250,21 +256,13 @@
   <div class="shell">
     <header class="topbar">
       <div class="tb-left">
-        <button class="hamburger" id="burger" aria-label="Menu">☰</button>
-        <a href="/edgekeeper.html" class="nav-logo">Edge<span>K</span>eeper</a>
-        <span class="tb-title">Guardian · Iris's Chamber</span>
+        <button class="eks-ham" id="eks-ham" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+        <button class="hamburger" id="burger" aria-label="Guardian tools"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="18" r="2" fill="currentColor" stroke="none"/></svg></button>
       </div>
-      <div style="display:flex;align-items:center;gap:16px;">
-        <button id="call-iris-btn" class="call-iris-btn" aria-label="Call Iris">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
-          Call Iris
-        </button>
-        <div class="ek-pillars" role="navigation" aria-label="Spaces" style="--ek-pillar-active:var(--iris);">
-          <a href="/workspace.html" data-space="marcus" class="ek-pillar">Marcus</a>
-          <a href="/my-academy" data-space="theo" class="ek-pillar">Theo</a>
-          <a href="/chamber" data-space="iris" class="ek-pillar">Iris</a>
-        </div>
-      </div>
+      <button id="call-iris-btn" class="call-iris-btn" aria-label="Call Iris">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+        Call Iris
+      </button>
     </header>
 
     <aside class="side" id="side">
@@ -750,6 +748,8 @@
     if (!window.EKVoice) { chamberToast('Voice is still loading — one moment.'); return; }
     window.EKVoice.start({ mentor: 'iris', getContext: irisVoiceContext, clientTools: irisClientTools });
   });
+  // ☰ opens the global app-shell menu (home, mentors, account)
+  document.getElementById('eks-ham')?.addEventListener('click', () => { if (window.EKShell) EKShell.openMenu(); });
 
   function _extractReply(raw) {
     const m = raw.match(/"reply"\s*:\s*"((?:[^"\\]|\\.)*)/);
