@@ -112,7 +112,7 @@ app.use((req, res, next) => {
 // own express.raw() with the stream untouched. The global json parser would
 // otherwise consume it first (leaving req.body a parsed object, breaking the
 // signature check). Skip json for those paths.
-const RAW_BODY_PATHS = new Set(['/api/billing/webhook', '/api/ig/webhook']);
+const RAW_BODY_PATHS = new Set(['/api/billing/webhook', '/api/ig/webhook', '/api/zernio/webhook']);
 const jsonParser = express.json({ limit: '64kb' });
 app.use((req, res, next) => {
   if (RAW_BODY_PATHS.has(req.path)) return next();
@@ -6267,6 +6267,81 @@ app.post('/api/ig/webhook', express.raw({ type: '*/*', limit: '512kb' }), async 
         try { await igPost(`${commentId}/replies`, { message: IG_PUBLIC_REPLY, access_token: process.env.IG_ACCESS_TOKEN }); console.log('[ig] public reply posted'); }
         catch (e) { console.error('[ig] public reply failed:', e.message); }
       }
+    }
+  }
+  res.sendStatus(200);
+});
+
+// ── Instagram via Zernio — comment → auto-DM (no Meta App Review / business needed) ──
+// Zernio holds Meta's approved access, so this works for the PUBLIC today. Zernio POSTs
+// a `comment.received` event here; we post a public reply and send the commenter a
+// one-time private reply (DM) with the link, through Zernio's API. Serverless + always-on:
+// no worker, no queue. Reuses igKeywordHit / IG_DM_TEXT / IG_PUBLIC_REPLY from above.
+//
+// Env: ZERNIO_API_KEY (send calls), ZERNIO_WEBHOOK_SECRET (X-Zernio-Signature HMAC).
+// The connected account id comes from the webhook payload, so it needs no env var.
+const ZERNIO_API = 'https://zernio.com/api/v1';
+async function zernioPost(path, body) {
+  const r = await fetch(`${ZERNIO_API}/${path}`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${process.env.ZERNIO_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || j.success === false) throw new Error(j.error || j.message || `HTTP ${r.status}`);
+  return j;
+}
+
+app.post('/api/zernio/webhook', express.raw({ type: '*/*', limit: '512kb' }), async (req, res) => {
+  const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body || '');
+  // Verify X-Zernio-Signature: lowercase hex HMAC-SHA256 of the raw body.
+  const secret = process.env.ZERNIO_WEBHOOK_SECRET;
+  const sig = String(req.headers['x-zernio-signature'] || '');
+  if (secret) {
+    const expected = crypto.createHmac('sha256', secret).update(raw).digest('hex');
+    const a = Buffer.from(sig), b = Buffer.from(expected);
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return res.sendStatus(401);
+  }
+
+  // Process before acking. Zernio wants 2xx within 5s; two API calls finish well under
+  // that, and dedup on the event id makes a retried delivery idempotent. (On Vercel,
+  // work after res.send() is frozen, so it must run first.)
+  let body;
+  try { body = JSON.parse(raw.toString('utf8')); } catch (_) { return res.sendStatus(200); }
+
+  if (body.event === 'comment.received' && !body.test) {
+    const c    = body.comment || {};
+    const post = body.post || c.post || {};
+    const acct = body.account || {};
+    // Field names parsed defensively; the one-time log below confirms the real shape.
+    const commentId = c.id || c.commentId || c.platformCommentId;
+    const postId    = post.id || post.postId || post.platformPostId || post._id;
+    const accountId = acct.accountId || acct.id;
+    const text      = c.text || c.message || '';
+    const author    = c.author || c.from || {};
+    const username  = String(author.username || '').toLowerCase();
+    const dedupeId  = body.id || ('c:' + commentId);
+
+    console.log('[zernio] comment.received', JSON.stringify({
+      commentId, postId, accountId, username, text,
+      topKeys: Object.keys(body), commentKeys: Object.keys(c), postKeys: Object.keys(post), acctKeys: Object.keys(acct),
+    }));
+
+    if (commentId && postId && accountId && username !== 'edge.keeper' && igKeywordHit(text)) {
+      // Dedup on the stable event id (Zernio delivers at-least-once).
+      try {
+        const { error } = await supabaseAdmin.from('webhook_events')
+          .insert({ event_id: 'zn:' + dedupeId, event_type: 'zernio_comment' });
+        if (error) { res.sendStatus(200); return; } // already handled
+      } catch (_) { /* fall through and try once */ }
+
+      // Private reply (DM). Plain text only: since Aug 2026 Instagram rejects buttons to
+      // non-followers and that still burns the single private reply, so keep it text + link.
+      try { await zernioPost(`inbox/comments/${encodeURIComponent(postId)}/${encodeURIComponent(commentId)}/private-reply`, { accountId, message: IG_DM_TEXT }); console.log(`[zernio] DM -> @${username || commentId}`); }
+      catch (e) { console.error('[zernio] DM failed:', e.message); }
+      // Public reply under the comment.
+      try { await zernioPost(`inbox/comments/${encodeURIComponent(postId)}`, { accountId, message: IG_PUBLIC_REPLY, commentId }); console.log('[zernio] public reply posted'); }
+      catch (e) { console.error('[zernio] public reply failed:', e.message); }
     }
   }
   res.sendStatus(200);
