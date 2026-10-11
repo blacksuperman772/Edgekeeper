@@ -393,14 +393,12 @@ function serveInjectedHtml(filePath) {
               + '<button class="ek-call" onclick="window.EKShell&&EKShell.call()" aria-label="Call ' + NAME + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg> Call ' + NAME + '</button>'
               + '</header>';
 
-            // save_rule is Iris's tool only — she owns the Guardian / Personal
-            // Laws. The other mentors do not set rules.
-            const toolsJs = mentorKey === 'iris'
-              ? 'tools={save_rule:async function(a){try{var r=await fetch("/api/rules",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({rule_text:a.rule_text,category:a.category||"General",rationale:a.rationale||null,origin_mentor:"ashley"})});if(r.status===403)return "Setting personal laws needs a Resident plan or above.";if(!r.ok){var e=await r.json().catch(function(){return{};});return "I could not save that: "+(e.error||"try again");}window.ekToast&&ekToast("New law set");return "Done. That is law now.";}catch(_){return "Something went wrong saving that.";}}};'
-              : '';
+            // Each mentor's own voice tools come from EKVoiceTools(mentor) in
+            // ek-voice.js — the browser-side implementations the ElevenLabs agent
+            // invokes. ekToast is defined here because those handlers call it.
             const initJs = '<script>'
               + 'function ekToast(m){var t=document.getElementById("ek-toast");if(!t){t=document.createElement("div");t.id="ek-toast";t.style.cssText="position:fixed;left:50%;bottom:30px;transform:translateX(-50%);z-index:9500;background:#0c0f0c;border:1px solid ' + ACCENT + ';color:#eef2ec;font:400 .82rem Inter,sans-serif;padding:13px 20px;max-width:88vw;border-radius:3px";document.body.appendChild(t);}t.textContent=m;clearTimeout(ekToast._t);ekToast._t=setTimeout(function(){t.remove();},4200);}'
-              + 'window.addEventListener("load",function(){if(!window.EKShell)return;var tools={};' + toolsJs + 'try{EKShell.init({mentor:"' + mentorKey + '",voice:{clientTools:tools},tools:' + TOOLS + '});}catch(e){}});'
+              + 'window.addEventListener("load",function(){if(!window.EKShell)return;var tools=(window.EKVoiceTools?EKVoiceTools("' + mentorKey + '"):{});try{EKShell.init({mentor:"' + mentorKey + '",voice:{clientTools:tools},tools:' + TOOLS + '});}catch(e){}});'
               + '</script>';
             html = html.replace(/<\/body>/i, bar + initJs + PERF + '</body>');
           } else {
@@ -3299,13 +3297,16 @@ KEY CONCEPTS: ${spec.concepts}
 A WAY TO SHOW IT (demonstrate, do not just assert): ${spec.example}
 A CHECK QUESTION TO WORK TOWARD (adapt it): ${spec.check}`;
     }
+    voicePrompt += `\n\nYOUR TOOLS: read_progress reads where this trader is in the Academy. mark_lesson_complete marks a lesson done — only call it once you have actually taught the lesson on this call and they have shown they understand it, never before and never just because they asked. ${moduleKey ? `The key for the lesson you are teaching right now is "${moduleKey}"; pass that to mark_lesson_complete.` : 'If you mark a lesson complete, pass its module key.'} When you pull up progress, say it naturally in your own words, not as raw data.`;
     firstMessage = buildTheoOpener(timeOfDay, temporal, false);
   } else if (safeMentor === 'marcus') {
+    voicePrompt += `\n\nYOUR TOOLS: add_journal_entry writes a note into the trader's journal — use it when they say something worth keeping and you have confirmed they want it written down, and keep their own words. read_my_rules reads their saved trading rules. read_analytics reads their recent discipline numbers. Reach for these when it genuinely helps, speak whatever you pull up naturally instead of reading fields aloud, and if something is not available or not on their plan, just tell them plainly.`;
     firstMessage = buildMarcusOpener(timeOfDay, temporal, !!brainContext);
   } else if (safeMentor === 'iris') {
     // Iris can set the trader's Personal Laws by voice. The save_rule client tool
     // is declared on her agent; this tells her WHEN to use it — always confirm first.
     voicePrompt += `\n\nSETTING RULES BY VOICE: The trader can set their Personal Laws just by talking to you. When they state a rule they want to live by, read it back to them in one clean sentence and ask them to confirm it. Only once they clearly agree, call the save_rule tool with their exact wording and a fitting category. Never save a rule they are only mulling over, and never save one without reading it back first. After it saves, tell them plainly that it is now one of their laws.`;
+    voicePrompt += `\n\nYOUR OTHER TOOLS: read_my_rules reads their saved laws. read_limits reads their Guardian risk limits. read_guardian_state reads how their connected account is doing right now. Use these when they ask or when it genuinely helps, speak the result naturally in your own words rather than as a list of fields, and if something is not set or not on their plan, just say so plainly.`;
     firstMessage = buildIrisOpener(timeOfDay, temporal, !!brainContext);
   }
 

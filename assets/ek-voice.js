@@ -212,6 +212,133 @@
     if (state.opts && typeof state.opts.onEnd === 'function') { try { state.opts.onEnd(secs); } catch (_) {} }
   }
 
+  // ── Per-mentor voice tools ────────────────────────────────────────────────
+  // Each mentor's own tools, callable by voice. The agent declares the tool
+  // (name + schema) on ElevenLabs; these are the browser-side implementations
+  // it invokes. Every one hits a real endpoint and returns a short, spoken-
+  // friendly string — real data, so the mentor never has to make anything up.
+  // The matching tool must be registered on that mentor's ElevenLabs agent or
+  // it simply never fires; wiring them here is harmless until then.
+  function toast(m) { if (typeof w.ekToast === 'function') w.ekToast(m); }
+  async function getJSON(url) {
+    var r = await fetch(url, { credentials: 'include' });
+    return { status: r.status, ok: r.ok, data: await r.json().catch(function () { return {}; }) };
+  }
+
+  async function readRules() {
+    try {
+      var r = await getJSON('/api/rules');
+      if (r.status === 403) return "They're not on a plan that has saved rules yet.";
+      if (!r.ok) return "Couldn't pull their rules right now.";
+      var list = (r.data.rules || []).filter(function (x) { return x.is_active !== false; }).map(function (x) { return x.rule_text; });
+      if (!list.length) return "They haven't saved any rules yet.";
+      return "Their current rules are: " + list.join(" | ");
+    } catch (_) { return "Couldn't reach their rules right now."; }
+  }
+
+  var TOOLS = {
+    iris: function () {
+      return {
+        save_rule: async function (a) {
+          try {
+            var r = await fetch('/api/rules', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rule_text: a && a.rule_text, category: (a && a.category) || 'General', rationale: (a && a.rationale) || null, origin_mentor: 'ashley' }) });
+            if (r.status === 403) return "Setting personal laws needs a Resident plan or above.";
+            if (!r.ok) { var e = await r.json().catch(function () { return {}; }); return "I couldn't save that: " + (e.error || "try again"); }
+            toast('New law set'); return "Done. That's law now.";
+          } catch (_) { return "Something went wrong saving that."; }
+        },
+        read_my_rules: readRules,
+        read_limits: async function () {
+          try {
+            var r = await getJSON('/api/guardian/limits');
+            if (r.status === 403) return "Custom risk limits are a Fellow-plan thing.";
+            if (!r.ok) return "Couldn't pull their limits right now.";
+            var d = r.data.limits || {}, p = [];
+            if (d.risk_per_trade_pct != null) p.push("per-trade risk " + d.risk_per_trade_pct + "%");
+            if (d.risk_max_daily_loss_pct != null) p.push("max daily loss " + d.risk_max_daily_loss_pct + "%");
+            if (d.risk_max_drawdown_pct != null) p.push("max drawdown " + d.risk_max_drawdown_pct + "%");
+            if (d.risk_max_loss_streak != null) p.push("max losing streak " + d.risk_max_loss_streak);
+            if (d.risk_max_lots != null) p.push("max lots " + d.risk_max_lots);
+            return p.length ? "Their limits: " + p.join(", ") + "." : "They haven't set any custom limits yet.";
+          } catch (_) { return "Couldn't reach their limits right now."; }
+        },
+        read_guardian_state: async function () {
+          try {
+            var r = await getJSON('/api/guardian');
+            if (r.status === 403) return "The Guardian is a Fellow-plan feature.";
+            if (!r.ok) return "Couldn't read the Guardian right now.";
+            var g = r.data.guardian;
+            if (!g || !g.is_connected) return "No trading account is connected, so there's no live standing to read.";
+            var p = [];
+            if (g.daily_pnl_pct != null) p.push("today they're " + (g.daily_pnl_pct >= 0 ? "up " : "down ") + Math.abs(g.daily_pnl_pct) + "%");
+            if (g.max_drawdown_pct != null) p.push("drawdown " + g.max_drawdown_pct + "%");
+            if (g.consecutive_losses != null) p.push(g.consecutive_losses + " losses in a row");
+            if (g.open_lots != null) p.push(g.open_lots + " lots open");
+            return p.length ? "Live standing: " + p.join(", ") + "." : "The account's connected but nothing stands out right now.";
+          } catch (_) { return "Couldn't reach the Guardian right now."; }
+        },
+      };
+    },
+    marcus: function () {
+      return {
+        read_my_rules: readRules,
+        add_journal_entry: async function (a) {
+          try {
+            var text = ((a && a.entry_text) || '').trim();
+            if (text.length < 3) return "There's nothing to write down yet.";
+            var r = await fetch('/api/journal', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: text, entry_type: 'free', mentor_notes: 'Logged on a call with Marcus' }) });
+            if (r.status === 403) return "Journaling needs the Resident plan or above.";
+            if (!r.ok) return "Couldn't save that to the journal.";
+            toast('Journal entry saved'); return "Saved to their journal.";
+          } catch (_) { return "Something went wrong saving that."; }
+        },
+        read_analytics: async function () {
+          try {
+            var r = await getJSON('/api/analytics');
+            if (r.status === 403) return "Behavior analytics needs the Resident plan or above.";
+            if (!r.ok) return "Couldn't pull their analytics right now.";
+            var d = r.data, p = [];
+            if (d.disciplineScore != null) p.push("discipline score " + d.disciplineScore);
+            if (d.adherencePct != null) p.push("rule adherence " + d.adherencePct + "%");
+            if (d.flagsThisWeek != null) p.push(d.flagsThisWeek + " flags this week");
+            if (d.totalRules != null && d.totalRules > 0) p.push(d.brokenRules + " of " + d.totalRules + " rules broken lately");
+            return p.length ? "This week: " + p.join(", ") + "." : "Not enough activity yet to read anything into.";
+          } catch (_) { return "Couldn't reach their analytics right now."; }
+        },
+      };
+    },
+    theo: function () {
+      return {
+        read_progress: async function () {
+          try {
+            var r = await getJSON('/api/academy/progress');
+            if (!r.ok) return "Couldn't pull their Academy progress right now.";
+            var prog = r.data.progress || {};
+            var keys = Object.keys(prog);
+            var done = keys.filter(function (k) { return prog[k] && prog[k].completed; }).length;
+            var track = r.data.track ? ("on the " + r.data.track + " track") : "not enrolled in a track yet";
+            var inProg = keys.length - done;
+            return "They're " + track + ", with " + done + " lesson" + (done === 1 ? "" : "s") + " completed" + (inProg > 0 ? (" and " + inProg + " in progress") : "") + ".";
+          } catch (_) { return "Couldn't reach their progress right now."; }
+        },
+        mark_lesson_complete: async function (a) {
+          try {
+            var key = ((a && a.module_key) || w.EK_CURRENT_MODULE || '').trim();
+            if (!/^[a-z0-9_]{2,60}$/.test(key)) return "I need the lesson's key to mark it done.";
+            var r = await fetch('/api/academy/progress', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ module: key, completed: Date.now() }) });
+            if (!r.ok) return "Couldn't mark that lesson complete.";
+            toast('Lesson marked complete'); return "Marked that lesson complete for them.";
+          } catch (_) { return "Something went wrong marking it."; }
+        },
+      };
+    },
+  };
+
+  w.EKVoiceTools = function (mentor) {
+    var f = TOOLS[mentor];
+    try { return f ? f() : {}; } catch (_) { return {}; }
+  };
+
   w.EKVoice = {
     start: function (opts) { state.opts = opts || {}; injectStyles(); injectView(); open(); connect(); },
     end: end,
