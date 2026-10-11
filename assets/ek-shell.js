@@ -53,7 +53,7 @@
       '#eks-scrim{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.5);opacity:0;pointer-events:none;transition:opacity .25s;}',
       '#eks-scrim.open{opacity:1;pointer-events:auto;}',
       // A drawer on every screen (never full-width): the chat stays visible behind the scrim.
-      '#eks-menu{--eks:#6b8c6b;box-sizing:border-box;position:fixed;top:0;left:0;bottom:0;z-index:10001;width:300px;max-width:86vw;overflow:hidden;overscroll-behavior:contain;background:#0b0b0d;border-right:1px solid rgba(255,255,255,0.08);box-shadow:4px 0 40px rgba(0,0,0,0.45);',
+      '#eks-menu{--eks:#6b8c6b;box-sizing:border-box;position:fixed;top:0;left:0;bottom:0;z-index:10001;width:300px;max-width:86vw;overflow:hidden;overscroll-behavior:contain;background:#0b0b0d;border-right:1px solid rgba(255,255,255,0.08);box-shadow:4px 0 40px rgba(0,0,0,0.45);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);',
       'display:flex;flex-direction:column;transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);font-family:var(--sans,Inter,sans-serif);}',
       '#eks-menu.open{transform:translateX(0);}',
       // Neutral darks everywhere; the room colour lives only in --eks (logo, active item, icons, avatar).
