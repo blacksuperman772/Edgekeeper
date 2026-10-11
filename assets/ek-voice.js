@@ -371,8 +371,75 @@
     try { return f ? f() : {}; } catch (_) { return {}; }
   };
 
+  // ── Incoming call: rings, then starts the call on answer ──────────────────
+  // A real incoming-call screen (ringtone + Accept/Decline) so a mentor reaching
+  // out feels like a call coming in, not a silent notice. Accept → start(opts).
+  var ring = (function () {
+    var ro = null, ctx = null, ringTimer = null, missTimer = null;
+    function tone() {
+      try {
+        if (!ctx) ctx = new (w.AudioContext || w.webkitAudioContext)();
+        if (ctx.state === 'suspended') ctx.resume();
+        [0, 0.4].forEach(function (off) {
+          var g = ctx.createGain(); g.connect(ctx.destination);
+          var a = ctx.createOscillator(), b = ctx.createOscillator();
+          a.type = 'sine'; a.frequency.value = 440; b.type = 'sine'; b.frequency.value = 480;
+          a.connect(g); b.connect(g);
+          var t0 = ctx.currentTime + off;
+          g.gain.setValueAtTime(0, t0);
+          g.gain.linearRampToValueAtTime(0.11, t0 + 0.02);
+          g.gain.setValueAtTime(0.11, t0 + 0.28);
+          g.gain.linearRampToValueAtTime(0, t0 + 0.3);
+          a.start(t0); b.start(t0); a.stop(t0 + 0.32); b.stop(t0 + 0.32);
+        });
+      } catch (_) {}
+    }
+    function buzz() { try { if (navigator.vibrate) navigator.vibrate([400, 200, 400]); } catch (_) {} }
+    function stop() {
+      if (ringTimer) { clearInterval(ringTimer); ringTimer = null; }
+      if (missTimer) { clearTimeout(missTimer); missTimer = null; }
+      try { if (navigator.vibrate) navigator.vibrate(0); } catch (_) {}
+      if (ro && ro.parentNode) ro.parentNode.removeChild(ro);
+      ro = null;
+    }
+    return function (opts) {
+      opts = opts || {};
+      var mentor = opts.mentor || 'iris';
+      var name = NAMES[mentor] || 'Iris';
+      var accent = COLORS[mentor] || '#6b8c6b';
+      stop();
+      if (!document.getElementById('ekv-ring-kf')) {
+        var st = document.createElement('style'); st.id = 'ekv-ring-kf';
+        st.textContent = '@keyframes ekvRingPulse{0%{box-shadow:0 0 0 0 rgba(46,158,91,.5)}70%{box-shadow:0 0 0 22px rgba(46,158,91,0)}100%{box-shadow:0 0 0 0 rgba(46,158,91,0)}}@keyframes ekvAvaPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}';
+        document.head.appendChild(st);
+      }
+      ro = document.createElement('div');
+      ro.id = 'ekv-ring'; ro.setAttribute('role', 'dialog'); ro.setAttribute('aria-label', 'Incoming call from ' + name);
+      ro.style.cssText = 'position:fixed;inset:0;z-index:10060;display:flex;flex-direction:column;align-items:center;justify-content:space-between;background:#070708;font-family:var(--sans,Inter,sans-serif);padding:14vh 24px calc(8vh + env(safe-area-inset-bottom,0px));box-sizing:border-box';
+      var ic = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
+      ro.innerHTML =
+        '<div style="text-align:center">'
+          + '<div style="font:500 .62rem/1 \'DM Mono\',monospace;letter-spacing:.28em;text-transform:uppercase;color:' + accent + ';opacity:.85">Incoming call</div>'
+          + '<div style="margin:34px auto 0;width:132px;height:132px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:300 3.1rem/1 var(--sans,Inter);color:#0a0a0b;background:' + accent + ';animation:ekvAvaPulse 1.8s ease-in-out infinite">' + name.charAt(0).toUpperCase() + '</div>'
+          + '<div style="margin-top:26px;font:300 2rem/1 var(--sans,Inter);color:#f2f2f0">' + name + '</div>'
+          + '<div style="margin-top:8px;font:300 .9rem/1.4 var(--sans,Inter);color:rgba(255,255,255,.45)">EdgeKeeper · voice</div>'
+        + '</div>'
+        + '<div style="display:flex;gap:64px;align-items:center">'
+          + '<button id="ekv-decline" aria-label="Decline" style="width:66px;height:66px;border-radius:50%;border:none;background:#c0392b;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center"><span style="display:block;transform:rotate(135deg);width:26px;height:26px">' + ic + '</span></button>'
+          + '<button id="ekv-accept" aria-label="Accept" style="width:78px;height:78px;border-radius:50%;border:none;background:#2e9e5b;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;animation:ekvRingPulse 1.4s ease-out infinite"><span style="display:block;width:30px;height:30px">' + ic + '</span></button>'
+        + '</div>';
+      document.body.appendChild(ro);
+      tone(); buzz();
+      ringTimer = setInterval(function () { tone(); buzz(); }, 3000);
+      missTimer = setTimeout(function () { stop(); if (opts.onDecline) try { opts.onDecline('missed'); } catch (_) {} }, 30000);
+      document.getElementById('ekv-accept').onclick = function () { stop(); w.EKVoice.start(opts); };
+      document.getElementById('ekv-decline').onclick = function () { stop(); if (opts.onDecline) try { opts.onDecline('declined'); } catch (_) {} };
+    };
+  })();
+
   w.EKVoice = {
     start: function (opts) { state.opts = opts || {}; injectStyles(); injectView(); open(); connect(); },
+    ring: ring,
     end: end,
     isActive: function () { return state.phase === 'active' || state.phase === 'connecting'; },
   };

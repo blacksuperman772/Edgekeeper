@@ -816,6 +816,21 @@
   // ☰ opens the global app-shell menu (home, mentors, account)
   document.getElementById('eks-ham')?.addEventListener('click', () => { if (window.EKShell) EKShell.openMenu(); });
 
+  // Arrived from an "Iris is calling" notification (/chamber?call=1): ring, and
+  // start the call only when the trader answers. Richer tools if the app shell
+  // loaded them; falls back to the inline save_rule tool otherwise.
+  (function () {
+    try { if (new URLSearchParams(location.search).get('call') !== '1') return; } catch (_) { return; }
+    let tries = 0;
+    const iv = setInterval(() => {
+      if (window.EKVoice && EKVoice.ring) {
+        clearInterval(iv);
+        const tools = (window.EKVoiceTools ? EKVoiceTools('iris') : irisClientTools);
+        EKVoice.ring({ mentor: 'iris', getContext: irisVoiceContext, clientTools: tools });
+      } else if (++tries > 50) { clearInterval(iv); }
+    }, 150);
+  })();
+
   function _extractReply(raw) {
     const m = raw.match(/"reply"\s*:\s*"((?:[^"\\]|\\.)*)/);
     if (!m) return null;

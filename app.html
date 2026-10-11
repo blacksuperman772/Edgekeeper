@@ -610,13 +610,17 @@
           if (t.length > 160) t = t.slice(0, 158) + '…';
           var mentor = (m.mentor || 'marcus').toLowerCase();
           var day = new Date(m.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+          // Iris reaching out is a call: tapping her note rings her, then starts
+          // the call on answer. Other mentors open their room as text.
+          var href = mentor === 'iris' ? '/chamber?call=1' : (dest[mentor] || '/workspace.html');
+          var meta = mentor.toUpperCase() + ' · ' + day + (mentor === 'iris' ? ' · tap to answer' : '');
           // Opening a notification marks it read (keepalive survives the navigation),
           // so it drops off Recent on the next visit.
-          return '<a class="act-row" href="' + (dest[mentor] || '/workspace.html') + '" data-mid="' + m.id + '" onclick="try{fetch(\'/api/messages/\'+this.dataset.mid,{method:\'PATCH\',credentials:\'include\',keepalive:true})}catch(e){}">' +
+          return '<a class="act-row" href="' + href + '" data-mid="' + m.id + '" onclick="try{fetch(\'/api/messages/\'+this.dataset.mid,{method:\'PATCH\',credentials:\'include\',keepalive:true})}catch(e){}">' +
             '<span class="act-ava">' + mentor.charAt(0).toUpperCase() + '</span>' +
             '<span class="act-body">' +
               '<span class="act-title">' + (t || 'A message from your mentor.') + '</span>' +
-              '<span class="act-meta">' + mentor.toUpperCase() + ' · ' + day + '</span>' +
+              '<span class="act-meta">' + meta + '</span>' +
             '</span></a>';
         }).join('') + '</div>';
       }).catch(function() {
