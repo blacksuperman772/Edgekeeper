@@ -34,26 +34,23 @@
     s.textContent = [
       // Above the top bar (9999) and menu (10001) so the call view covers "Call [mentor]".
       '#ekv{--ekv:#6b8c6b;position:fixed;inset:0;z-index:10050;display:none;flex-direction:column;align-items:center;justify-content:center;',
-      "background:radial-gradient(ellipse 72% 56% at 50% 40%, color-mix(in srgb,var(--ekv) 12%,#060806) 0%, #060806 70%);font-family:var(--sans,Inter,sans-serif);}",
+      "background:#070708;font-family:var(--sans,Inter,sans-serif);}",
       '#ekv.active{display:flex;}',
       // Siri-style orb: layered conic gradients rotated via @property --ekv-angle, a
       // dot-texture overlay, blur + contrast, tinted to the room colour, over a halo.
       '@property --ekv-angle{syntax:"<angle>";inherits:false;initial-value:0deg;}',
       '#ekv-orbwrap{position:relative;width:clamp(240px,64vw,300px);height:clamp(240px,64vw,300px);margin-bottom:46px;display:flex;align-items:center;justify-content:center;}',
-      '#ekv-halo{position:absolute;width:88%;height:88%;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--ekv) 55%,transparent) 0%,transparent 70%);filter:blur(40px);opacity:.5;animation:ekvHalo 5s ease-in-out infinite;will-change:transform,opacity;}',
       '#ekv-orb{--c1:color-mix(in srgb,var(--ekv) 92%,#fff);--c2:color-mix(in srgb,var(--ekv) 55%,#fff);--c3:color-mix(in srgb,var(--ekv) 72%,#000);--ekbg:color-mix(in srgb,var(--ekv) 10%,#eff3f1);',
-      'position:relative;width:84%;height:84%;display:grid;grid-template-areas:"stack";overflow:hidden;border-radius:50%;isolation:isolate;transition:transform .5s cubic-bezier(.4,0,.2,1);box-shadow:0 0 54px color-mix(in srgb,var(--ekv) 35%,transparent);}',
+      'position:relative;width:90%;height:90%;display:grid;grid-template-areas:"stack";overflow:hidden;border-radius:50%;isolation:isolate;transform:scale(1);transition:transform .6s cubic-bezier(.4,0,.2,1);}',
       '#ekv-orb::before,#ekv-orb::after{content:"";display:block;grid-area:stack;width:100%;height:100%;border-radius:50%;}',
       '#ekv-orb::before{background:conic-gradient(from calc(var(--ekv-angle)*2) at 25% 70%,var(--c3),transparent 20% 80%,var(--c3)),conic-gradient(from calc(var(--ekv-angle)*2) at 45% 75%,var(--c2),transparent 30% 60%,var(--c2)),conic-gradient(from calc(var(--ekv-angle)*-3) at 80% 20%,var(--c1),transparent 40% 60%,var(--c1)),conic-gradient(from calc(var(--ekv-angle)*2) at 15% 5%,var(--c2),transparent 10% 90%,var(--c2)),conic-gradient(from calc(var(--ekv-angle)*1) at 20% 80%,var(--c1),transparent 10% 90%,var(--c1)),conic-gradient(from calc(var(--ekv-angle)*-2) at 85% 10%,var(--c3),transparent 20% 80%,var(--c3));box-shadow:inset var(--ekbg) 0 0 2px 0.4px;filter:blur(4px) contrast(1.5);animation:ekvRotate 18s linear infinite;will-change:transform;}',
       '#ekv-orb::after{background:radial-gradient(circle at 36% 28%,rgba(255,255,255,.38) 0%,rgba(255,255,255,.08) 20%,transparent 46%),radial-gradient(circle at 70% 82%,rgba(0,0,0,.28),transparent 46%);}',
-      '#ekv-orb.speaking{animation:ekvBreathe 2.8s ease-in-out infinite;}',
-      '#ekv-orb.speaking::before{animation-duration:9s;}',
-      '#ekv-orb.listening{transform:scale(.92);}',
-      '#ekv-orb.listening::before{animation-duration:30s;}',
+      // Reaction = a smooth scale transition only. Rotation speed never changes, so the
+      // @property angle never jumps (that was the speaking-state glitch).
+      '#ekv-orb.speaking{transform:scale(1.045);}',
+      '#ekv-orb.listening{transform:scale(.955);}',
       '@keyframes ekvRotate{to{--ekv-angle:360deg;}}',
-      '@keyframes ekvBreathe{0%,100%{transform:scale(1);}50%{transform:scale(1.04);}}',
-      '@keyframes ekvHalo{0%,100%{transform:scale(1);opacity:.4;}50%{transform:scale(1.2);opacity:.62;}}',
-      '@media (prefers-reduced-motion:reduce){#ekv-halo,#ekv-orb,#ekv-orb::before{animation:none!important;}#ekv-orb.listening{transform:none;}}',
+      '@media (prefers-reduced-motion:reduce){#ekv-orb::before{animation:none!important;}#ekv-orb.listening,#ekv-orb.speaking{transform:none;}}',
       '#ekv-name{font-family:var(--serif,Georgia,serif);font-weight:400;font-size:2.4rem;color:var(--bright,#eef2ec);}',
       '#ekv-status{font-family:var(--mono,monospace);font-size:0.62rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--ekv);margin-top:12px;min-height:16px;}',
       '#ekv-note{font-size:0.72rem;color:var(--muted,#5f6b5e);margin-top:16px;max-width:300px;text-align:center;line-height:1.5;}',
@@ -73,7 +70,7 @@
     var v = document.createElement('div');
     v.id = 'ekv';
     v.innerHTML =
-      '<div id="ekv-orbwrap"><div id="ekv-halo"></div><div id="ekv-orb"></div></div>' +
+      '<div id="ekv-orbwrap"><div id="ekv-orb"></div></div>' +
       '<div id="ekv-name"></div>' +
       '<div id="ekv-status">Connecting…</div>' +
       '<div id="ekv-note">Behavioural coaching, not financial advice. Your mic is used only for this call.</div>' +
