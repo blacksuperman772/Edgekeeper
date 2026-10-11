@@ -30,12 +30,22 @@
       '#ekv{--ekv:#6b8c6b;position:fixed;inset:0;z-index:10050;display:none;flex-direction:column;align-items:center;justify-content:center;',
       "background:radial-gradient(ellipse 72% 56% at 50% 40%, color-mix(in srgb,var(--ekv) 12%,#060806) 0%, #060806 70%);font-family:var(--sans,Inter,sans-serif);}",
       '#ekv.active{display:flex;}',
-      '#ekv-orb{width:150px;height:150px;border-radius:50%;margin-bottom:34px;',
-      'background:radial-gradient(circle at 42% 38%, color-mix(in srgb,var(--ekv) 55%,#fff), var(--ekv) 55%, color-mix(in srgb,var(--ekv) 40%,#000) 100%);',
-      'box-shadow:0 0 60px color-mix(in srgb,var(--ekv) 45%,transparent),0 0 120px color-mix(in srgb,var(--ekv) 18%,transparent);transition:transform .3s ease;}',
-      '#ekv-orb.speaking{animation:ekvBreathe 1.6s ease-in-out infinite;}',
-      '#ekv-orb.listening{transform:scale(0.86);opacity:0.75;}',
-      '@keyframes ekvBreathe{0%,100%{transform:scale(1);}50%{transform:scale(1.07);}}',
+      // A real sphere: lit body, inner light that orbits, a specular highlight, and a breathing halo.
+      '#ekv-orbwrap{position:relative;width:170px;height:170px;margin-bottom:42px;display:flex;align-items:center;justify-content:center;}',
+      '#ekv-halo{position:absolute;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--ekv) 60%,transparent) 0%,transparent 68%);filter:blur(28px);opacity:.45;animation:ekvHalo 4.8s ease-in-out infinite;will-change:transform,opacity;}',
+      '#ekv-orb{position:relative;width:152px;height:152px;border-radius:50%;overflow:hidden;transition:transform .45s cubic-bezier(.4,0,.2,1);',
+      'background:radial-gradient(circle at 36% 30%,color-mix(in srgb,var(--ekv) 68%,#fff) 0%,var(--ekv) 46%,color-mix(in srgb,var(--ekv) 52%,#000) 100%);',
+      'box-shadow:0 0 50px color-mix(in srgb,var(--ekv) 40%,transparent),inset 0 0 44px color-mix(in srgb,var(--ekv) 45%,#000),inset -8px -10px 30px rgba(0,0,0,.45);}',
+      '#ekv-orb::before{content:"";position:absolute;inset:-25%;border-radius:50%;background:radial-gradient(circle at 50% 50%,color-mix(in srgb,var(--ekv) 22%,#fff) 0%,transparent 44%);mix-blend-mode:screen;filter:blur(16px);opacity:.7;animation:ekvSwirl 9s linear infinite;will-change:transform;}',
+      '#ekv-orb::after{content:"";position:absolute;left:20%;top:13%;width:38%;height:32%;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.72),transparent 72%);filter:blur(4px);}',
+      '#ekv-orb.speaking{animation:ekvBreathe 2.6s ease-in-out infinite;}',
+      '#ekv-orb.speaking::before{animation-duration:4.5s;opacity:1;}',
+      '#ekv-orb.listening{transform:scale(.9);}',
+      '#ekv-orb.listening::before{opacity:.4;animation-duration:14s;}',
+      '@keyframes ekvBreathe{0%,100%{transform:scale(1);}50%{transform:scale(1.045);}}',
+      '@keyframes ekvSwirl{from{transform:rotate(0deg) translateX(9%);}to{transform:rotate(360deg) translateX(9%);}}',
+      '@keyframes ekvHalo{0%,100%{transform:scale(1);opacity:.4;}50%{transform:scale(1.22);opacity:.68;}}',
+      '@media (prefers-reduced-motion:reduce){#ekv-halo,#ekv-orb,#ekv-orb::before{animation:none!important;}#ekv-orb.listening{transform:none;}}',
       '#ekv-name{font-family:var(--serif,Georgia,serif);font-weight:400;font-size:2.4rem;color:var(--bright,#eef2ec);}',
       '#ekv-status{font-family:var(--mono,monospace);font-size:0.62rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--ekv);margin-top:12px;min-height:16px;}',
       '#ekv-note{font-size:0.72rem;color:var(--muted,#5f6b5e);margin-top:16px;max-width:300px;text-align:center;line-height:1.5;}',
@@ -55,7 +65,7 @@
     var v = document.createElement('div');
     v.id = 'ekv';
     v.innerHTML =
-      '<div id="ekv-orb"></div>' +
+      '<div id="ekv-orbwrap"><div id="ekv-halo"></div><div id="ekv-orb"></div></div>' +
       '<div id="ekv-name"></div>' +
       '<div id="ekv-status">Connecting…</div>' +
       '<div id="ekv-note">Behavioural coaching, not financial advice. Your mic is used only for this call.</div>' +
