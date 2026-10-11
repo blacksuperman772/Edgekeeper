@@ -62,7 +62,9 @@
     var scrim = document.createElement('div'); scrim.id = 'eks-scrim'; scrim.onclick = closeMenu;
     document.body.appendChild(scrim);
 
-    var m = document.createElement('nav'); m.id = 'eks-menu';
+    // A <div>, not a <nav>: the app-mode shell hides `body>nav:not(.ek-appnav)`,
+    // which would otherwise display:none this menu. role keeps the landmark.
+    var m = document.createElement('div'); m.id = 'eks-menu'; m.setAttribute('role', 'navigation'); m.setAttribute('aria-label', 'Main menu');
     m.style.setProperty('--eks', COLORS[state.mentor] || '#6b8c6b');
     var items = MENTORS.map(function (x) {
       return '<a class="eks-item' + (x.key === state.mentor ? ' on' : '') + '" href="' + x.href + '">' +
