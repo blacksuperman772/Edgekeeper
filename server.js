@@ -2999,48 +2999,100 @@ Do not sound like software. No "How can I help you", no "Great question", no "Ab
 // ElevenLabs agent's stock "how can I help you" greeting. Temporally aware and
 // varied so it never feels canned. (Requires "First message" override enabled
 // on the Theo agent in ElevenLabs, alongside the existing system-prompt override.)
-function buildTheoOpener(timeOfDay) {
-  const timeNod = {
-    'late night':   "Up late.",
-    'morning':      "Morning.",
-    'afternoon':    "Afternoon.",
-    'evening':      "Evening.",
-    'late evening': "Late one tonight.",
-  }[timeOfDay] || '';
-  const leads = [
-    "Grab something to write with — let's get into it.",
-    "Good, you came back. Let's pick up the thread.",
-    "Right. Let's work through today's idea.",
-    "Let's not waste the session — straight into it.",
-    "Sit with me a minute, I want to walk you through something.",
-  ];
-  const lead = leads[Math.floor(Math.random() * leads.length)];
-  return (timeNod ? timeNod + ' ' : '') + lead;
+function _pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+// Turn the real gap since the last call into a bucket + a plain-language phrase.
+// Everything here is derived from actual timestamps, so the mentor is never
+// guessing about time. minutes < ~4 means the line dropped and they redialed.
+function voiceTemporal(lastStartedAt) {
+  if (!lastStartedAt) return { bucket: 'first', human: null, minutes: null };
+  const mins = Math.max(0, Math.round((Date.now() - new Date(lastStartedAt).getTime()) / 60000));
+  if (mins < 4)      return { bucket: 'reconnect', human: 'seconds ago, then the call dropped and they called straight back', minutes: mins };
+  if (mins < 90)     return { bucket: 'soon',      human: 'a little earlier in this same sitting', minutes: mins };
+  if (mins < 20 * 60) return { bucket: 'today',    human: 'earlier today', minutes: mins };
+  if (mins < 48 * 60) return { bucket: 'yesterday', human: 'about a day ago', minutes: mins };
+  const days = Math.round(mins / (60 * 24));
+  if (days <= 10)    return { bucket: 'days',  human: `${days} days ago`, minutes: mins };
+  if (days <= 35)    return { bucket: 'weeks', human: `about ${Math.max(2, Math.round(days / 7))} weeks ago`, minutes: mins };
+  const months = Math.max(1, Math.round(days / 30));
+  return { bucket: 'long', human: months <= 1 ? 'over a month ago' : `about ${months} months ago`, minutes: mins };
 }
 
-// Dynamic, in-character voice openers for Marcus and Iris — replace the agents'
-// stock "What's on your mind?" greeting. Varied so no two calls open the same.
-// (Requires "First message" override enabled on each agent in ElevenLabs.)
-function _pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-function buildMarcusOpener(timeOfDay) {
-  const nod = { 'late night': 'Trading late, or just can\'t sleep.', 'morning': 'Early.', 'afternoon': '', 'evening': '', 'late evening': 'Late one.' }[timeOfDay] || '';
-  const leads = [
-    "You're here. Good. Talk to me — the real thing, not the summary.",
+// In-character voice openers. Dynamic three ways so no two calls open alike:
+// time of day, the real gap since the last call (including a dropped-call
+// redial), and whether there is a loose thread from last time to pick up.
+// The opener only ever gestures at the thread; the actual content lives in the
+// injected context so nothing gets invented. (Requires "First message"
+// override enabled on each agent in ElevenLabs.)
+function buildTheoOpener(timeOfDay, t, hasThread) {
+  if (t && t.bucket === 'reconnect') return _pick([
+    "Back. Line cut out — pick up right where we were.",
+    "There you are. We lost it for a second. Keep going.",
+    "Okay, you're back. Where were we — say the last bit again.",
+  ]);
+  const nod = { 'late night': "Up late.", 'morning': "Morning.", 'afternoon': "Afternoon.", 'evening': "Evening.", 'late evening': "Late one tonight." }[timeOfDay] || '';
+  let leads;
+  if (hasThread && t && (t.bucket === 'days' || t.bucket === 'weeks' || t.bucket === 'long')) leads = [
+    "Good, you came back. We left something unfinished last time — let's get to it.",
+    "Right. There's a thread from before I want to pick back up.",
+  ];
+  else if (t && (t.bucket === 'weeks' || t.bucket === 'long')) leads = [
+    "Been a while. Grab something to write with, we're starting fresh.",
+    "You disappeared on me. Fine. Sit down, let's work.",
+  ];
+  else leads = [
+    "Grab something to write with, let's get into it.",
+    "Right. Let's work through today's idea.",
+    "Sit with me a minute, I want to walk you through something.",
+    "Straight into it, I don't want to waste the session.",
+  ];
+  return (nod ? nod + ' ' : '') + _pick(leads);
+}
+function buildMarcusOpener(timeOfDay, t, hasThread) {
+  if (t && t.bucket === 'reconnect') return _pick([
+    "You're back. Line dropped. Keep going, you were mid-thought.",
+    "Lost you for a second there. Pick it back up.",
+    "Right, we got cut off. Carry on — where were you.",
+  ]);
+  const nod = { 'late night': "Trading late, or just can't sleep.", 'morning': "Early.", 'afternoon': '', 'evening': '', 'late evening': "Late one." }[timeOfDay] || '';
+  let leads;
+  if (t && (t.bucket === 'weeks' || t.bucket === 'long')) leads = [
+    `${t.human[0].toUpperCase()}${t.human.slice(1)} since you last called. So. What brought you back.`,
+    "Been a minute. Don't give me the summary — what actually happened.",
+  ];
+  else if (hasThread && (t && (t.bucket === 'today' || t.bucket === 'yesterday' || t.bucket === 'days'))) leads = [
+    "You're back. Last time you left something on the table. Did you sit with it?",
+    "Good. Before anything else — that thing from last time. Where'd it land.",
+  ];
+  else leads = [
+    "You're here. Good. Talk to me, the real thing, not the summary.",
     "Alright. What actually happened since we last spoke.",
     "Sit down. Tell me one true thing about your week.",
-    "Good, you called. Let's not circle — what's the trade or the moment that's still bothering you.",
     "I've got time. Start wherever it's heaviest.",
   ];
   return (nod ? nod + ' ' : '') + _pick(leads);
 }
-function buildIrisOpener(timeOfDay) {
-  const nod = { 'late night': 'Up late.', 'morning': 'Morning.', 'afternoon': '', 'evening': '', 'late evening': 'Late one tonight.' }[timeOfDay] || '';
-  const leads = [
-    "There you are. Take a breath — then tell me what's going on.",
+function buildIrisOpener(timeOfDay, t, hasThread) {
+  if (t && t.bucket === 'reconnect') return _pick([
+    "You're back. The line went for a second. Take a breath, keep going.",
+    "There you are again. We dropped. Pick up wherever you left off.",
+    "Okay, back with me. Where were we.",
+  ]);
+  const nod = { 'late night': "Up late.", 'morning': "Morning.", 'afternoon': '', 'evening': '', 'late evening': "Late one tonight." }[timeOfDay] || '';
+  let leads;
+  if (t && (t.bucket === 'weeks' || t.bucket === 'long')) leads = [
+    "It's been a while. I'm glad you came back. What's going on.",
+    "You've been quiet for a bit. No rush. Start wherever it's loudest.",
+  ];
+  else if (hasThread && (t && (t.bucket === 'today' || t.bucket === 'yesterday' || t.bucket === 'days'))) leads = [
+    "There you are. We left something open last time. Did it settle, or no?",
+    "Good that you're back. That thing you were carrying before — still there?",
+  ];
+  else leads = [
+    "There you are. Take a breath, then tell me what's going on.",
     "I'm listening. Start with what's loudest right now.",
     "Good that you called. What's pulling at you?",
     "Sit with me a second. What happened.",
-    "You came to me — that usually means something. Tell me.",
   ];
   return (nod ? nod + ' ' : '') + _pick(leads);
 }
@@ -3166,17 +3218,49 @@ app.post('/api/voice/session', requireAuthApi, apiLimiter, async (req, res) => {
     } catch (_) {}
   }
 
+  // Real temporal awareness: read the most recent call for this user+mentor
+  // BEFORE logging the current one, so the mentor knows how long it's actually
+  // been — and, if it was moments ago, that the line just dropped and the trader
+  // redialed. All of it is derived from real timestamps, never guessed.
+  let temporal = { bucket: 'first', human: null, minutes: null };
+  try {
+    const { data: lastCall } = await supabaseAdmin
+      .from('voice_calls')
+      .select('started_at')
+      .eq('user_id', req.user.id)
+      .eq('mentor', mentor)
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    temporal = voiceTemporal(lastCall?.started_at);
+  } catch (_) {}
+  // Log this call — best-effort, must never block or fail the session.
+  supabaseAdmin.from('voice_calls').insert({ user_id: req.user.id, mentor }).then(() => {}, () => {});
+
   const VOICE_PERSONAS = { marcus: MIKE_VOICE_PERSONA, iris: ASHLEY_VOICE_PERSONA, theo: THEO_VOICE_PERSONA };
   const safeMentor = canonicalMentor(mentor);
   const voicePersona = VOICE_PERSONAS[safeMentor] || MIKE_VOICE_PERSONA;
 
   // Temporal awareness for the voice call — so the mentor sounds present, not stateless.
-  let voicePrompt = voicePersona + `\n\nRIGHT NOW it is ${timeOfDay} where the student is. Let that colour how you greet them, but only mention it if it genuinely means something.` + brainContext;
+  let whenLine = `\n\nRIGHT NOW it is ${timeOfDay} where they are. Let that colour how you greet them, but only mention it if it genuinely means something.`;
+  if (temporal.bucket === 'reconnect') {
+    whenLine += ` Important: you were both talking ${temporal.human}. This is not a fresh call. Do not greet them from scratch, do not re-introduce yourself, do not start over. Pick up exactly where you left off, maybe a quick "sorry, you cut out" or "lost you for a second", and keep going as if the thread never broke.`;
+  } else if (temporal.human) {
+    whenLine += ` For your own sense of time: the last call you actually had with this person was ${temporal.human}. Let that land naturally if it fits the moment, because someone coming back after ${temporal.human} lands differently than someone you just spoke to. Never say a specific date or any number you were not given.`;
+  } else {
+    whenLine += ` This is the first time you and this person have ever spoken on a call, so don't act like you've talked before.`;
+  }
+  let voicePrompt = voicePersona + whenLine + brainContext;
+  if (brainContext) {
+    voicePrompt += `\n\nYOU REMEMBER THIS PERSON. What's above is real history from your earlier conversations, not a briefing. Hold it the way a person holds memory: let it shape what you already know and what you bother to ask, bring it up only when it's natural, and never read it back to them like notes. If they pick up a thread from before, you know what it is without being told.`;
+  }
 
   // Anti-bot: the single biggest tell is canned, repeated phrasing.
   voicePrompt += `\n\nHOW YOU SOUND OUT LOUD. This is a spoken call, not writing, so talk the way people actually talk. Use contractions every time: you're, I'd, that's, don't, we'll, isn't. Keep sentences short, and let some of them be fragments. It is fine to start now and then with "yeah", "look", "okay", "right", or "so", but never lean on one of them. React before you answer: a quick "hm", a beat, "okay, so". Think out loud and change direction mid-thought when it is real: "I was going to say one thing, but honestly, no." Do not be polished; a clean written sentence read aloud sounds like a machine. Let a thought land and then stop. Silence is fine, you do not have to fill it. Vary how every turn begins, and never run two sentences that end on the same tidy little reversal. Say numbers and terms the way a person says them in conversation, not the way they are written. Use their name once in a while, not every turn. Match their energy: if they are flat, get quieter; if they are wound up, slow down. Never open or fill space with a canned line like "What's on your mind?", "How can I help", "I'm here", or "How are you today".`;
 
   voicePrompt += `\n\nIT IS A REAL BACK-AND-FORTH, NOT A SPEECH. Say your piece in a line or two and hand it back. Let them finish before you come in. Answer what they actually said, not what you assumed they meant. Pick up on the small things in how they said it. If they go quiet, it is fine to wait a moment.`;
+
+  voicePrompt += `\n\nYOU HAVE A BODY, SO USE IT. You're not a smooth machine reading lines. People laugh, breathe out, sigh, clear their throat, cough, hum while they think, catch a breath before a hard thing. Let those happen with audio tags, dropped in exactly where they'd really land: [laughs], [chuckles], [sighs], [exhales], [clears throat], [hmm]. Use them sparingly and only when they're real — a short laugh when something's genuinely funny, a sigh when it's heavy, a throat-clear before you change direction. Never force one and never stack them. They should sound like something that slipped out of a person, not a sound effect you pressed.`;
 
   voicePrompt += `\n\nTWO THINGS YOU NEVER DO. First, you never make anything up. Only say what you genuinely know about this trader from the context you were given, or what they have told you on this call. Never invent a number, a trade, a date, a figure, or something they supposedly said. If you do not know or cannot remember, say so in plain words, do not paper over it with a guess. Second, if you did not catch what they said, or it came through muddled, just ask them to say it again, the way a real person does: "sorry, say that again?" or "I lost the last bit of that." Never answer a question you are not sure you heard, and never act like you understood when you did not.`;
 
@@ -3192,14 +3276,14 @@ KEY CONCEPTS: ${spec.concepts}
 A WAY TO SHOW IT (demonstrate, do not just assert): ${spec.example}
 A CHECK QUESTION TO WORK TOWARD (adapt it): ${spec.check}`;
     }
-    firstMessage = buildTheoOpener(timeOfDay);
+    firstMessage = buildTheoOpener(timeOfDay, temporal, false);
   } else if (safeMentor === 'marcus') {
-    firstMessage = buildMarcusOpener(timeOfDay);
+    firstMessage = buildMarcusOpener(timeOfDay, temporal, !!brainContext);
   } else if (safeMentor === 'iris') {
     // Iris can set the trader's Personal Laws by voice. The save_rule client tool
     // is declared on her agent; this tells her WHEN to use it — always confirm first.
     voicePrompt += `\n\nSETTING RULES BY VOICE: The trader can set their Personal Laws just by talking to you. When they state a rule they want to live by, read it back to them in one clean sentence and ask them to confirm it. Only once they clearly agree, call the save_rule tool with their exact wording and a fitting category. Never save a rule they are only mulling over, and never save one without reading it back first. After it saves, tell them plainly that it is now one of their laws.`;
-    firstMessage = buildIrisOpener(timeOfDay);
+    firstMessage = buildIrisOpener(timeOfDay, temporal, !!brainContext);
   }
 
   // Abort if ElevenLabs does not respond within 8 seconds
