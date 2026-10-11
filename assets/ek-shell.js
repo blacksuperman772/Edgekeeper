@@ -13,13 +13,13 @@
   'use strict';
   if (w.EKShell) return;
 
-  var COLORS = { marcus: '#b8a06a', iris: '#6b8c6b', theo: '#6b82a0' };
+  var COLORS = { marcus: '#b8a06a', iris: '#6b8c6b', theo: '#b8a06a' };
   var MENTORS = [
     { key: 'marcus', label: 'Marcus · the day-to-day', href: '/workspace.html' },
     { key: 'theo',   label: 'Theo · the Academy',      href: '/my-academy' },
     { key: 'iris',   label: 'Iris · the Guardian',     href: '/chamber' },
   ];
-  var state = { mentor: 'iris', voice: {} };
+  var state = { mentor: 'iris', voice: {}, tools: null };
 
   function injectStyles() {
     if (document.getElementById('ek-shell-style')) return;
@@ -42,6 +42,9 @@
       '.eks-item{display:flex;align-items:center;gap:12px;padding:12px 22px;color:#b4bdb2;text-decoration:none;font-size:0.86rem;}',
       '.eks-item:hover{background:#10140f;color:#eef2ec;}',
       '.eks-item.on{color:#eef2ec;background:#10140f;}',
+      '.eks-tool{background:none;border:none;width:100%;text-align:left;cursor:pointer;font-family:var(--sans,Inter,sans-serif);font-size:0.84rem;color:#9aa69a;}',
+      '.eks-tool:hover{background:#10140f;color:#eef2ec;}',
+      '.eks-tool .eks-dot{background:var(--eks);opacity:.45;}',
       '.eks-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}',
       '.eks-foot{border-top:1px solid #141a14;padding:14px 18px;display:flex;align-items:center;gap:12px;text-decoration:none;}',
       '.eks-foot:hover{background:#10140f;}',
@@ -65,18 +68,34 @@
       return '<a class="eks-item' + (x.key === state.mentor ? ' on' : '') + '" href="' + x.href + '">' +
         '<span class="eks-dot" style="background:' + COLORS[x.key] + '"></span>' + esc(x.label) + '</a>';
     }).join('');
+    var toolsHtml = '';
+    if (state.tools && state.tools.items && state.tools.items.length) {
+      toolsHtml = '<div class="eks-sec" style="margin-top:4px">' + esc(state.tools.label || 'In this room') + '</div>'
+        + state.tools.items.map(function (t, i) {
+            return '<button class="eks-item eks-tool" data-i="' + i + '"><span class="eks-dot"></span>' + esc(t.l) + '</button>';
+          }).join('');
+    }
     m.innerHTML =
       '<div class="eks-top">' +
         '<a class="eks-logo" href="/edgekeeper.html">Edge<b>K</b>eeper</a>' +
         '<a class="eks-home" href="/edgekeeper.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>' +
       '</div>' +
-      '<div class="eks-mid"><div class="eks-sec">Your mentors</div>' + items + '</div>' +
+      '<div class="eks-mid"><div class="eks-sec">Your mentors</div>' + items + toolsHtml + '</div>' +
       '<a class="eks-foot" href="/profile.html">' +
         '<div class="eks-av" id="eks-av">·</div>' +
         '<div><div class="eks-nm" id="eks-nm">Account</div><div class="eks-pl" id="eks-pl"></div></div>' +
         '<span class="eks-gear" onclick="event.preventDefault();event.stopPropagation();location.href=\'/settings.html\'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H1a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 2.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H7a1.6 1.6 0 0 0 1-1.5V1a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8v.1a1.6 1.6 0 0 0 1.5 1H23a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg></span>' +
       '</a>';
     document.body.appendChild(m);
+    if (state.tools && state.tools.fn) {
+      m.querySelectorAll('.eks-tool').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var it = state.tools.items[+btn.dataset.i];
+          closeMenu();
+          try { if (typeof window[state.tools.fn] === 'function') window[state.tools.fn](it.a); } catch (e) {}
+        });
+      });
+    }
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMenu(); });
   }
 
@@ -84,7 +103,16 @@
   function closeMenu() { var m = document.getElementById('eks-menu'), s = document.getElementById('eks-scrim'); if (m) m.classList.remove('open'); if (s) s.classList.remove('open'); }
 
   w.EKShell = {
-    init: function (o) { o = o || {}; state.mentor = o.mentor || 'iris'; state.voice = o.voice || {}; injectStyles(); injectMenu(); },
+    init: function (o) {
+      o = o || {};
+      state.mentor = o.mentor || 'iris';
+      state.voice = o.voice || {};
+      state.tools = o.tools || null;
+      injectStyles();
+      var m = document.getElementById('eks-menu'); if (m) m.remove();
+      var s = document.getElementById('eks-scrim'); if (s) s.remove();
+      injectMenu();
+    },
     openMenu: openMenu,
     closeMenu: closeMenu,
     call: function () { if (w.EKVoice) w.EKVoice.start(Object.assign({ mentor: state.mentor }, state.voice)); },

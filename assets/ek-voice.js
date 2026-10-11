@@ -16,7 +16,7 @@
 
   var STYLE_ID = 'ek-voice-style';
   var NAMES  = { marcus: 'Marcus', iris: 'Iris', theo: 'Theo' };
-  var COLORS = { marcus: '#b8a06a', iris: '#6b8c6b', theo: '#6b82a0' };
+  var COLORS = { marcus: '#b8a06a', iris: '#6b8c6b', theo: '#b8a06a' };
   var state = { conv: null, phase: 'idle', seconds: 0, timer: null, endedByTimeout: false, muted: false, opts: null };
 
   function el(id) { return document.getElementById(id); }

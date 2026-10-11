@@ -361,11 +361,23 @@ function serveInjectedHtml(filePath) {
             + '.ek-call{display:flex;align-items:center;gap:7px;background:color-mix(in srgb,var(--accent,#b8a06a) 10%,transparent);border:1px solid var(--accent,#b8a06a);color:var(--accent,#b8a06a);font:500 .6rem "DM Mono",monospace;letter-spacing:.12em;text-transform:uppercase;padding:8px 13px;border-radius:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}'
             + '.ek-call svg{width:14px;height:14px}.ek-call:active{opacity:.7}';
 
+          // Fold each room's own nav into the ☰ menu: hide the redundant sidebar and
+          // give the chat the full width. Theo keeps his lesson panel; drop his old
+          // inline voice bar (the Call button in the bar replaces it).
+          if (mentorKey === 'iris') css += 'html.ek-app .shell{grid-template-columns:1fr!important}html.ek-app .side{display:none!important}';
+          else if (mentorKey === 'marcus') css += 'html.ek-app .workspace{grid-template-columns:1fr!important}html.ek-app .sidebar{display:none!important}';
+          else if (mentorKey === 'theo') css += 'html.ek-app #voice-bar,html.ek-app #voice-nav-btn{display:none!important}';
+
           html = html.replace(/<\/head>/i, '<style>' + css + '</style></head>');
 
           if (mentorKey) {
             const NAME   = { marcus: 'Marcus', iris: 'Iris', theo: 'Theo' }[mentorKey];
-            const ACCENT = { marcus: '#b8a06a', iris: '#6b8c6b', theo: '#6b82a0' }[mentorKey];
+            const ACCENT = { marcus: '#b8a06a', iris: '#6b8c6b', theo: '#b8a06a' }[mentorKey];
+            const TOOLS  = {
+              iris:   '{label:"The Guardian",fn:"openPanel",items:[{l:"Readings",a:"readings"},{l:"The account",a:"account"},{l:"Recent days",a:"trend"},{l:"How Iris responds",a:"ladder"},{l:"Your limits",a:"limits"}]}',
+              marcus: '{label:"The Office",fn:"showPanel",items:[{l:"Journal",a:"journal"},{l:"Rules",a:"rules"},{l:"Decision Passport",a:"passport"},{l:"Behavior Analytics",a:"analytics"},{l:"The Vault",a:"vault"},{l:"Mentor\\u2019s Read",a:"profile"},{l:"Messages",a:"messages"}]}',
+              theo:   '{label:"The Academy",fn:"toggleModulePanel",items:[{l:"Lessons",a:null}]}',
+            }[mentorKey];
             const scripts =
               '<script src="https://cdn.jsdelivr.net/npm/livekit-client@2.19.2/dist/livekit-client.umd.js" defer></script>'
               + '<script src="https://cdn.jsdelivr.net/npm/@11labs/client@0.2.0/dist/lib.umd.js" defer></script>'
@@ -374,10 +386,7 @@ function serveInjectedHtml(filePath) {
             html = html.replace(/<\/head>/i, scripts + '</head>');
 
             const bar = '<header class="ek-bar" style="--accent:' + ACCENT + '">'
-              + '<div class="ek-bar-l">'
               + '<button class="ek-ham" onclick="window.EKShell&&EKShell.openMenu()" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>'
-              + menuBtn
-              + '</div>'
               + '<button class="ek-call" onclick="window.EKShell&&EKShell.call()" aria-label="Call ' + NAME + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg> Call ' + NAME + '</button>'
               + '</header>';
 
@@ -386,7 +395,7 @@ function serveInjectedHtml(filePath) {
               : '';
             const initJs = '<script>'
               + 'function ekToast(m){var t=document.getElementById("ek-toast");if(!t){t=document.createElement("div");t.id="ek-toast";t.style.cssText="position:fixed;left:50%;bottom:30px;transform:translateX(-50%);z-index:9500;background:#0c0f0c;border:1px solid ' + ACCENT + ';color:#eef2ec;font:400 .82rem Inter,sans-serif;padding:13px 20px;max-width:88vw;border-radius:3px";document.body.appendChild(t);}t.textContent=m;clearTimeout(ekToast._t);ekToast._t=setTimeout(function(){t.remove();},4200);}'
-              + 'window.addEventListener("load",function(){if(!window.EKShell)return;var tools={};' + toolsJs + 'try{EKShell.init({mentor:"' + mentorKey + '",voice:{clientTools:tools}});}catch(e){}});'
+              + 'window.addEventListener("load",function(){if(!window.EKShell)return;var tools={};' + toolsJs + 'try{EKShell.init({mentor:"' + mentorKey + '",voice:{clientTools:tools},tools:' + TOOLS + '});}catch(e){}});'
               + '</script>';
             html = html.replace(/<\/body>/i, bar + initJs + PERF + '</body>');
           } else {
