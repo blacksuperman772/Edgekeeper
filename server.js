@@ -365,7 +365,7 @@ function serveInjectedHtml(filePath) {
           // give the chat the full width. Theo keeps his lesson panel; drop his old
           // inline voice bar (the Call button in the bar replaces it).
           if (mentorKey === 'iris') css += 'html.ek-app .shell{grid-template-columns:1fr!important}html.ek-app .side{display:none!important}';
-          else if (mentorKey === 'marcus') css += 'html.ek-app .workspace{grid-template-columns:1fr!important}html.ek-app .sidebar{display:none!important}';
+          else if (mentorKey === 'marcus') css += 'html.ek-app .workspace{grid-template-columns:1fr!important}html.ek-app .sidebar{display:none!important}html.ek-app #guardian-banner{display:none!important}';
           else if (mentorKey === 'theo') css += 'html.ek-app #voice-bar,html.ek-app #voice-nav-btn{display:none!important}';
 
           html = html.replace(/<\/head>/i, '<style>' + css + '</style></head>');
@@ -374,8 +374,8 @@ function serveInjectedHtml(filePath) {
             const NAME   = { marcus: 'Marcus', iris: 'Iris', theo: 'Theo' }[mentorKey];
             const ACCENT = { marcus: '#b8a06a', iris: '#6b8c6b', theo: '#b8a06a' }[mentorKey];
             const TOOLS  = {
-              iris:   '{label:"The Guardian",fn:"openPanel",items:[{l:"Readings",a:"readings",ic:"eye"},{l:"The account",a:"account",ic:"link"},{l:"Recent days",a:"trend",ic:"trend"},{l:"How Iris responds",a:"ladder",ic:"levels"},{l:"Your limits",a:"limits",ic:"shieldplain"}]}',
-              marcus: '{label:"The Office",fn:"showPanel",items:[{l:"Journal",a:"journal",ic:"book"},{l:"Rules",a:"rules",ic:"check"},{l:"Decision Passport",a:"passport",ic:"card"},{l:"Behavior Analytics",a:"analytics",ic:"chart"},{l:"The Vault",a:"vault",ic:"lock"},{l:"Mentor\\u2019s Read",a:"profile",ic:"person"},{l:"Messages",a:"messages",ic:"mail"}]}',
+              iris:   '{label:"The Guardian",fn:"openPanel",items:[{l:"Readings",a:"readings",ic:"eye"},{l:"The account",a:"account",ic:"link"},{l:"Recent days",a:"trend",ic:"trend"},{l:"How Iris responds",a:"ladder",ic:"levels"},{l:"Your limits",a:"limits",ic:"shieldplain"},{l:"Your laws",a:"rules",ic:"check"}]}',
+              marcus: '{label:"The Office",fn:"showPanel",items:[{l:"Journal",a:"journal",ic:"book"},{l:"Decision Passport",a:"passport",ic:"card"},{l:"Behavior Analytics",a:"analytics",ic:"chart"},{l:"The Vault",a:"vault",ic:"lock"},{l:"Mentor\\u2019s Read",a:"profile",ic:"person"},{l:"Messages",a:"messages",ic:"mail"}]}',
               theo:   '{label:"The Academy",fn:"toggleModulePanel",items:[{l:"Lessons",a:null,ic:"cap"}]}',
             }[mentorKey];
             // Cache-bust our own assets per deploy so a stale ek-shell/ek-voice is

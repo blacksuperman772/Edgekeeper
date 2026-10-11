@@ -199,6 +199,19 @@
     .g-btn.ghost:hover { border-color:var(--iris-dim); color:var(--text); }
     .g-btn.danger { background:none; border-color:rgba(168,90,74,0.4); color:var(--red); }
     .g-btn.danger:hover { background:rgba(168,90,74,0.08); }
+    /* Your laws */
+    .law-add { border:1px solid var(--border); border-radius:8px; padding:14px; margin-bottom:22px; }
+    .law-add textarea { width:100%; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:var(--sans); font-size:0.92rem; line-height:1.5; padding:11px 13px; resize:vertical; box-sizing:border-box; }
+    .law-add textarea:focus { outline:none; border-color:var(--iris-dim); }
+    .law-add-foot { display:flex; gap:10px; margin-top:11px; }
+    .law-add select { flex:1; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:var(--mono); font-size:0.6rem; letter-spacing:0.1em; text-transform:uppercase; padding:0 12px; }
+    .law-list { display:flex; flex-direction:column; gap:10px; }
+    .law-row { display:flex; align-items:flex-start; gap:12px; border:1px solid var(--border); border-radius:8px; padding:13px 14px; }
+    .law-main { flex:1; }
+    .law-text { color:var(--text); font-size:0.95rem; line-height:1.5; }
+    .law-cat { font-family:var(--mono); font-size:0.5rem; letter-spacing:0.18em; text-transform:uppercase; color:var(--faint); margin-top:6px; }
+    .law-del { background:none; border:none; color:var(--faint); font-size:1.3rem; line-height:1; cursor:pointer; padding:0 2px; }
+    .law-del:hover { color:var(--red); }
     .panel-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
 
     .trend { display:flex; align-items:flex-end; gap:5px; height:130px; padding-top:8px; }
@@ -280,6 +293,7 @@
         <button class="nav-item" data-panel="trend"><span class="nav-txt">Recent days</span><span class="nav-end"><svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></button>
         <button class="nav-item" data-panel="ladder"><span class="nav-txt">How Iris responds</span><span class="nav-end"><span class="nav-badge" id="badge-lvl">—</span><svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></button>
         <button class="nav-item" data-panel="limits"><span class="nav-txt">Your limits</span><span class="nav-end"><svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></button>
+        <button class="nav-item" data-panel="rules"><span class="nav-txt">Your laws</span><span class="nav-end"><svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></button>
       </nav>
       <div class="side-foot">
         Behavioural risk monitoring — not financial advice. By default Iris only watches and cannot act on your account. If you have explicitly consented to the Guardian lock, she may close open positions and cancel pending orders on a connected account when you breach your limits. She cannot prevent an order being sent to your broker, and cannot guarantee any loss is prevented. You can withdraw consent at any time, with immediate effect.
@@ -446,7 +460,7 @@
 
   // ── panels ──────────────────────────────────────────────────────────
   let currentPanel = null;
-  const PANEL_TITLES = { readings:'The readings', account:'The account', trend:'Recent days', ladder:'How Iris responds', limits:'Your limits' };
+  const PANEL_TITLES = { readings:'The readings', account:'The account', trend:'Recent days', ladder:'How Iris responds', limits:'Your limits', rules:'Your laws' };
 
   function panelHtml(kind, g) {
     const losses = g.consecutive_losses || 0;
@@ -489,6 +503,7 @@
         + '<div class="panel-actions"><a class="g-btn ghost" href="/integrations.html">Change account</a>'
         + '<button class="g-btn danger" id="g-disconnect">Disconnect</button></div>';
     }
+    if (kind === 'rules') return '<div id="rules-mount"><p class="panel-sub">Reading your laws…</p></div>';
     if (kind === 'trend') return '<div id="trend-mount"><div class="trend-empty">Reading her memory…</div></div>';
     if (kind === 'ladder') {
       const active = levelOf(g);
@@ -531,7 +546,7 @@
   }
 
   function openPanel(kind, keepScroll) {
-    if (!_g) return;
+    if (!_g && kind !== 'rules') return; // rules don't depend on a connected account
     currentPanel = kind;
     const body = document.getElementById('panel-body');
     const prev = keepScroll ? body.scrollTop : 0;
@@ -549,6 +564,7 @@
       });
     }
     if (kind === 'trend') loadTrend();
+    if (kind === 'rules') loadRules();
     if (kind === 'account') {
       const dc = document.getElementById('g-disconnect'); if (dc) dc.onclick = disconnectAccount;
     }
@@ -704,6 +720,58 @@
     if (!confirm('Disconnect this account? Iris stops watching until you reconnect.')) return;
     try { await fetch('/api/guardian/disconnect', { method:'POST', credentials:'include' }); } catch (_) {}
     location.reload();
+  }
+
+  // ── Your laws (Personal Laws / trading rules) ───────────────────────
+  // Iris owns the rulebook. Rules can be set here by hand, in text chat, or by
+  // voice (save_rule). The same /api/rules endpoints back all three.
+  const RULE_CATS = ['Risk', 'Volume', 'Timing', 'Discipline', 'Execution', 'Psychology', 'General'];
+  async function loadRules() {
+    const mount = document.getElementById('rules-mount');
+    if (!mount) return;
+    let rules = [];
+    try {
+      const r = await fetch('/api/rules', { credentials: 'include' });
+      if (r.status === 403) { mount.innerHTML = '<p class="panel-sub">Setting your own laws needs a Resident plan or above.</p>'; return; }
+      if (!r.ok) { mount.innerHTML = '<p class="panel-sub">Could not load your laws. Try again.</p>'; return; }
+      rules = ((await r.json()).rules || []).filter(x => x.is_active !== false);
+    } catch (_) { mount.innerHTML = '<p class="panel-sub">Could not load your laws. Try again.</p>'; return; }
+
+    const opts = RULE_CATS.map(c => '<option value="' + c + '">' + c + '</option>').join('');
+    const rows = rules.length
+      ? rules.map(r => '<div class="law-row" data-id="' + r.id + '">'
+          + '<div class="law-main"><div class="law-text">' + esc(r.rule_text) + '</div>'
+          + '<div class="law-cat">' + esc(r.category || 'General') + '</div></div>'
+          + '<button class="law-del" data-id="' + r.id + '" aria-label="Remove">&times;</button></div>').join('')
+      : '<p class="panel-sub" style="margin-top:14px">No laws yet. Write the first one, or set it by talking to Iris on a call.</p>';
+
+    mount.innerHTML =
+      '<p class="panel-sub">The lines you hold yourself to. Iris remembers these and holds you to them.</p>'
+      + '<div class="law-add"><textarea id="law-text" rows="2" placeholder="I will not add to a losing position."></textarea>'
+      + '<div class="law-add-foot"><select id="law-cat" class="guardian-input">' + opts + '</select>'
+      + '<button class="g-btn" id="law-save">Set as law</button></div></div>'
+      + '<div class="law-list">' + rows + '</div>';
+
+    document.getElementById('law-save').onclick = addRule;
+    mount.querySelectorAll('.law-del').forEach(b => { b.onclick = () => removeRule(b.dataset.id); });
+  }
+  async function addRule() {
+    const ta = document.getElementById('law-text');
+    const text = (ta.value || '').trim();
+    if (text.length < 5) { ta.focus(); return; }
+    const cat = document.getElementById('law-cat').value || 'General';
+    const btn = document.getElementById('law-save'); btn.disabled = true; btn.textContent = 'Setting…';
+    try {
+      const r = await fetch('/api/rules', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rule_text: text, category: cat, origin_mentor: 'self' }) });
+      if (!r.ok) { const e = await r.json().catch(() => ({})); chamberToast(e.error || 'Could not set that law.'); btn.disabled = false; btn.textContent = 'Set as law'; return; }
+      chamberToast('New law set'); loadRules();
+    } catch (_) { chamberToast('Could not set that law.'); btn.disabled = false; btn.textContent = 'Set as law'; }
+  }
+  async function removeRule(id) {
+    if (!confirm('Remove this law?')) return;
+    try { await fetch('/api/rules/' + id, { method: 'DELETE', credentials: 'include' }); } catch (_) {}
+    loadRules();
   }
 
   // ── chat ────────────────────────────────────────────────────────────
