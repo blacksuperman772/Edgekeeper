@@ -15,14 +15,15 @@
 
   var COLORS = { marcus: '#b8a06a', iris: '#6b8c6b', theo: '#b8a06a' };
   var MENTORS = [
-    { key: 'marcus', label: 'Marcus · the day-to-day', href: '/workspace.html' },
-    { key: 'theo',   label: 'Theo · the Academy',      href: '/my-academy' },
-    { key: 'iris',   label: 'Iris · the Guardian',     href: '/chamber' },
+    { key: 'marcus', label: 'Marcus', href: '/workspace.html' },
+    { key: 'theo',   label: 'Theo',   href: '/my-academy' },
+    { key: 'iris',   label: 'Iris',   href: '/chamber' },
   ];
   var state = { mentor: 'iris', voice: {}, tools: null };
 
   // Icon set — mentor glyphs match the home nav (Marcus ledger, Theo cap, Iris shield).
   var ICONS = {
+    home:   '<path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/>',
     ledger: '<rect x="4" y="5" width="16" height="14" rx="1"/><path d="M8 9h8M8 13h5"/>',
     cap:    '<path d="m3 9 9-5 9 5-9 5z"/><path d="M7 11v5c3 2 7 2 10 0v-5"/>',
     shield: '<path d="M12 3 20 7v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="m8.5 12 2.2 2.2 4.8-5"/>',
@@ -38,6 +39,7 @@
     lock:   '<rect x="4" y="10" width="16" height="11" rx="1"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
     person: '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/>',
     mail:   '<rect x="3" y="5" width="18" height="14" rx="1"/><path d="M3 6l9 7 9-7"/>',
+    gear:   '<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M5 5l1.8 1.8M17.2 17.2L19 19M3 12h2.5M18.5 12H21M5 19l1.8-1.8M17.2 6.8L19 5"/>',
     dot:    '<circle cx="12" cy="12" r="3.5"/>',
   };
   var MENTOR_ICON = { marcus: 'ledger', theo: 'cap', iris: 'shield' };
@@ -60,8 +62,8 @@
       '.eks-top{padding:20px 22px 14px;border-bottom:1px solid rgba(255,255,255,0.06);}',
       '.eks-logo{font-family:var(--serif,Georgia,serif);font-size:1.1rem;letter-spacing:0.2em;text-transform:uppercase;color:#eef2ec;text-decoration:none;display:block;}',
       '.eks-logo b{color:var(--eks);font-weight:500;}',
-      '.eks-home{display:flex;align-items:center;gap:11px;font-size:0.8rem;color:#9a9aa0;margin-top:14px;text-decoration:none;}',
-      '.eks-home:hover{color:#eef2ec;} .eks-home svg{width:15px;height:15px;opacity:.7;}',
+      '.eks-home{display:flex;align-items:center;gap:12px;font-size:0.86rem;color:#9a9aa0;margin-top:16px;text-decoration:none;}',
+      '.eks-home:hover{color:#eef2ec;}',
       '.eks-mid{flex:1;padding:14px 0;overflow-y:auto;}',
       '.eks-sec{font-family:var(--mono,monospace);font-size:0.5rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.3);padding:10px 22px 8px;}',
       '.eks-item{display:flex;align-items:center;gap:12px;padding:12px 22px;color:#b7b7bd;text-decoration:none;font-size:0.86rem;}',
@@ -106,13 +108,13 @@
     m.innerHTML =
       '<div class="eks-top">' +
         '<a class="eks-logo" href="/app">Edge<b>K</b>eeper</a>' +
-        '<a class="eks-home" href="/app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>' +
+        '<a class="eks-home" href="/app">' + icon('home') + '<span>Home</span></a>' +
       '</div>' +
       '<div class="eks-mid"><div class="eks-sec">Your mentors</div>' + items + toolsHtml + '</div>' +
       '<a class="eks-foot" href="/profile.html">' +
         '<div class="eks-av" id="eks-av">·</div>' +
         '<div><div class="eks-nm" id="eks-nm">Account</div><div class="eks-pl" id="eks-pl"></div></div>' +
-        '<span class="eks-gear" onclick="event.preventDefault();event.stopPropagation();location.href=\'/settings.html\'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H1a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 2.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H7a1.6 1.6 0 0 0 1-1.5V1a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8v.1a1.6 1.6 0 0 0 1.5 1H23a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg></span>' +
+        '<span class="eks-gear" onclick="event.preventDefault();event.stopPropagation();location.href=\'/settings.html\'">' + icon('gear') + '</span>' +
       '</a>';
     document.body.appendChild(m);
     if (state.tools && state.tools.fn) {
