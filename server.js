@@ -374,9 +374,9 @@ function serveInjectedHtml(filePath) {
             const NAME   = { marcus: 'Marcus', iris: 'Iris', theo: 'Theo' }[mentorKey];
             const ACCENT = { marcus: '#b8a06a', iris: '#6b8c6b', theo: '#b8a06a' }[mentorKey];
             const TOOLS  = {
-              iris:   '{label:"The Guardian",fn:"openPanel",items:[{l:"Readings",a:"readings"},{l:"The account",a:"account"},{l:"Recent days",a:"trend"},{l:"How Iris responds",a:"ladder"},{l:"Your limits",a:"limits"}]}',
-              marcus: '{label:"The Office",fn:"showPanel",items:[{l:"Journal",a:"journal"},{l:"Rules",a:"rules"},{l:"Decision Passport",a:"passport"},{l:"Behavior Analytics",a:"analytics"},{l:"The Vault",a:"vault"},{l:"Mentor\\u2019s Read",a:"profile"},{l:"Messages",a:"messages"}]}',
-              theo:   '{label:"The Academy",fn:"toggleModulePanel",items:[{l:"Lessons",a:null}]}',
+              iris:   '{label:"The Guardian",fn:"openPanel",items:[{l:"Readings",a:"readings",ic:"eye"},{l:"The account",a:"account",ic:"link"},{l:"Recent days",a:"trend",ic:"trend"},{l:"How Iris responds",a:"ladder",ic:"levels"},{l:"Your limits",a:"limits",ic:"shieldplain"}]}',
+              marcus: '{label:"The Office",fn:"showPanel",items:[{l:"Journal",a:"journal",ic:"book"},{l:"Rules",a:"rules",ic:"check"},{l:"Decision Passport",a:"passport",ic:"card"},{l:"Behavior Analytics",a:"analytics",ic:"chart"},{l:"The Vault",a:"vault",ic:"lock"},{l:"Mentor\\u2019s Read",a:"profile",ic:"person"},{l:"Messages",a:"messages",ic:"mail"}]}',
+              theo:   '{label:"The Academy",fn:"toggleModulePanel",items:[{l:"Lessons",a:null,ic:"cap"}]}',
             }[mentorKey];
             // Cache-bust our own assets per deploy so a stale ek-shell/ek-voice is
             // never served from the browser's 1h cache after a fix ships.

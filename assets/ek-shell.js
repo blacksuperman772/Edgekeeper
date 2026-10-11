@@ -21,6 +21,30 @@
   ];
   var state = { mentor: 'iris', voice: {}, tools: null };
 
+  // Icon set — mentor glyphs match the home nav (Marcus ledger, Theo cap, Iris shield).
+  var ICONS = {
+    ledger: '<rect x="4" y="5" width="16" height="14" rx="1"/><path d="M8 9h8M8 13h5"/>',
+    cap:    '<path d="m3 9 9-5 9 5-9 5z"/><path d="M7 11v5c3 2 7 2 10 0v-5"/>',
+    shield: '<path d="M12 3 20 7v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="m8.5 12 2.2 2.2 4.8-5"/>',
+    shieldplain: '<path d="M12 3 20 7v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/>',
+    eye:    '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+    link:   '<path d="M9 15l6-6"/><path d="M11 6l1-1a4 4 0 0 1 5 5l-1 1"/><path d="M13 18l-1 1a4 4 0 0 1-5-5l1-1"/>',
+    trend:  '<path d="M4 17l5-5 3 3 7-8"/>',
+    levels: '<path d="M5 19V9M11 19V5M17 19v-6"/>',
+    book:   '<rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 8h6M9 12h4"/>',
+    check:  '<path d="M5 7l2 2 4-4M5 15l2 2 4-4"/><path d="M14 7h5M14 17h5"/>',
+    card:   '<rect x="4" y="4" width="16" height="16" rx="1"/><circle cx="12" cy="10" r="2.5"/><path d="M8 17c0-2 8-2 8 0"/>',
+    chart:  '<path d="M4 18l5-5 3 3 7-8"/>',
+    lock:   '<rect x="4" y="10" width="16" height="11" rx="1"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+    person: '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/>',
+    mail:   '<rect x="3" y="5" width="18" height="14" rx="1"/><path d="M3 6l9 7 9-7"/>',
+    dot:    '<circle cx="12" cy="12" r="3.5"/>',
+  };
+  var MENTOR_ICON = { marcus: 'ledger', theo: 'cap', iris: 'shield' };
+  function icon(key) {
+    return '<svg class="eks-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[key] || ICONS.dot) + '</svg>';
+  }
+
   function injectStyles() {
     if (document.getElementById('ek-shell-style')) return;
     var s = document.createElement('style');
@@ -28,10 +52,10 @@
     s.textContent = [
       '#eks-scrim{position:fixed;inset:0;z-index:10000;background:rgba(3,4,3,0.6);opacity:0;pointer-events:none;transition:opacity .25s;}',
       '#eks-scrim.open{opacity:1;pointer-events:auto;}',
-      '#eks-menu{--eks:#6b8c6b;position:fixed;top:0;left:0;bottom:0;z-index:10001;width:278px;max-width:86vw;background:#0c0f0c;border-right:1px solid #1a201a;',
+      '#eks-menu{--eks:#6b8c6b;box-sizing:border-box;position:fixed;top:0;left:0;bottom:0;z-index:10001;width:278px;max-width:86vw;overflow:hidden;overscroll-behavior:contain;background:#0c0f0c;border-right:1px solid #1a201a;',
       'display:flex;flex-direction:column;transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);font-family:var(--sans,Inter,sans-serif);}',
       '#eks-menu.open{transform:translateX(0);}',
-      '@media (max-width:640px){#eks-menu{width:100%;max-width:100%;}}',
+      '@media (max-width:640px){#eks-menu{width:100%;max-width:100%;border-right:none;}}',
       '.eks-top{padding:20px 22px 14px;border-bottom:1px solid #141a14;}',
       '.eks-logo{font-family:var(--serif,Georgia,serif);font-size:1.1rem;letter-spacing:0.2em;text-transform:uppercase;color:#eef2ec;text-decoration:none;display:block;}',
       '.eks-logo b{color:var(--eks);font-weight:500;}',
@@ -46,6 +70,8 @@
       '.eks-tool:hover{background:#10140f;color:#eef2ec;}',
       '.eks-tool .eks-dot{background:var(--eks);opacity:.45;}',
       '.eks-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}',
+      '.eks-ic{width:17px;height:17px;flex-shrink:0;opacity:.72;}',
+      '.eks-item.on .eks-ic,.eks-item:hover .eks-ic{opacity:.95;}',
       '.eks-foot{border-top:1px solid #141a14;padding:14px 18px;display:flex;align-items:center;gap:12px;text-decoration:none;}',
       '.eks-foot:hover{background:#10140f;}',
       '.eks-av{width:34px;height:34px;border-radius:50%;border:1px solid #273027;background:radial-gradient(circle at 35% 30%,#2a332a,#12170f);display:flex;align-items:center;justify-content:center;font-family:var(--serif,Georgia,serif);color:#9aa69a;font-size:0.9rem;flex-shrink:0;}',
@@ -68,19 +94,19 @@
     m.style.setProperty('--eks', COLORS[state.mentor] || '#6b8c6b');
     var items = MENTORS.map(function (x) {
       return '<a class="eks-item' + (x.key === state.mentor ? ' on' : '') + '" href="' + x.href + '">' +
-        '<span class="eks-dot" style="background:' + COLORS[x.key] + '"></span>' + esc(x.label) + '</a>';
+        icon(MENTOR_ICON[x.key]) + esc(x.label) + '</a>';
     }).join('');
     var toolsHtml = '';
     if (state.tools && state.tools.items && state.tools.items.length) {
       toolsHtml = '<div class="eks-sec" style="margin-top:4px">' + esc(state.tools.label || 'In this room') + '</div>'
         + state.tools.items.map(function (t, i) {
-            return '<button class="eks-item eks-tool" data-i="' + i + '"><span class="eks-dot"></span>' + esc(t.l) + '</button>';
+            return '<button class="eks-item eks-tool" data-i="' + i + '">' + icon(t.ic) + esc(t.l) + '</button>';
           }).join('');
     }
     m.innerHTML =
       '<div class="eks-top">' +
-        '<a class="eks-logo" href="/edgekeeper.html">Edge<b>K</b>eeper</a>' +
-        '<a class="eks-home" href="/edgekeeper.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>' +
+        '<a class="eks-logo" href="/app">Edge<b>K</b>eeper</a>' +
+        '<a class="eks-home" href="/app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home</a>' +
       '</div>' +
       '<div class="eks-mid"><div class="eks-sec">Your mentors</div>' + items + toolsHtml + '</div>' +
       '<a class="eks-foot" href="/profile.html">' +
