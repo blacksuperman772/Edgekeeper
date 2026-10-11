@@ -252,7 +252,7 @@ function serveInjectedHtml(filePath) {
       // Home. So on any core app page, set the cookie and treat this render as app mode
       // too, so the nav is identical everywhere once you're signed in. Marketing/auth
       // pages are deliberately excluded and keep the website chrome.
-      const CORE_APP_PAGE = /(?:workspace|chamber|study|settings|profile|reports|reviews|integrations|network|research|assessment|academy|academy-onboarding|onboarding)\.html$/;
+      const CORE_APP_PAGE = /(?:workspace|chamber|study|settings|profile|reports|reviews|integrations|network|research|assessment|academy|academy-onboarding|onboarding|more)\.html$/;
       let isAppMode = req.cookies?.ek_app === '1' && req.user && !filePath.endsWith('app.html');
       if (!isAppMode && req.user && CORE_APP_PAGE.test(filePath)) {
         res.cookie('ek_app', '1', { path: '/', sameSite: 'lax', maxAge: 365 * 24 * 60 * 60 * 1000 });
@@ -432,7 +432,7 @@ function serveInjectedHtml(filePath) {
             + '<a href="/workspace.html" class="ek-nav-marcus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg>Marcus</a>'
             + '<a href="/my-academy" class="ek-nav-theo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m3 10 9-5 9 5-9 5z"/><path d="M7 12v5c3 2 7 2 10 0v-5"/></svg>Theo</a>'
             + '<a href="/chamber" class="ek-nav-iris"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3 20 7v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg>Iris</a>'
-            + '<button class="ek-nav-more" onclick="document.getElementById(\'ek-mo\').classList.add(\'ek-show\');document.getElementById(\'ek-ms\').classList.add(\'ek-show\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>More</button>'
+            + '<a href="/more" class="ek-nav-more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>More</a>'
             + '</nav>'
             + '<div id="ek-mo" class="ek-mo" onclick="this.classList.remove(\'ek-show\');document.getElementById(\'ek-ms\').classList.remove(\'ek-show\')"></div>'
             + '<div id="ek-ms" class="ek-ms"><div class="ek-ms-g"></div>'
@@ -1133,6 +1133,7 @@ app.get('/profile',          requireAuthPage, (req, res) => res.redirect('/profi
 app.get('/workspace.html', requireAuthPage, serveInjectedHtml(path.join(__dirname, 'workspace.html')));
 app.get('/settings.html',    requireAuthPage, serveInjectedHtml(path.join(__dirname, 'settings.html')));
 app.get('/settings',         (req, res) => res.redirect('/settings.html'));
+app.get(['/more', '/more.html'], requireAuthPage, serveInjectedHtml(path.join(__dirname, 'more.html')));
 app.get('/assessment.html',  requireAuthPage, serveInjectedHtml(path.join(__dirname, 'assessment.html')));
 app.get('/academy.html',              (req, res) => res.redirect(301, '/my-academy'));
 // Academy onboarding is intentionally public — new users arrive before signup
