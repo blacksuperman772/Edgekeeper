@@ -393,13 +393,10 @@ function serveInjectedHtml(filePath) {
               + '<button class="ek-call" onclick="window.EKShell&&EKShell.call()" aria-label="Call ' + NAME + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg> Call ' + NAME + '</button>'
               + '</header>';
 
-            // save_rule is available by voice to both rule-owning mentors. The
-            // handler is identical; only the origin tag differs. (The matching
-            // tool must also be declared on each mentor's ElevenLabs agent, or
-            // the agent simply never calls it — wiring it here is harmless.)
-            const ruleOrigin = { iris: 'ashley', marcus: 'mike' }[mentorKey];
-            const toolsJs = ruleOrigin
-              ? 'tools={save_rule:async function(a){try{var r=await fetch("/api/rules",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({rule_text:a.rule_text,category:a.category||"General",rationale:a.rationale||null,origin_mentor:"' + ruleOrigin + '"})});if(r.status===403)return "Setting personal laws needs a Resident plan or above.";if(!r.ok){var e=await r.json().catch(function(){return{};});return "I could not save that: "+(e.error||"try again");}window.ekToast&&ekToast("New law set");return "Done. That is law now.";}catch(_){return "Something went wrong saving that.";}}};'
+            // save_rule is Iris's tool only — she owns the Guardian / Personal
+            // Laws. The other mentors do not set rules.
+            const toolsJs = mentorKey === 'iris'
+              ? 'tools={save_rule:async function(a){try{var r=await fetch("/api/rules",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({rule_text:a.rule_text,category:a.category||"General",rationale:a.rationale||null,origin_mentor:"ashley"})});if(r.status===403)return "Setting personal laws needs a Resident plan or above.";if(!r.ok){var e=await r.json().catch(function(){return{};});return "I could not save that: "+(e.error||"try again");}window.ekToast&&ekToast("New law set");return "Done. That is law now.";}catch(_){return "Something went wrong saving that.";}}};'
               : '';
             const initJs = '<script>'
               + 'function ekToast(m){var t=document.getElementById("ek-toast");if(!t){t=document.createElement("div");t.id="ek-toast";t.style.cssText="position:fixed;left:50%;bottom:30px;transform:translateX(-50%);z-index:9500;background:#0c0f0c;border:1px solid ' + ACCENT + ';color:#eef2ec;font:400 .82rem Inter,sans-serif;padding:13px 20px;max-width:88vw;border-radius:3px";document.body.appendChild(t);}t.textContent=m;clearTimeout(ekToast._t);ekToast._t=setTimeout(function(){t.remove();},4200);}'
@@ -3304,7 +3301,6 @@ A CHECK QUESTION TO WORK TOWARD (adapt it): ${spec.check}`;
     }
     firstMessage = buildTheoOpener(timeOfDay, temporal, false);
   } else if (safeMentor === 'marcus') {
-    voicePrompt += `\n\nSETTING RULES BY VOICE: The trader can set their trading rules just by talking to you. When they state a rule they want to hold themselves to, read it back in one clean sentence and ask them to confirm it. Only once they clearly agree, call the save_rule tool with their exact wording and a fitting category. Never save a rule they are only thinking out loud about, and never save one without reading it back first. After it saves, tell them plainly that it is set.`;
     firstMessage = buildMarcusOpener(timeOfDay, temporal, !!brainContext);
   } else if (safeMentor === 'iris') {
     // Iris can set the trader's Personal Laws by voice. The save_rule client tool
