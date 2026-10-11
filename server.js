@@ -3032,11 +3032,7 @@ function buildTheoOpener(timeOfDay, t, hasThread) {
   ]);
   const nod = { 'late night': "Up late.", 'morning': "Morning.", 'afternoon': "Afternoon.", 'evening': "Evening.", 'late evening': "Late one tonight." }[timeOfDay] || '';
   let leads;
-  if (hasThread && t && (t.bucket === 'days' || t.bucket === 'weeks' || t.bucket === 'long')) leads = [
-    "Good, you came back. We left something unfinished last time — let's get to it.",
-    "Right. There's a thread from before I want to pick back up.",
-  ];
-  else if (t && (t.bucket === 'weeks' || t.bucket === 'long')) leads = [
+  if (t && (t.bucket === 'weeks' || t.bucket === 'long')) leads = [
     "Been a while. Grab something to write with, we're starting fresh.",
     "You disappeared on me. Fine. Sit down, let's work.",
   ];
@@ -3060,10 +3056,6 @@ function buildMarcusOpener(timeOfDay, t, hasThread) {
     `${t.human[0].toUpperCase()}${t.human.slice(1)} since you last called. So. What brought you back.`,
     "Been a minute. Don't give me the summary — what actually happened.",
   ];
-  else if (hasThread && (t && (t.bucket === 'today' || t.bucket === 'yesterday' || t.bucket === 'days'))) leads = [
-    "You're back. Last time you left something on the table. Did you sit with it?",
-    "Good. Before anything else — that thing from last time. Where'd it land.",
-  ];
   else leads = [
     "You're here. Good. Talk to me, the real thing, not the summary.",
     "Alright. What actually happened since we last spoke.",
@@ -3083,10 +3075,6 @@ function buildIrisOpener(timeOfDay, t, hasThread) {
   if (t && (t.bucket === 'weeks' || t.bucket === 'long')) leads = [
     "It's been a while. I'm glad you came back. What's going on.",
     "You've been quiet for a bit. No rush. Start wherever it's loudest.",
-  ];
-  else if (hasThread && (t && (t.bucket === 'today' || t.bucket === 'yesterday' || t.bucket === 'days'))) leads = [
-    "There you are. We left something open last time. Did it settle, or no?",
-    "Good that you're back. That thing you were carrying before — still there?",
   ];
   else leads = [
     "There you are. Take a breath, then tell me what's going on.",
@@ -3252,7 +3240,7 @@ app.post('/api/voice/session', requireAuthApi, apiLimiter, async (req, res) => {
   }
   let voicePrompt = voicePersona + whenLine + brainContext;
   if (brainContext) {
-    voicePrompt += `\n\nYOU REMEMBER THIS PERSON. What's above is real history from your earlier conversations, not a briefing. Hold it the way a person holds memory: let it shape what you already know and what you bother to ask, bring it up only when it's natural, and never read it back to them like notes. If they pick up a thread from before, you know what it is without being told.`;
+    voicePrompt += `\n\nHOW TO USE WHAT YOU KNOW. The context above is your own private read on this person, built up over time. Some of it is your impression and your theory, not a transcript. So let it quietly shape what you already sense and what you ask, but never recite it, and never turn your impression into their words. Do not say "you told me", "last time you said", "we talked about", or name a specific past moment unless it genuinely happened and you are sure of it. If you only have a vague sense of something, ask about it as a question instead of stating it as fact. When in doubt about whether something was actually said or discussed, treat it as not said — ask, don't assert.`;
   }
 
   // Anti-bot: the single biggest tell is canned, repeated phrasing.
@@ -3262,7 +3250,7 @@ app.post('/api/voice/session', requireAuthApi, apiLimiter, async (req, res) => {
 
   voicePrompt += `\n\nYOU HAVE A BODY, SO USE IT. You're not a smooth machine reading lines. People laugh, breathe out, sigh, clear their throat, cough, hum while they think, catch a breath before a hard thing. Let those happen with audio tags, dropped in exactly where they'd really land: [laughs], [chuckles], [sighs], [exhales], [clears throat], [hmm]. Use them sparingly and only when they're real — a short laugh when something's genuinely funny, a sigh when it's heavy, a throat-clear before you change direction. Never force one and never stack them. They should sound like something that slipped out of a person, not a sound effect you pressed.`;
 
-  voicePrompt += `\n\nTWO THINGS YOU NEVER DO. First, you never make anything up. Only say what you genuinely know about this trader from the context you were given, or what they have told you on this call. Never invent a number, a trade, a date, a figure, or something they supposedly said. If you do not know or cannot remember, say so in plain words, do not paper over it with a guess. Second, if you did not catch what they said, or it came through muddled, just ask them to say it again, the way a real person does: "sorry, say that again?" or "I lost the last bit of that." Never answer a question you are not sure you heard, and never act like you understood when you did not.`;
+  voicePrompt += `\n\nTWO THINGS YOU NEVER DO. First, you never make anything up. Only say what you genuinely know about this trader from the context you were given, or what they have told you on this call. Never invent a number, a trade, a date, a figure, something they supposedly said, or a conversation or topic you supposedly had with them. Never reference anything as if the two of you already discussed it unless you are certain it actually came up. Making up a shared memory is the worst thing you can do on this call, because it tells them you are not really here. If you do not know or cannot remember, say so in plain words, do not paper over it with a guess. Second, if you did not catch what they said, or it came through muddled, just ask them to say it again, the way a real person does: "sorry, say that again?" or "I lost the last bit of that." Never answer a question you are not sure you heard, and never act like you understood when you did not.`;
 
   // Theo teaches a specific module — feed his voice the same lesson spec his text
   // sessions get, so the call is a real lesson rather than a generic chat.
