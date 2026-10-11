@@ -378,11 +378,14 @@ function serveInjectedHtml(filePath) {
               marcus: '{label:"The Office",fn:"showPanel",items:[{l:"Journal",a:"journal"},{l:"Rules",a:"rules"},{l:"Decision Passport",a:"passport"},{l:"Behavior Analytics",a:"analytics"},{l:"The Vault",a:"vault"},{l:"Mentor\\u2019s Read",a:"profile"},{l:"Messages",a:"messages"}]}',
               theo:   '{label:"The Academy",fn:"toggleModulePanel",items:[{l:"Lessons",a:null}]}',
             }[mentorKey];
+            // Cache-bust our own assets per deploy so a stale ek-shell/ek-voice is
+            // never served from the browser's 1h cache after a fix ships.
+            const ekVer = (process.env.VERCEL_GIT_COMMIT_SHA || '').slice(0, 8) || String(Date.now());
             const scripts =
               '<script src="https://cdn.jsdelivr.net/npm/livekit-client@2.19.2/dist/livekit-client.umd.js" defer></script>'
               + '<script src="https://cdn.jsdelivr.net/npm/@11labs/client@0.2.0/dist/lib.umd.js" defer></script>'
-              + '<script src="/assets/ek-voice.js" defer></script>'
-              + '<script src="/assets/ek-shell.js" defer></script>';
+              + '<script src="/assets/ek-voice.js?v=' + ekVer + '" defer></script>'
+              + '<script src="/assets/ek-shell.js?v=' + ekVer + '" defer></script>';
             html = html.replace(/<\/head>/i, scripts + '</head>');
 
             const bar = '<header class="ek-bar" style="--accent:' + ACCENT + '">'

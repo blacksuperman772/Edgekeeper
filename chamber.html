@@ -10,11 +10,8 @@
   <link rel="stylesheet" href="/assets/shared.css" />
   <script src="/assets/analytics.js" defer></script>
   <script src="/assets/pillars.js" defer></script>
-  <!-- In-app voice (ElevenLabs Conversational AI) — same build Marcus's Office uses -->
-  <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.19.2/dist/livekit-client.umd.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/@11labs/client@0.2.0/dist/lib.umd.js" defer></script>
-  <script src="/assets/ek-voice.js" defer></script>
-  <script src="/assets/ek-shell.js" defer></script>
+  <!-- The voice + shell scripts are injected server-side (app mode), cache-busted
+       per deploy. Not loaded here, so a stale cached copy can't win the guard. -->
   <style>
     :root {
       --black:#040504; --stone:#0c0f0c; --surface:#10140f; --border:#1a201a;
