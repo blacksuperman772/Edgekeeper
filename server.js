@@ -5487,10 +5487,12 @@ app.get('/api/analytics', requireAuthApi, apiLimiter, async (req, res) => {
 
 // GET /api/messages — fetch unread mentor messages
 app.get('/api/messages', requireAuthApi, apiLimiter, async (req, res) => {
-  const { data, error } = await supabaseAdmin
+  let query = supabaseAdmin
     .from('mentor_messages')
     .select('*')
-    .eq('user_id', req.user.id)
+    .eq('user_id', req.user.id);
+  if (req.query.unread === '1') query = query.is('read_at', null);  // home "Recent" asks for unread only
+  const { data, error } = await query
     .order('created_at', { ascending: false })
     .limit(20);
   if (error) return res.status(500).json({ error: 'Database error' });
@@ -5686,10 +5688,12 @@ async function runProactiveOutreach() {
         .limit(1)
         .maybeSingle();
 
+      // No message history means the trader has never started — they are not
+      // "inactive", so never send a "you've been away N days" nudge (that was the
+      // source of fabricated "away 999 days" outreach). Reach them only on a real gap.
       const lastActivity = usage?.updated_at ? new Date(usage.updated_at) : null;
-      const daysSinceActivity = lastActivity
-        ? Math.floor((Date.now() - lastActivity.getTime()) / 86400000)
-        : 999;
+      if (!lastActivity) continue;
+      const daysSinceActivity = Math.floor((Date.now() - lastActivity.getTime()) / 86400000);
 
       if (daysSinceActivity < 2) continue;
 
