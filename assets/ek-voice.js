@@ -26,12 +26,10 @@
     var s = document.createElement('style');
     s.id = STYLE_ID;
     s.textContent = [
-      '#ekv{--ekv:#6b8c6b;position:fixed;inset:0;z-index:9000;display:none;flex-direction:column;align-items:center;justify-content:center;',
+      // Above the top bar (9999) and menu (10001) so the call view covers "Call [mentor]".
+      '#ekv{--ekv:#6b8c6b;position:fixed;inset:0;z-index:10050;display:none;flex-direction:column;align-items:center;justify-content:center;',
       "background:radial-gradient(ellipse 72% 56% at 50% 40%, color-mix(in srgb,var(--ekv) 12%,#060806) 0%, #060806 70%);font-family:var(--sans,Inter,sans-serif);}",
       '#ekv.active{display:flex;}',
-      '#ekv-back{position:absolute;top:0;left:0;height:56px;display:flex;align-items:center;gap:9px;padding:0 18px;',
-      'color:var(--faint,#7d8a7c);font-family:var(--mono,monospace);font-size:0.58rem;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;background:none;border:none;}',
-      '#ekv-back:hover{color:var(--ekv);} #ekv-back svg{width:15px;height:15px;}',
       '#ekv-orb{width:150px;height:150px;border-radius:50%;margin-bottom:34px;',
       'background:radial-gradient(circle at 42% 38%, color-mix(in srgb,var(--ekv) 55%,#fff), var(--ekv) 55%, color-mix(in srgb,var(--ekv) 40%,#000) 100%);',
       'box-shadow:0 0 60px color-mix(in srgb,var(--ekv) 45%,transparent),0 0 120px color-mix(in srgb,var(--ekv) 18%,transparent);transition:transform .3s ease;}',
@@ -57,7 +55,6 @@
     var v = document.createElement('div');
     v.id = 'ekv';
     v.innerHTML =
-      '<button id="ekv-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back to chat</button>' +
       '<div id="ekv-orb"></div>' +
       '<div id="ekv-name"></div>' +
       '<div id="ekv-status">Connecting…</div>' +
@@ -68,7 +65,6 @@
         '<button id="ekv-end" title="End call"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.6 13.6a1 1 0 0 1-.3-1.2C4.9 8.9 8.2 6.5 12 6.5s7.1 2.4 8.7 5.9a1 1 0 0 1-.3 1.2l-2.4 1.8a1 1 0 0 1-1.3-.1l-1.6-1.6a1 1 0 0 1-.2-1.1c.1-.3.2-.6.2-.8-1-.4-2-.6-3.1-.6s-2.1.2-3.1.6c0 .2.1.5.2.8a1 1 0 0 1-.2 1.1L7 15.3a1 1 0 0 1-1.3.1z"/></svg></button>' +
       '</div>';
     document.body.appendChild(v);
-    el('ekv-back').onclick = end;
     el('ekv-end').onclick = end;
     el('ekv-mute').onclick = toggleMute;
   }
