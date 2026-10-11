@@ -277,11 +277,38 @@
             return p.length ? "Live standing: " + p.join(", ") + "." : "The account's connected but nothing stands out right now.";
           } catch (_) { return "Couldn't reach the Guardian right now."; }
         },
+        set_limit: async function (a) {
+          // Reads current limits, applies the one change, writes the full set
+          // back (the endpoint replaces all fields at once). Confirm-first is
+          // enforced by the agent prompt; this just does the merge safely.
+          try {
+            var FIELDS = { per_trade: 'risk_per_trade_pct', daily_loss: 'risk_max_daily_loss_pct', drawdown: 'risk_max_drawdown_pct', loss_streak: 'risk_max_loss_streak', max_lots: 'risk_max_lots' };
+            var key = FIELDS[(a && a.field)];
+            if (!key) return "I'm not sure which limit you mean — daily loss, drawdown, losing streak, per-trade risk, or max lots?";
+            var cur = await getJSON('/api/guardian/limits');
+            if (cur.status === 403) return "Custom limits are a Fellow-plan feature.";
+            if (!cur.ok) return "Couldn't read their current limits to change them.";
+            var L = cur.data.limits || {};
+            var body = {
+              risk_per_trade_pct: L.risk_per_trade_pct, risk_per_trade_mode: L.risk_per_trade_mode || 'pct',
+              risk_max_daily_loss_pct: L.risk_max_daily_loss_pct, risk_max_daily_loss_mode: L.risk_max_daily_loss_mode || 'pct',
+              risk_max_drawdown_pct: L.risk_max_drawdown_pct, risk_max_drawdown_mode: L.risk_max_drawdown_mode || 'pct',
+              risk_max_loss_streak: L.risk_max_loss_streak, risk_max_lots: L.risk_max_lots,
+            };
+            var v = (a && a.value);
+            body[key] = (v === null || v === '' || v === undefined) ? null : Number(v);
+            if ((a && a.mode) && /_pct$/.test(key)) body[key.replace('_pct', '_mode')] = (a.mode === 'amt' ? 'amt' : 'pct');
+            var r = await fetch('/api/guardian/limits', { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            if (r.status === 403) return "Custom limits are a Fellow-plan feature.";
+            if (r.status === 423) return "Their rules are locked right now — they can tighten a limit but not loosen one until the cooldown ends.";
+            if (!r.ok) { var e = await r.json().catch(function () { return {}; }); return "Couldn't set that: " + (e.error || "it was out of range"); }
+            toast('Limit updated'); return "Done — that limit is set now, and it locks for 24 hours.";
+          } catch (_) { return "Something went wrong setting that."; }
+        },
       };
     },
     marcus: function () {
       return {
-        read_my_rules: readRules,
         add_journal_entry: async function (a) {
           try {
             var text = ((a && a.entry_text) || '').trim();
