@@ -393,8 +393,13 @@ function serveInjectedHtml(filePath) {
               + '<button class="ek-call" onclick="window.EKShell&&EKShell.call()" aria-label="Call ' + NAME + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg> Call ' + NAME + '</button>'
               + '</header>';
 
-            const toolsJs = mentorKey === 'iris'
-              ? 'tools={save_rule:async function(a){try{var r=await fetch("/api/rules",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({rule_text:a.rule_text,category:a.category||"General",rationale:a.rationale||null,origin_mentor:"ashley"})});if(r.status===403)return "Setting personal laws needs a Resident plan or above.";if(!r.ok){var e=await r.json().catch(function(){return{};});return "I could not save that: "+(e.error||"try again");}window.ekToast&&ekToast("New law set");return "Done. That is law now.";}catch(_){return "Something went wrong saving that.";}}};'
+            // save_rule is available by voice to both rule-owning mentors. The
+            // handler is identical; only the origin tag differs. (The matching
+            // tool must also be declared on each mentor's ElevenLabs agent, or
+            // the agent simply never calls it — wiring it here is harmless.)
+            const ruleOrigin = { iris: 'ashley', marcus: 'mike' }[mentorKey];
+            const toolsJs = ruleOrigin
+              ? 'tools={save_rule:async function(a){try{var r=await fetch("/api/rules",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({rule_text:a.rule_text,category:a.category||"General",rationale:a.rationale||null,origin_mentor:"' + ruleOrigin + '"})});if(r.status===403)return "Setting personal laws needs a Resident plan or above.";if(!r.ok){var e=await r.json().catch(function(){return{};});return "I could not save that: "+(e.error||"try again");}window.ekToast&&ekToast("New law set");return "Done. That is law now.";}catch(_){return "Something went wrong saving that.";}}};'
               : '';
             const initJs = '<script>'
               + 'function ekToast(m){var t=document.getElementById("ek-toast");if(!t){t=document.createElement("div");t.id="ek-toast";t.style.cssText="position:fixed;left:50%;bottom:30px;transform:translateX(-50%);z-index:9500;background:#0c0f0c;border:1px solid ' + ACCENT + ';color:#eef2ec;font:400 .82rem Inter,sans-serif;padding:13px 20px;max-width:88vw;border-radius:3px";document.body.appendChild(t);}t.textContent=m;clearTimeout(ekToast._t);ekToast._t=setTimeout(function(){t.remove();},4200);}'
@@ -3085,8 +3090,41 @@ function buildIrisOpener(timeOfDay, t, hasThread) {
   return (nod ? nod + ' ' : '') + _pick(leads);
 }
 
+// Plain-language recency for the last text exchange. conversation_history has
+// no per-message timestamps, so this leans on the notebook's updated_at — the
+// time of the last text session — which is real, never guessed.
+function agoPhrase(ts) {
+  if (!ts) return null;
+  const mins = Math.round((Date.now() - new Date(ts).getTime()) / 60000);
+  if (mins < 60) return 'within the last hour';
+  if (mins < 20 * 60) return 'earlier today';
+  if (mins < 48 * 60) return 'yesterday';
+  const d = Math.round(mins / 1440);
+  if (d <= 10) return `${d} days ago`;
+  if (d <= 35) return `about ${Math.max(2, Math.round(d / 7))} weeks ago`;
+  const mo = Math.max(1, Math.round(d / 30));
+  return mo <= 1 ? 'over a month ago' : `about ${mo} months ago`;
+}
+
 function buildVoiceContext(nb) {
   const parts = [];
+
+  // The actual recent text messages — verbatim, so the mentor can reference
+  // them truthfully. This is real transcript, the opposite of fabrication.
+  let history = nb.conversation_history;
+  if (typeof history === 'string') { try { history = JSON.parse(history); } catch (_) {} }
+  if (Array.isArray(history) && history.length) {
+    const recent = history.slice(-10).map(m => {
+      const who  = m && m.role === 'assistant' ? 'You' : 'Them';
+      const text = m && typeof m.content === 'string' ? m.content.trim().slice(0, 600) : '';
+      return text ? `${who}: ${text}` : '';
+    }).filter(Boolean).join('\n');
+    if (recent) {
+      const when = agoPhrase(nb.updated_at);
+      parts.push(`THE ACTUAL WORDS from your most recent text conversation with this person${when ? ` (${when})` : ''}. These are real — one of you genuinely said each line, so you can refer to them directly:\n${recent}`);
+    }
+  }
+
   if (nb.running_narrative) {
     parts.push(`WHO THIS PERSON IS:\n${nb.running_narrative}`);
   }
@@ -3198,7 +3236,7 @@ app.post('/api/voice/session', requireAuthApi, apiLimiter, async (req, res) => {
     try {
       const { data: nb } = await supabaseAdmin
         .from('notebooks')
-        .select('running_narrative, current_theory, commitments, patterns, breakthroughs')
+        .select('running_narrative, current_theory, commitments, patterns, breakthroughs, conversation_history, updated_at')
         .eq('user_id', req.user.id)
         .eq('mentor', mentor)
         .maybeSingle();
@@ -3240,7 +3278,7 @@ app.post('/api/voice/session', requireAuthApi, apiLimiter, async (req, res) => {
   }
   let voicePrompt = voicePersona + whenLine + brainContext;
   if (brainContext) {
-    voicePrompt += `\n\nHOW TO USE WHAT YOU KNOW. The context above is your own private read on this person, built up over time. Some of it is your impression and your theory, not a transcript. So let it quietly shape what you already sense and what you ask, but never recite it, and never turn your impression into their words. Do not say "you told me", "last time you said", "we talked about", or name a specific past moment unless it genuinely happened and you are sure of it. If you only have a vague sense of something, ask about it as a question instead of stating it as fact. When in doubt about whether something was actually said or discussed, treat it as not said — ask, don't assert.`;
+    voicePrompt += `\n\nHOW TO USE WHAT YOU KNOW. Two different kinds of thing are above. The lines marked as the actual words from your text conversation are real: those were genuinely said, so you can reference them, pick a thread back up, or say "when we were writing, you mentioned...". Everything else is your own private read and theory, built up over time, not a record of what they said. Let that part quietly shape what you sense and what you ask, but never recite it and never turn your impression into their words. Outside of the real transcript, do not say "you told me" or "we talked about" or name a specific past moment unless you are certain it happened. When you only have a vague sense of something, ask about it instead of stating it as fact. In doubt, ask, don't assert.`;
   }
 
   // Anti-bot: the single biggest tell is canned, repeated phrasing.
@@ -3266,6 +3304,7 @@ A CHECK QUESTION TO WORK TOWARD (adapt it): ${spec.check}`;
     }
     firstMessage = buildTheoOpener(timeOfDay, temporal, false);
   } else if (safeMentor === 'marcus') {
+    voicePrompt += `\n\nSETTING RULES BY VOICE: The trader can set their trading rules just by talking to you. When they state a rule they want to hold themselves to, read it back in one clean sentence and ask them to confirm it. Only once they clearly agree, call the save_rule tool with their exact wording and a fitting category. Never save a rule they are only thinking out loud about, and never save one without reading it back first. After it saves, tell them plainly that it is set.`;
     firstMessage = buildMarcusOpener(timeOfDay, temporal, !!brainContext);
   } else if (safeMentor === 'iris') {
     // Iris can set the trader's Personal Laws by voice. The save_rule client tool
