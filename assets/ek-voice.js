@@ -17,6 +17,12 @@
   var STYLE_ID = 'ek-voice-style';
   var NAMES  = { marcus: 'Marcus', iris: 'Iris', theo: 'Theo' };
   var COLORS = { marcus: '#b8a06a', iris: '#6b8c6b', theo: '#b8a06a' };
+  // Per-mentor orb palettes (c1 light → c3 deep) so each orb has its own character.
+  var PALETTES = {
+    iris:   { c1: '#aed8b6', c2: '#6ea88e', c3: '#2e5343', bg: '#edf4ef' }, // sage → forest
+    marcus: { c1: '#ecd7a0', c2: '#c29a4a', c3: '#6c5a34', bg: '#f3eee4' }, // wheat → bronze
+    theo:   { c1: '#ecd7a0', c2: '#c29a4a', c3: '#6c5a34', bg: '#f3eee4' }, // gold (same family)
+  };
   var state = { conv: null, phase: 'idle', seconds: 0, timer: null, endedByTimeout: false, muted: false, opts: null };
 
   function el(id) { return document.getElementById(id); }
@@ -30,21 +36,23 @@
       '#ekv{--ekv:#6b8c6b;position:fixed;inset:0;z-index:10050;display:none;flex-direction:column;align-items:center;justify-content:center;',
       "background:radial-gradient(ellipse 72% 56% at 50% 40%, color-mix(in srgb,var(--ekv) 12%,#060806) 0%, #060806 70%);font-family:var(--sans,Inter,sans-serif);}",
       '#ekv.active{display:flex;}',
-      // A real sphere: lit body, inner light that orbits, a specular highlight, and a breathing halo.
-      '#ekv-orbwrap{position:relative;width:170px;height:170px;margin-bottom:42px;display:flex;align-items:center;justify-content:center;}',
-      '#ekv-halo{position:absolute;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--ekv) 60%,transparent) 0%,transparent 68%);filter:blur(28px);opacity:.45;animation:ekvHalo 4.8s ease-in-out infinite;will-change:transform,opacity;}',
-      '#ekv-orb{position:relative;width:152px;height:152px;border-radius:50%;overflow:hidden;transition:transform .45s cubic-bezier(.4,0,.2,1);',
-      'background:radial-gradient(circle at 36% 30%,color-mix(in srgb,var(--ekv) 68%,#fff) 0%,var(--ekv) 46%,color-mix(in srgb,var(--ekv) 52%,#000) 100%);',
-      'box-shadow:0 0 50px color-mix(in srgb,var(--ekv) 40%,transparent),inset 0 0 44px color-mix(in srgb,var(--ekv) 45%,#000),inset -8px -10px 30px rgba(0,0,0,.45);}',
-      '#ekv-orb::before{content:"";position:absolute;inset:-25%;border-radius:50%;background:radial-gradient(circle at 50% 50%,color-mix(in srgb,var(--ekv) 22%,#fff) 0%,transparent 44%);mix-blend-mode:screen;filter:blur(16px);opacity:.7;animation:ekvSwirl 9s linear infinite;will-change:transform;}',
-      '#ekv-orb::after{content:"";position:absolute;left:20%;top:13%;width:38%;height:32%;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.72),transparent 72%);filter:blur(4px);}',
-      '#ekv-orb.speaking{animation:ekvBreathe 2.6s ease-in-out infinite;}',
-      '#ekv-orb.speaking::before{animation-duration:4.5s;opacity:1;}',
-      '#ekv-orb.listening{transform:scale(.9);}',
-      '#ekv-orb.listening::before{opacity:.4;animation-duration:14s;}',
-      '@keyframes ekvBreathe{0%,100%{transform:scale(1);}50%{transform:scale(1.045);}}',
-      '@keyframes ekvSwirl{from{transform:rotate(0deg) translateX(9%);}to{transform:rotate(360deg) translateX(9%);}}',
-      '@keyframes ekvHalo{0%,100%{transform:scale(1);opacity:.4;}50%{transform:scale(1.22);opacity:.68;}}',
+      // Siri-style orb: layered conic gradients rotated via @property --ekv-angle, a
+      // dot-texture overlay, blur + contrast, tinted to the room colour, over a halo.
+      '@property --ekv-angle{syntax:"<angle>";inherits:false;initial-value:0deg;}',
+      '#ekv-orbwrap{position:relative;width:180px;height:180px;margin-bottom:44px;display:flex;align-items:center;justify-content:center;}',
+      '#ekv-halo{position:absolute;width:152px;height:152px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--ekv) 55%,transparent) 0%,transparent 70%);filter:blur(34px);opacity:.5;animation:ekvHalo 5s ease-in-out infinite;will-change:transform,opacity;}',
+      '#ekv-orb{--c1:color-mix(in srgb,var(--ekv) 92%,#fff);--c2:color-mix(in srgb,var(--ekv) 55%,#fff);--c3:color-mix(in srgb,var(--ekv) 72%,#000);--ekbg:color-mix(in srgb,var(--ekv) 10%,#eff3f1);',
+      'position:relative;width:152px;height:152px;display:grid;grid-template-areas:"stack";overflow:hidden;border-radius:50%;transition:transform .5s cubic-bezier(.4,0,.2,1);box-shadow:0 0 46px color-mix(in srgb,var(--ekv) 35%,transparent);}',
+      '#ekv-orb::before,#ekv-orb::after{content:"";display:block;grid-area:stack;width:100%;height:100%;border-radius:50%;}',
+      '#ekv-orb::before{background:conic-gradient(from calc(var(--ekv-angle)*2) at 25% 70%,var(--c3),transparent 20% 80%,var(--c3)),conic-gradient(from calc(var(--ekv-angle)*2) at 45% 75%,var(--c2),transparent 30% 60%,var(--c2)),conic-gradient(from calc(var(--ekv-angle)*-3) at 80% 20%,var(--c1),transparent 40% 60%,var(--c1)),conic-gradient(from calc(var(--ekv-angle)*2) at 15% 5%,var(--c2),transparent 10% 90%,var(--c2)),conic-gradient(from calc(var(--ekv-angle)*1) at 20% 80%,var(--c1),transparent 10% 90%,var(--c1)),conic-gradient(from calc(var(--ekv-angle)*-2) at 85% 10%,var(--c3),transparent 20% 80%,var(--c3));box-shadow:inset var(--ekbg) 0 0 2px 0.4px;filter:blur(4px) contrast(1.5);animation:ekvRotate 18s linear infinite;will-change:transform;}',
+      '#ekv-orb::after{background-image:radial-gradient(circle at center,var(--ekbg) 1.2px,transparent 1.2px);background-size:2.4px 2.4px;backdrop-filter:blur(8px) contrast(3);-webkit-backdrop-filter:blur(8px) contrast(3);mix-blend-mode:overlay;-webkit-mask-image:radial-gradient(black 25%,transparent 75%);mask-image:radial-gradient(black 25%,transparent 75%);}',
+      '#ekv-orb.speaking{animation:ekvBreathe 2.8s ease-in-out infinite;}',
+      '#ekv-orb.speaking::before{animation-duration:9s;}',
+      '#ekv-orb.listening{transform:scale(.92);}',
+      '#ekv-orb.listening::before{animation-duration:30s;}',
+      '@keyframes ekvRotate{to{--ekv-angle:360deg;}}',
+      '@keyframes ekvBreathe{0%,100%{transform:scale(1);}50%{transform:scale(1.04);}}',
+      '@keyframes ekvHalo{0%,100%{transform:scale(1);opacity:.4;}50%{transform:scale(1.2);opacity:.62;}}',
       '@media (prefers-reduced-motion:reduce){#ekv-halo,#ekv-orb,#ekv-orb::before{animation:none!important;}#ekv-orb.listening{transform:none;}}',
       '#ekv-name{font-family:var(--serif,Georgia,serif);font-weight:400;font-size:2.4rem;color:var(--bright,#eef2ec);}',
       '#ekv-status{font-family:var(--mono,monospace);font-size:0.62rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--ekv);margin-top:12px;min-height:16px;}',
@@ -83,6 +91,8 @@
     var mk = state.opts.mentor;
     var v = el('ekv');
     v.style.setProperty('--ekv', COLORS[mk] || '#6b8c6b');
+    var pal = PALETTES[mk], orb = el('ekv-orb');
+    if (pal && orb) { orb.style.setProperty('--c1', pal.c1); orb.style.setProperty('--c2', pal.c2); orb.style.setProperty('--c3', pal.c3); orb.style.setProperty('--ekbg', pal.bg); }
     el('ekv-name').textContent = NAMES[mk] || 'Mentor';
     setStatus('Connecting…');
     el('ekv-err').style.display = 'none';
