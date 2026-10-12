@@ -822,7 +822,7 @@
   // (breach) or ?call=1 (she left you a note); both ring on arrival.
   (function () {
     let ringing = false;
-    const ackCall = () => { try { fetch('/api/voice/incoming/ack', { method: 'POST', credentials: 'include', keepalive: true }); } catch (_) {} };
+    const ackCall = () => { try { fetch('/api/voice/incoming/ack', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ decline: true }), keepalive: true }); } catch (_) {} };
     function ringIris(incoming) {
       if (ringing) return;
       if (!window.EKVoice || !EKVoice.ring) return;

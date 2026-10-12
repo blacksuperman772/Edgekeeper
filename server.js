@@ -3420,14 +3420,18 @@ app.get('/api/voice/incoming', requireAuthApi, apiLimiter, async (req, res) => {
   } catch (_) { res.json({ pending: false }); }
 });
 
-// POST /api/voice/incoming/ack — trader answered, declined, or missed it;
-// clear the pending call so it stops ringing.
+// POST /api/voice/incoming/ack — clear the pending call. Only clears on an
+// explicit decline; an "answer" must NOT clear here, because the voice session
+// reads the reason and clears it itself. (A stale client that acked on accept
+// would otherwise wipe the reason before the session could read it.)
 app.post('/api/voice/incoming/ack', requireAuthApi, apiLimiter, async (req, res) => {
-  try {
-    await supabaseAdmin.from('guardian_data')
-      .update({ call_pending_at: null, call_reason: null })
-      .eq('user_id', req.user.id);
-  } catch (_) {}
+  if (req.body?.decline === true) {
+    try {
+      await supabaseAdmin.from('guardian_data')
+        .update({ call_pending_at: null, call_reason: null })
+        .eq('user_id', req.user.id);
+    } catch (_) {}
+  }
   res.json({ ok: true });
 });
 
