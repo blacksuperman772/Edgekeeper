@@ -212,6 +212,19 @@
     .law-cat { font-family:var(--mono); font-size:0.5rem; letter-spacing:0.18em; text-transform:uppercase; color:var(--faint); margin-top:6px; }
     .law-del { background:none; border:none; color:var(--faint); font-size:1.3rem; line-height:1; cursor:pointer; padding:0 2px; }
     .law-del:hover { color:var(--red); }
+    /* Protection modes */
+    .mode-list { display:flex; flex-direction:column; gap:10px; }
+    .mode-opt { display:flex; align-items:flex-start; gap:13px; text-align:left; width:100%; border:1px solid var(--border); border-radius:8px; padding:15px 15px; background:none; color:var(--text); cursor:pointer; font-family:var(--sans); transition:border-color .15s, background .15s; }
+    .mode-opt:hover:not(.locked) { border-color:var(--iris-dim); background:rgba(255,255,255,0.025); }
+    .mode-opt.on { border-color:var(--accent); background:var(--iris-bg); }
+    .mode-opt.locked { opacity:0.5; cursor:not-allowed; }
+    .mode-dot { width:14px; height:14px; border-radius:50%; border:1.5px solid var(--faint); flex-shrink:0; margin-top:2px; }
+    .mode-opt.on .mode-dot { border-color:var(--accent); background:var(--accent); box-shadow:inset 0 0 0 3px var(--surface, #0e0e10); }
+    .mode-main { display:flex; flex-direction:column; gap:4px; }
+    .mode-name { font-size:0.95rem; color:var(--text); }
+    .mode-opt.on .mode-name { color:var(--bright); }
+    .mode-desc { font-size:0.8rem; color:var(--muted); line-height:1.55; }
+    .mode-desc em { color:var(--faint); font-style:normal; }
     .panel-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
 
     .trend { display:flex; align-items:flex-end; gap:5px; height:130px; padding-top:8px; }
@@ -294,6 +307,7 @@
         <button class="nav-item" data-panel="ladder"><span class="nav-txt">How Iris responds</span><span class="nav-end"><span class="nav-badge" id="badge-lvl">—</span><svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></button>
         <button class="nav-item" data-panel="limits"><span class="nav-txt">Your limits</span><span class="nav-end"><svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></button>
         <button class="nav-item" data-panel="rules"><span class="nav-txt">Your laws</span><span class="nav-end"><svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></button>
+        <button class="nav-item" data-panel="protection"><span class="nav-txt">Protection</span><span class="nav-end"><span class="nav-badge" id="badge-protect">—</span><svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></button>
       </nav>
       <div class="side-foot">
         Behavioural risk monitoring — not financial advice. By default Iris only watches and cannot act on your account. If you have explicitly consented to the Guardian lock, she may close open positions and cancel pending orders on a connected account when you breach your limits. She cannot prevent an order being sent to your broker, and cannot guarantee any loss is prevented. You can withdraw consent at any time, with immediate effect.
@@ -460,7 +474,7 @@
 
   // ── panels ──────────────────────────────────────────────────────────
   let currentPanel = null;
-  const PANEL_TITLES = { readings:'The readings', account:'The account', trend:'Recent days', ladder:'How Iris responds', limits:'Your limits', rules:'Your laws' };
+  const PANEL_TITLES = { readings:'The readings', account:'The account', trend:'Recent days', ladder:'How Iris responds', limits:'Your limits', rules:'Your laws', protection:'Protection' };
 
   function panelHtml(kind, g) {
     const losses = g.consecutive_losses || 0;
@@ -504,6 +518,7 @@
         + '<button class="g-btn danger" id="g-disconnect">Disconnect</button></div>';
     }
     if (kind === 'rules') return '<div id="rules-mount"><p class="panel-sub">Reading your laws…</p></div>';
+    if (kind === 'protection') return '<div id="protect-mount"><p class="panel-sub">Reading how much I can step in…</p></div>';
     if (kind === 'trend') return '<div id="trend-mount"><div class="trend-empty">Reading her memory…</div></div>';
     if (kind === 'ladder') {
       const active = levelOf(g);
@@ -546,7 +561,7 @@
   }
 
   function openPanel(kind, keepScroll) {
-    if (!_g && kind !== 'rules') return; // rules don't depend on a connected account
+    if (!_g && kind !== 'rules' && kind !== 'protection') return; // these don't depend on a connected account
     currentPanel = kind;
     const body = document.getElementById('panel-body');
     const prev = keepScroll ? body.scrollTop : 0;
@@ -565,6 +580,7 @@
     }
     if (kind === 'trend') loadTrend();
     if (kind === 'rules') loadRules();
+    if (kind === 'protection') loadProtection();
     if (kind === 'account') {
       const dc = document.getElementById('g-disconnect'); if (dc) dc.onclick = disconnectAccount;
     }
@@ -772,6 +788,48 @@
     if (!confirm('Remove this law?')) return;
     try { await fetch('/api/rules/' + id, { method: 'DELETE', credentials: 'include' }); } catch (_) {}
     loadRules();
+  }
+
+  // ── Protection (how far Iris can step in) ───────────────────────────
+  // Four modes, trader-set. 'protect' is the hard lock (she can close trades and
+  // block new ones); it needs the Fellow plan to actually enforce. Wired to
+  // PUT /api/guardian/consent, the one place that records consent.
+  const MODES = [
+    { k: 'observe', t: 'Observe', d: 'I only tell you what I see. I never step in.' },
+    { k: 'warn',    t: 'Warn',    d: 'I flag it when the account turns, and leave the call to you.' },
+    { k: 'slow',    t: 'Slow me down', d: 'When you push after losses, I make you pause before the next one.' },
+    { k: 'protect', t: 'Protect', d: 'When you breach badly, I close your open trades and lock you out until you cool off. You consent to the lock.' },
+  ];
+  async function loadProtection() {
+    const mount = document.getElementById('protect-mount');
+    if (!mount) return;
+    let cur = 'warn', eligible = true;
+    try {
+      const r = await fetch('/api/guardian/consent', { credentials: 'include' });
+      if (r.ok) { const d = await r.json(); cur = d.level || 'warn'; eligible = d.eligible !== false; }
+    } catch (_) {}
+    const badge = document.getElementById('badge-protect'); if (badge) badge.textContent = (MODES.find(m => m.k === cur) || {}).t || '—';
+    const rows = MODES.map(m => {
+      const active = m.k === cur;
+      const locked = m.k === 'protect' && !eligible;
+      return '<button class="mode-opt' + (active ? ' on' : '') + (locked ? ' locked' : '') + '" data-mode="' + m.k + '"' + (locked ? ' disabled' : '') + '>'
+        + '<span class="mode-dot"></span>'
+        + '<span class="mode-main"><span class="mode-name">' + m.t + (active ? ' · current' : '') + '</span>'
+        + '<span class="mode-desc">' + m.d + (locked ? ' <em>(needs the Fellow plan)</em>' : '') + '</span></span></button>';
+    }).join('');
+    mount.innerHTML = '<p class="panel-sub">How far I can step in when the account turns. Your calm self decides this — set it now, so it holds when the day gets loud.</p>'
+      + '<div class="mode-list">' + rows + '</div>';
+    mount.querySelectorAll('.mode-opt:not([disabled])').forEach(b => { b.onclick = () => setProtection(b.dataset.mode, cur); });
+  }
+  async function setProtection(level, cur) {
+    if (level === cur) return;
+    if (level === 'protect' && !confirm('Turn on Protect? When you breach badly, I will close your open trades and lock you out until you cool off. You can lower this again anytime.')) return;
+    try {
+      const r = await fetch('/api/guardian/consent', { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ level }) });
+      if (!r.ok) { const e = await r.json().catch(() => ({})); chamberToast(e.error || 'Could not change that.'); return; }
+      chamberToast(level === 'protect' ? 'Protect is on. I can step in now.' : 'Protection set to ' + (MODES.find(m => m.k === level) || {}).t);
+      loadProtection();
+    } catch (_) { chamberToast('Could not change that.'); }
   }
 
   // ── chat ────────────────────────────────────────────────────────────
