@@ -332,28 +332,6 @@
     @keyframes ek-breathe { 0%,100% { opacity: .4; } 50% { opacity: .85; } }
     @media (prefers-reduced-motion: reduce) { .act-loading { animation: none; } }
 
-    /* ── Desktop: phone tab bar becomes a left side rail, content shifts right ── */
-    @media (min-width: 900px) {
-      .nav {
-        position: fixed; top: 0; bottom: 0; left: 0;
-        width: 216px; height: 100vh;
-        display: flex; flex-direction: column; justify-content: flex-start; gap: 4px;
-        grid-template-columns: none;
-        border-top: none; border-right: 1px solid var(--line-2);
-        padding: 24px 14px; box-sizing: border-box;
-      }
-      .tab {
-        flex-direction: row; justify-content: flex-start; gap: 14px;
-        min-height: auto; padding: 12px 14px; border-radius: 9px;
-        font: 400 .82rem var(--sans); letter-spacing: .01em; text-transform: none;
-        color: var(--text-2);
-      }
-      .tab svg { width: 18px; height: 18px; }
-      .tab:hover { background: rgba(255,255,255,.045); color: var(--text); }
-      .tab.on { background: var(--gold-glow); color: var(--gold); }
-      .shell { padding-left: 216px; box-sizing: border-box; }
-    }
-
     /* ── Nav ── */
     .nav {
       flex-shrink: 0;
@@ -437,6 +415,33 @@
     .sheet-item svg { width: 17px; height: 17px; color: var(--muted); flex-shrink: 0; }
     .sheet-item.out { color: var(--red); margin-top: 8px; border-top: 1px solid var(--line-2); }
     .sheet-item.out svg { color: var(--red); }
+    /* ── Desktop (>=900px): bottom tab bar becomes a left side rail, content ──
+       widens and centers so a big screen reads like an app, not a phone column.
+       Placed AFTER the base .nav/.tab rules so it wins the cascade. ── */
+    @media (min-width: 900px) {
+      .nav {
+        position: fixed; top: 0; bottom: 0; left: 0;
+        width: 224px; height: 100vh;
+        display: flex !important; flex-direction: column !important;
+        grid-template-columns: none !important;
+        justify-content: flex-start; align-items: stretch; gap: 4px;
+        border-top: none; border-right: 1px solid var(--line-2);
+        padding: 64px 14px 20px; box-sizing: border-box; z-index: 40;
+      }
+      .tab {
+        flex-direction: row !important; justify-content: flex-start; align-items: center;
+        gap: 14px; min-height: 0; padding: 11px 14px; border-radius: 9px;
+        font: 400 .82rem var(--sans); letter-spacing: 0; text-transform: none;
+        color: var(--text-2);
+      }
+      .tab svg { width: 18px; height: 18px; }
+      .tab:hover { background: rgba(255,255,255,.05); color: var(--text); }
+      .tab.on { background: var(--gold-glow); color: var(--gold); }
+      .shell { padding-left: 224px; box-sizing: border-box; }
+      .hdr { padding-left: 28px; padding-right: 28px; }
+      .body { padding: 8px 40px 60px; }
+      .body > * { max-width: 680px !important; margin-left: auto !important; margin-right: auto !important; }
+    }
   </style>
 </head>
 <body>
