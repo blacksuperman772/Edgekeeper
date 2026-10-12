@@ -816,19 +816,39 @@
   // ☰ opens the global app-shell menu (home, mentors, account)
   document.getElementById('eks-ham')?.addEventListener('click', () => { if (window.EKShell) EKShell.openMenu(); });
 
-  // Arrived from an "Iris is calling" notification (/chamber?call=1): ring, and
-  // start the call only when the trader answers. Richer tools if the app shell
-  // loaded them; falls back to the inline save_rule tool otherwise.
+  // Incoming call from Iris. A Guardian breach marks a pending call server-side;
+  // the Chamber polls for it and rings — pick up and the call starts. The ack
+  // clears it so it stops ringing. A tapped notification arrives as ?incoming=1
+  // (breach) or ?call=1 (she left you a note); both ring on arrival.
   (function () {
-    try { if (new URLSearchParams(location.search).get('call') !== '1') return; } catch (_) { return; }
-    let tries = 0;
-    const iv = setInterval(() => {
-      if (window.EKVoice && EKVoice.ring) {
-        clearInterval(iv);
-        const tools = (window.EKVoiceTools ? EKVoiceTools('iris') : irisClientTools);
-        EKVoice.ring({ mentor: 'iris', getContext: irisVoiceContext, clientTools: tools });
-      } else if (++tries > 50) { clearInterval(iv); }
-    }, 150);
+    let ringing = false;
+    const ackCall = () => { try { fetch('/api/voice/incoming/ack', { method: 'POST', credentials: 'include', keepalive: true }); } catch (_) {} };
+    function ringIris() {
+      if (ringing) return;
+      if (!window.EKVoice || !EKVoice.ring) return;
+      if (EKVoice.isActive && EKVoice.isActive()) return;
+      ringing = true;
+      const tools = (window.EKVoiceTools ? EKVoiceTools('iris') : irisClientTools);
+      EKVoice.ring({
+        mentor: 'iris', getContext: irisVoiceContext, clientTools: tools,
+        onAccept: () => { ringing = false; ackCall(); },
+        onDecline: () => { ringing = false; ackCall(); },
+      });
+    }
+    async function checkIncoming() {
+      if (ringing || (window.EKVoice && EKVoice.isActive && EKVoice.isActive())) return;
+      try {
+        const r = await fetch('/api/voice/incoming', { credentials: 'include' });
+        if (!r.ok) return;
+        const d = await r.json();
+        if (d && d.pending) ringIris();
+      } catch (_) {}
+    }
+    const whenReady = (fn) => { let n = 0; const iv = setInterval(() => { if (window.EKVoice && EKVoice.ring) { clearInterval(iv); fn(); } else if (++n > 50) clearInterval(iv); }, 150); };
+    let callParam = false;
+    try { callParam = new URLSearchParams(location.search).get('call') === '1'; } catch (_) {}
+    whenReady(callParam ? ringIris : checkIncoming);   // ?call=1 rings now; otherwise check for a pending breach call
+    setInterval(checkIncoming, 45000);                 // catch a breach that trips mid-session
   })();
 
   function _extractReply(raw) {

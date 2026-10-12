@@ -3363,6 +3363,33 @@ A CHECK QUESTION TO WORK TOWARD (adapt it): ${spec.check}`;
   }
 });
 
+// GET /api/voice/incoming — is Iris trying to reach the trader right now?
+// Set by a Guardian breach (maybeAlertGuardianBreach); the Chamber polls this
+// and rings. Kept fresh for 20 minutes so a stale breach never rings later.
+app.get('/api/voice/incoming', requireAuthApi, apiLimiter, async (req, res) => {
+  try {
+    const { data } = await supabaseAdmin
+      .from('guardian_data')
+      .select('call_pending_at, call_reason')
+      .eq('user_id', req.user.id)
+      .maybeSingle();
+    const at = data?.call_pending_at ? new Date(data.call_pending_at).getTime() : 0;
+    if (!at || (Date.now() - at) >= 20 * 60 * 1000) return res.json({ pending: false });
+    res.json({ pending: true, mentor: 'iris', reason: data.call_reason || null, since: data.call_pending_at });
+  } catch (_) { res.json({ pending: false }); }
+});
+
+// POST /api/voice/incoming/ack — trader answered, declined, or missed it;
+// clear the pending call so it stops ringing.
+app.post('/api/voice/incoming/ack', requireAuthApi, apiLimiter, async (req, res) => {
+  try {
+    await supabaseAdmin.from('guardian_data')
+      .update({ call_pending_at: null, call_reason: null })
+      .eq('user_id', req.user.id);
+  } catch (_) {}
+  res.json({ ok: true });
+});
+
 // ── Guardian Layer ────────────────────────────────────────────────────────────
 
 // Intervention ladder labels (server mirror of the client's INTERVENTION_LADDER).
@@ -3962,11 +3989,11 @@ async function maybeAlertGuardianBreach(userId, level, snap) {
   const prev = gd?.last_alert_level || 0;
 
   if (level <= 1 && prev !== 0) {
-    await supabaseAdmin.from('guardian_data').update({ last_alert_level: 0 }).eq('user_id', userId);
+    // Back to calm — reset the alert dedup and drop any unanswered call.
+    await supabaseAdmin.from('guardian_data').update({ last_alert_level: 0, call_pending_at: null, call_reason: null }).eq('user_id', userId);
     return;
   }
   if (level >= 3 && level > prev) {
-    await supabaseAdmin.from('guardian_data').update({ last_alert_level: level }).eq('user_id', userId);
     const label = (INTERVENTION_LADDER[level] && INTERVENTION_LADDER[level].label) || `Level ${level}`;
 
     // A short human line describing what tripped — reused by push + call.
@@ -3976,12 +4003,22 @@ async function maybeAlertGuardianBreach(userId, level, snap) {
     if (snap.drawdown) bits.push(`${Math.abs(snap.drawdown).toFixed(1)}% drawdown`);
     const summary = bits.join(' · ') || 'your account hit a limit';
 
-    // Live push — the moment it trips, on the device, even with the app closed.
+    // Mark a pending in-app call from Iris. The Chamber polls this and rings;
+    // picking up starts the live call. Stored alongside the alert dedup.
+    await supabaseAdmin.from('guardian_data').update({
+      last_alert_level: level,
+      call_pending_at:  new Date().toISOString(),
+      call_reason:      summary,
+    }).eq('user_id', userId);
+
+    // Live push — how Iris reaches the device when the app is closed. Tapping it
+    // opens the Chamber, which then rings. When the app is open, the poll rings
+    // without any notification.
     await notifications.sendToUser(supabaseAdmin, userId, {
       type:     'important',
-      title:    `Iris — ${label}`,
-      body:     summary.charAt(0).toUpperCase() + summary.slice(1) + '. Step into the chamber.',
-      deepLink: '/chamber',
+      title:    `Iris is calling you`,
+      body:     summary.charAt(0).toUpperCase() + summary.slice(1) + '. Pick up.',
+      deepLink: '/chamber?incoming=1',
     }).catch(e => console.error('Guardian breach push error:', e && e.message));
 
     // Outbound call at the top of the ladder (Cooldown+), if configured & consented.

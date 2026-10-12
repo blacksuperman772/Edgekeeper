@@ -432,7 +432,7 @@
       tone(); buzz();
       ringTimer = setInterval(function () { tone(); buzz(); }, 3000);
       missTimer = setTimeout(function () { stop(); if (opts.onDecline) try { opts.onDecline('missed'); } catch (_) {} }, 30000);
-      document.getElementById('ekv-accept').onclick = function () { stop(); w.EKVoice.start(opts); };
+      document.getElementById('ekv-accept').onclick = function () { stop(); if (opts.onAccept) try { opts.onAccept(); } catch (_) {} w.EKVoice.start(opts); };
       document.getElementById('ekv-decline').onclick = function () { stop(); if (opts.onDecline) try { opts.onDecline('declined'); } catch (_) {} };
     };
   })();
