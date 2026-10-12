@@ -823,7 +823,7 @@
   (function () {
     let ringing = false;
     const ackCall = () => { try { fetch('/api/voice/incoming/ack', { method: 'POST', credentials: 'include', keepalive: true }); } catch (_) {} };
-    function ringIris() {
+    function ringIris(incoming) {
       if (ringing) return;
       if (!window.EKVoice || !EKVoice.ring) return;
       if (EKVoice.isActive && EKVoice.isActive()) return;
@@ -831,6 +831,7 @@
       const tools = (window.EKVoiceTools ? EKVoiceTools('iris') : irisClientTools);
       EKVoice.ring({
         mentor: 'iris', getContext: irisVoiceContext, clientTools: tools,
+        incoming: incoming === true, // she called them — server names why on pickup
         onAccept: () => { ringing = false; ackCall(); },
         onDecline: () => { ringing = false; ackCall(); },
       });
@@ -841,7 +842,7 @@
         const r = await fetch('/api/voice/incoming', { credentials: 'include' });
         if (!r.ok) return;
         const d = await r.json();
-        if (d && d.pending) ringIris();
+        if (d && d.pending) ringIris(true); // breach-driven: she's calling
       } catch (_) {}
     }
     const whenReady = (fn) => { let n = 0; const iv = setInterval(() => { if (window.EKVoice && EKVoice.ring) { clearInterval(iv); fn(); } else if (++n > 50) clearInterval(iv); }, 150); };

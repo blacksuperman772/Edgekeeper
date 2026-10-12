@@ -144,7 +144,9 @@
     try {
       var res = await fetch('/api/voice/session', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mentor: opts.mentor }),
+        // incoming:true when SHE called them (answered from a ring), so the
+        // server can tell her she initiated the call and why.
+        body: JSON.stringify({ mentor: opts.mentor, incoming: opts.incoming === true }),
       });
       if (res.status === 401) { showErr('Sign in to start a call.'); state.phase = 'idle'; return; }
       if (res.status === 429) {

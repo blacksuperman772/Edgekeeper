@@ -3085,6 +3085,17 @@ function buildIrisOpener(timeOfDay, t, hasThread) {
   return (nod ? nod + ' ' : '') + _pick(leads);
 }
 
+// When Iris is the one calling (a Guardian breach), she opens by saying so and
+// why. `why` is the real breach reason, spoken-formatted; never fabricated.
+function buildIrisBreachOpener(why) {
+  const tail = why ? why + '. ' : '';
+  return _pick([
+    "It's Iris. I called you — " + tail + "Stop for a second, don't touch anything else.",
+    "Iris here, and I'm calling you on purpose. " + (why ? why + '. ' : '') + "Step back from the screen and talk to me.",
+    "It's me. I picked up the phone because " + (why || 'the Guardian flagged your account') + ". Breathe. We go through this together.",
+  ]);
+}
+
 // Plain-language recency for the last text exchange. conversation_history has
 // no per-message timestamps, so this leans on the notebook's updated_at — the
 // time of the last text session — which is real, never guessed.
@@ -3258,6 +3269,27 @@ app.post('/api/voice/session', requireAuthApi, apiLimiter, async (req, res) => {
   // Log this call — best-effort, must never block or fail the session.
   supabaseAdmin.from('voice_calls').insert({ user_id: req.user.id, mentor }).then(() => {}, () => {});
 
+  // If SHE is calling them (answered from a breach ring), pull the real reason so
+  // she opens knowing she called and why — then clear the pending call so it
+  // stops ringing. Only Iris calls (she owns the Guardian).
+  let breachWhy = null;
+  if (mentor === 'iris' && req.body?.incoming === true) {
+    try {
+      const { data: gd } = await supabaseAdmin
+        .from('guardian_data')
+        .select('call_pending_at, call_reason')
+        .eq('user_id', req.user.id)
+        .maybeSingle();
+      const at = gd?.call_pending_at ? new Date(gd.call_pending_at).getTime() : 0;
+      if (at && (Date.now() - at) < 30 * 60 * 1000 && gd.call_reason) {
+        breachWhy = String(gd.call_reason).replace(/\s*·\s*/g, ', '); // spoken-friendly
+      }
+      if (gd?.call_pending_at) {
+        await supabaseAdmin.from('guardian_data').update({ call_pending_at: null, call_reason: null }).eq('user_id', req.user.id);
+      }
+    } catch (_) {}
+  }
+
   const VOICE_PERSONAS = { marcus: MIKE_VOICE_PERSONA, iris: ASHLEY_VOICE_PERSONA, theo: THEO_VOICE_PERSONA };
   const safeMentor = canonicalMentor(mentor);
   const voicePersona = VOICE_PERSONAS[safeMentor] || MIKE_VOICE_PERSONA;
@@ -3307,7 +3339,12 @@ A CHECK QUESTION TO WORK TOWARD (adapt it): ${spec.check}`;
     // is declared on her agent; this tells her WHEN to use it — always confirm first.
     voicePrompt += `\n\nSETTING RULES BY VOICE: The trader can set their Personal Laws just by talking to you. When they state a rule they want to live by, read it back to them in one clean sentence and ask them to confirm it. Only once they clearly agree, call the save_rule tool with their exact wording and a fitting category. Never save a rule they are only mulling over, and never save one without reading it back first. After it saves, tell them plainly that it is now one of their laws.`;
     voicePrompt += `\n\nYOUR OTHER TOOLS: read_my_rules reads their saved laws. read_limits reads their Guardian risk limits. read_guardian_state reads how their connected account is doing right now. set_limit sets their risk limits: per-trade risk, max daily loss, max drawdown, stop-after-N-losses, and max open lots. Set them ALL IN ONE GO, not one at a time. Walk through the ones they care about, say the full set back to them in plain numbers, and only call set_limit once, after a clear yes — you can pass several at once. They must understand one thing before you save: the moment limits are set they lock for 24 hours, and during that lock they can tighten them but not loosen them, and setting them again later restarts that 24-hour clock. So it is worth getting the whole set right in one sitting. If a save is blocked because they are locked, tell them plainly. Speak everything naturally, never as a list of fields, and if something is not set or not on their plan, just say so.`;
-    firstMessage = buildIrisOpener(timeOfDay, temporal, !!brainContext);
+    if (breachWhy) {
+      voicePrompt += `\n\nWHY YOU ARE ON THIS CALL — READ THIS FIRST: You called them, just now. They did not call you. The Guardian flagged their account and you picked up the phone because of it: ${breachWhy}. This is real and happening right now. Open the call by making that clear in your own words — that it is you, that you called them, and why — before anything else, and do not wait for them to speak first. Stay calm and level, get them to step back from the screen before they do more damage, then work it through with them. Everything else about how you talk still applies.`;
+      firstMessage = buildIrisBreachOpener(breachWhy);
+    } else {
+      firstMessage = buildIrisOpener(timeOfDay, temporal, !!brainContext);
+    }
   }
 
   // Abort if ElevenLabs does not respond within 8 seconds
