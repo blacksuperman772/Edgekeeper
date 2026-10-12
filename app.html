@@ -332,6 +332,28 @@
     @keyframes ek-breathe { 0%,100% { opacity: .4; } 50% { opacity: .85; } }
     @media (prefers-reduced-motion: reduce) { .act-loading { animation: none; } }
 
+    /* ── Desktop: phone tab bar becomes a left side rail, content shifts right ── */
+    @media (min-width: 900px) {
+      .nav {
+        position: fixed; top: 0; bottom: 0; left: 0;
+        width: 216px; height: 100vh;
+        display: flex; flex-direction: column; justify-content: flex-start; gap: 4px;
+        grid-template-columns: none;
+        border-top: none; border-right: 1px solid var(--line-2);
+        padding: 24px 14px; box-sizing: border-box;
+      }
+      .tab {
+        flex-direction: row; justify-content: flex-start; gap: 14px;
+        min-height: auto; padding: 12px 14px; border-radius: 9px;
+        font: 400 .82rem var(--sans); letter-spacing: .01em; text-transform: none;
+        color: var(--text-2);
+      }
+      .tab svg { width: 18px; height: 18px; }
+      .tab:hover { background: rgba(255,255,255,.045); color: var(--text); }
+      .tab.on { background: var(--gold-glow); color: var(--gold); }
+      .shell { padding-left: 216px; box-sizing: border-box; }
+    }
+
     /* ── Nav ── */
     .nav {
       flex-shrink: 0;
