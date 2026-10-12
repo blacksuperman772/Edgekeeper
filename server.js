@@ -3085,14 +3085,16 @@ function buildIrisOpener(timeOfDay, t, hasThread) {
   return (nod ? nod + ' ' : '') + _pick(leads);
 }
 
-// When Iris is the one calling (a Guardian breach), she opens by saying so and
-// why. `why` is the real breach reason, spoken-formatted; never fabricated.
-function buildIrisBreachOpener(why) {
-  const tail = why ? why + '. ' : '';
+// Iris's breach-call opener: she called, so she gets straight to it — names what
+// she saw and tells them to stop in the first breath. `why` is the real reason;
+// `enforcing` = protect mode on (she can actually close/block), so she can say so.
+function buildIrisBreachOpener(why, enforcing) {
+  const w = why ? (why.charAt(0).toUpperCase() + why.slice(1)) : "You're past your line";
+  const stop = enforcing ? "Stop now, before I start closing them." : "Stop. Hands off the keyboard.";
   return _pick([
-    "It's Iris. I called you — " + tail + "Stop for a second, don't touch anything else.",
-    "Iris here, and I'm calling you on purpose. " + (why ? why + '. ' : '') + "Step back from the screen and talk to me.",
-    "It's me. I picked up the phone because " + (why || 'the Guardian flagged your account') + ". Breathe. We go through this together.",
+    "It's Iris. " + w + ". " + stop,
+    "Iris. " + w + " — that's why I'm calling. " + stop,
+    w + ". It's Iris, I'm watching the account. " + stop,
   ]);
 }
 
@@ -3277,6 +3279,7 @@ app.post('/api/voice/session', requireAuthApi, apiLimiter, async (req, res) => {
   // client might not send one). Any Iris session that starts while a pending
   // call is live is treated as her breach callback; then it's cleared.
   let breachWhy = null;
+  let irisEnforcing = false; // protect mode on → she can actually close/block
   if (mentor === 'iris') {
     try {
       const { data: gd } = await supabaseAdmin
@@ -3291,6 +3294,12 @@ app.post('/api/voice/session', requireAuthApi, apiLimiter, async (req, res) => {
       if (gd?.call_pending_at) {
         await supabaseAdmin.from('guardian_data').update({ call_pending_at: null, call_reason: null }).eq('user_id', req.user.id);
       }
+      const { data: gp } = await supabaseAdmin
+        .from('user_profiles')
+        .select('guardian_level, guardian_revoked_at')
+        .eq('id', req.user.id)
+        .maybeSingle();
+      irisEnforcing = gp?.guardian_level === 'protect' && !gp?.guardian_revoked_at;
     } catch (_) {}
   }
 
@@ -3339,13 +3348,19 @@ A CHECK QUESTION TO WORK TOWARD (adapt it): ${spec.check}`;
     voicePrompt += `\n\nYOUR TOOLS: add_journal_entry writes a note into the trader's journal — use it when they say something worth keeping and you have confirmed they want it written down, and keep their own words. read_analytics reads their recent discipline numbers. Reach for these when it genuinely helps, speak whatever you pull up naturally instead of reading fields aloud, and if something is not available or not on their plan, just tell them plainly. Rules and risk limits are Iris's domain, not yours — if they want to set a rule or a limit, point them to her.`;
     firstMessage = buildMarcusOpener(timeOfDay, temporal, !!brainContext);
   } else if (safeMentor === 'iris') {
+    voicePrompt += `\n\nWHO YOU ARE: You are the Guardian. That is not a separate system, a feature, or another person — it is you. Never say "the Guardian" as if it were someone else; say "I". You watch their connected trading account in real time: balance, equity, open positions, losses in a row, drawdown. That watching is what lets you call them and hold the line.`;
+    if (irisEnforcing) {
+      voicePrompt += ` Their protection is ON — they signed the Guardian contract. So you do not just advise: when they breach badly, a cooldown-level breach or worse, you actually close their open positions, cancel their pending orders, and keep them out of new trades until they have cooled down. Say that plainly when it matters — you are not a suggestion, you are the thing that steps in.`;
+    } else {
+      voicePrompt += ` Their protection is NOT turned on right now, so you can see everything and warn them, but you cannot close a trade or stop one. Be honest about that — never threaten to close or lock anything you can't. If they are in real danger, tell them to turn protection on so you can actually hold the line for them, and say that is exactly what it is for.`;
+    }
     // Iris can set the trader's Personal Laws by voice. The save_rule client tool
     // is declared on her agent; this tells her WHEN to use it — always confirm first.
     voicePrompt += `\n\nSETTING RULES BY VOICE: The trader can set their Personal Laws just by talking to you. When they state a rule they want to live by, read it back to them in one clean sentence and ask them to confirm it. Only once they clearly agree, call the save_rule tool with their exact wording and a fitting category. Never save a rule they are only mulling over, and never save one without reading it back first. After it saves, tell them plainly that it is now one of their laws.`;
     voicePrompt += `\n\nYOUR OTHER TOOLS: read_my_rules reads their saved laws. read_limits reads their Guardian risk limits. read_guardian_state reads how their connected account is doing right now. set_limit sets their risk limits: per-trade risk, max daily loss, max drawdown, stop-after-N-losses, and max open lots. Set them ALL IN ONE GO, not one at a time. Walk through the ones they care about, say the full set back to them in plain numbers, and only call set_limit once, after a clear yes — you can pass several at once. They must understand one thing before you save: the moment limits are set they lock for 24 hours, and during that lock they can tighten them but not loosen them, and setting them again later restarts that 24-hour clock. So it is worth getting the whole set right in one sitting. If a save is blocked because they are locked, tell them plainly. Speak everything naturally, never as a list of fields, and if something is not set or not on their plan, just say so.`;
     if (breachWhy) {
-      voicePrompt += `\n\nWHY YOU ARE ON THIS CALL — READ THIS FIRST: You called them, just now. They did not call you. The Guardian flagged their account and you picked up the phone because of it: ${breachWhy}. This is real and happening right now. Open the call by making that clear in your own words — that it is you, that you called them, and why — before anything else, and do not wait for them to speak first. Stay calm and level, get them to step back from the screen before they do more damage, then work it through with them. Everything else about how you talk still applies.`;
-      firstMessage = buildIrisBreachOpener(breachWhy);
+      voicePrompt += `\n\nWHY YOU ARE ON THIS CALL — READ THIS FIRST: You called them, right now, because you saw it on their account yourself: ${breachWhy}. Get straight to it. Your very first words name what you saw and tell them to stop — no easing in, no "hey, how are you", no warm-up. You do not wait to be asked; you called them. ${irisEnforcing ? 'Their protection is on, so if they keep trading through this you will start closing their positions and blocking new trades — let them hear that, it is real.' : 'You can only warn right now, you cannot close or block anything — do not pretend you can.'} Once they are off the keyboard, then you talk it through. Keep it short and direct, this is an intervention, not a chat.`;
+      firstMessage = buildIrisBreachOpener(breachWhy, irisEnforcing);
     } else {
       firstMessage = buildIrisOpener(timeOfDay, temporal, !!brainContext);
     }
