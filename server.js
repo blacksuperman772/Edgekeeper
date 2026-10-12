@@ -3272,8 +3272,12 @@ app.post('/api/voice/session', requireAuthApi, apiLimiter, async (req, res) => {
   // If SHE is calling them (answered from a breach ring), pull the real reason so
   // she opens knowing she called and why — then clear the pending call so it
   // stops ringing. Only Iris calls (she owns the Guardian).
+  // She's on this call because the Guardian flagged a breach if there's a fresh
+  // pending call — detected server-side, not from a client flag (a stale cached
+  // client might not send one). Any Iris session that starts while a pending
+  // call is live is treated as her breach callback; then it's cleared.
   let breachWhy = null;
-  if (mentor === 'iris' && req.body?.incoming === true) {
+  if (mentor === 'iris') {
     try {
       const { data: gd } = await supabaseAdmin
         .from('guardian_data')
@@ -3281,7 +3285,7 @@ app.post('/api/voice/session', requireAuthApi, apiLimiter, async (req, res) => {
         .eq('user_id', req.user.id)
         .maybeSingle();
       const at = gd?.call_pending_at ? new Date(gd.call_pending_at).getTime() : 0;
-      if (at && (Date.now() - at) < 30 * 60 * 1000 && gd.call_reason) {
+      if (at && (Date.now() - at) < 20 * 60 * 1000 && gd.call_reason) {
         breachWhy = String(gd.call_reason).replace(/\s*·\s*/g, ', '); // spoken-friendly
       }
       if (gd?.call_pending_at) {
