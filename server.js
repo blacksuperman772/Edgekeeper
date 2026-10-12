@@ -4016,6 +4016,7 @@ async function maybeAlertGuardianBreach(userId, level, snap) {
     // without any notification.
     await notifications.sendToUser(supabaseAdmin, userId, {
       type:     'important',
+      call:     true,
       title:    `Iris is calling you`,
       body:     summary.charAt(0).toUpperCase() + summary.slice(1) + '. Pick up.',
       deepLink: '/chamber?incoming=1',

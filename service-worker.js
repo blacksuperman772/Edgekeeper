@@ -1,6 +1,6 @@
 'use strict';
 
-const VERSION = 'edgekeeper-shell-v5';
+const VERSION = 'edgekeeper-shell-v6';
 const STATIC_CACHE = VERSION + '-static';
 const NAVIGATION_CACHE = VERSION + '-navigation';
 const OFFLINE_URL = '/offline.html';
@@ -43,20 +43,37 @@ self.addEventListener('push', (event) => {
   let payload = {};
   try { payload = event.data ? event.data.json() : {}; } catch (_) {}
   const title = payload.title || 'EdgeKeeper';
+  const isCall = payload.call === true;
   const options = {
     body: payload.body || 'You have an update waiting in EdgeKeeper.',
     icon: payload.icon || '/assets/app-icon-192.png',
     badge: payload.badge || '/assets/app-icon-192.png',
-    tag: payload.type || 'edgekeeper',
-    data: { url: payload.url || '/workspace.html', type: payload.type || 'system', entityId: payload.entityId || null },
+    tag: isCall ? 'iris-call' : (payload.type || 'edgekeeper'),
+    data: { url: payload.url || '/workspace.html', type: payload.type || 'system', entityId: payload.entityId || null, call: isCall },
     renotify: true,
   };
+  if (isCall) {
+    // Make it behave like an incoming call: stays on screen until acted on,
+    // rings the device's vibrate, and offers Answer / Decline.
+    options.requireInteraction = true;
+    options.vibrate = [600, 300, 600, 300, 600, 300, 600];
+    options.actions = [
+      { action: 'answer', title: 'Answer' },
+      { action: 'decline', title: 'Decline' },
+    ];
+  }
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener('notificationclick', (event) => {
+  const data = event.notification.data || {};
   event.notification.close();
-  const target = new URL(event.notification.data?.url || '/workspace.html', self.location.origin).href;
+  // Declining a call just clears the pending call server-side — don't open.
+  if (data.call && event.action === 'decline') {
+    event.waitUntil(fetch('/api/voice/incoming/ack', { method: 'POST', credentials: 'include' }).catch(() => {}));
+    return;
+  }
+  const target = new URL(data.url || '/workspace.html', self.location.origin).href;
   event.waitUntil((async () => {
     const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     for (const client of clients) {
