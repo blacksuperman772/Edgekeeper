@@ -832,7 +832,10 @@
       EKVoice.ring({
         mentor: 'iris', getContext: irisVoiceContext, clientTools: tools,
         incoming: incoming === true, // she called them — server names why on pickup
-        onAccept: () => { ringing = false; ackCall(); },
+        // Do NOT ack on accept: the voice session reads the pending-call reason
+        // and clears it server-side. Acking here would wipe it first (race),
+        // and she'd open not knowing why she called. Only decline acks.
+        onAccept: () => { ringing = false; },
         onDecline: () => { ringing = false; ackCall(); },
       });
     }
