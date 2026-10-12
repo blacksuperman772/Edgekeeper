@@ -423,7 +423,19 @@ function serveInjectedHtml(filePath) {
             + '.ek-ms a:active,.ek-ms button:active{background:rgba(255,255,255,.02)}'
             + '.ek-ms svg{width:17px;height:17px;color:#5e5a55;flex-shrink:0}'
             + '.ek-ms .ek-out{color:#9d6c58;margin-top:8px;border-top:1px solid rgba(232,228,220,.1)}'
-            + '.ek-ms .ek-out svg{color:#9d6c58}';
+            + '.ek-ms .ek-out svg{color:#9d6c58}'
+            // Desktop: the phone tab bar becomes a left side rail, and the page
+            // content shifts right + stays in a comfortable centered column so a
+            // big screen reads like an app, not a phone stretched across black.
+            + '@media(min-width:900px){'
+            +   'html.ek-app body{padding-bottom:0!important;padding-left:216px!important;padding-top:0!important}'
+            +   '.ek-appnav{top:0!important;bottom:0!important;left:0!important;right:auto!important;width:216px;height:100vh!important;display:flex!important;flex-direction:column;justify-content:flex-start;gap:4px;grid-template-columns:none!important;border-top:none!important;border-right:1px solid rgba(232,228,220,.09);background:rgba(7,7,6,.96);padding:26px 14px;box-sizing:border-box}'
+            +   '.ek-appnav a,.ek-appnav button{flex-direction:row!important;justify-content:flex-start!important;gap:14px;min-height:auto!important;padding:12px 14px;border-radius:9px;font:400 .82rem/1 "Inter",-apple-system,sans-serif!important;letter-spacing:.01em!important;text-transform:none!important;color:#8a857d}'
+            +   '.ek-appnav a:hover,.ek-appnav button:hover{background:rgba(255,255,255,.045);color:#e8e4dc}'
+            +   '.ek-appnav .ek-on{background:rgba(184,160,106,.1)}'
+            +   '.ek-appnav svg{width:18px;height:18px}'
+            +   '.ek-app-main,html.ek-app main,html.ek-app .app-wrap{max-width:720px;margin-left:auto;margin-right:auto}'
+            + '}';
 
           html = html.replace(/<\/head>/i, '<style>' + css + '</style></head>');
 
